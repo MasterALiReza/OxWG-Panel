@@ -6255,6 +6255,9 @@
         if (iface && typeof refreshDefaultIface === "function") {
           refreshDefaultIface(iface);
         }
+        if (typeof refreshAddressOptions === "function") {
+          refreshAddressOptions();
+        }
 
         if (!modalOpenRequestIsCurrent(openTicket)) return;
         openModal(createModal);

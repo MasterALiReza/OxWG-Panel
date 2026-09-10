@@ -93,3 +93,35 @@ def peer_address_host(address):
     """Normalize a peer CIDR into canonical host string representation."""
     host = _safe_ip(address)
     return str(host) if host is not None else None
+
+
+def _private_networks() -> list[str]:
+    """Return a list of detected private IPv4 network CIDRs on this host."""
+    import socket
+    import psutil
+    networks = []
+    try:
+        for interface_name, addresses in psutil.net_if_addrs().items():
+            if interface_name == 'lo':
+                continue
+            for address in addresses:
+                if getattr(address, 'family', None) != socket.AF_INET:
+                    continue
+                ip_value = (getattr(address, 'address', '') or '').split('%', 1)[0]
+                netmask = getattr(address, 'netmask', None)
+                if not ip_value or not netmask:
+                    continue
+                try:
+                    interface = ipaddress.ip_interface(f"{ip_value}/{netmask}")
+                    if interface.ip.is_loopback or interface.ip.is_link_local or interface.ip.is_unspecified:
+                        continue
+                    if not interface.ip.is_private:
+                        continue
+                    network = str(interface.network)
+                    if network not in networks:
+                        networks.append(network)
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return networks

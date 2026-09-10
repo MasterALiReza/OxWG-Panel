@@ -38,7 +38,7 @@ from models import (
 from core.extensions import csrf
 from auth import require_api_key_or_login
 from core.paths import IFACE_LOG_DIR
-from core.ip_utils import _first_cidr, _safe_ip
+from core.ip_utils import _first_cidr, _safe_ip, _private_networks
 from core.file_utils import _extend_file
 from core.constants import MAX_ENUMERATED_HOSTS
 from services.wg_parser import (
@@ -677,19 +677,30 @@ def get_interfaces():
     db.session.commit()
     all_ifaces = InterfaceConfig.query.all()
     out = []
+    scope_networks = _private_networks()
     for iface in all_ifaces:
         if getattr(iface, 'node_id', None) is not None:
             continue
         dev = iface_devname(iface)
+        override = iface_endpoint_override(iface)
         out.append({
             'id': iface.id,
             'name': iface.name,
             'dev': dev,
-            'address': iface.address,
+            'address': iface.address or '',
+            'server_cidr': iface.address or '',
+            'scope_networks': scope_networks,
             'listen_port': iface.listen_port,
             'mtu': iface.mtu,
             'dns': iface.dns,
+            'available_ips': _available_ips(iface),
             'is_up': _iface_up(dev),
+            'endpoint_host': (getattr(iface, 'endpoint_host', None) or '').strip() or None,
+            'endpoint_port': int(iface.endpoint_port) if getattr(iface, 'endpoint_port', None) else None,
+            'endpoint_override': override,
+            'auto_endpoint': '',
+            'effective_endpoint': override,
+            'endpoint_source': 'override' if override else 'none',
         })
     return jsonify({'interfaces': out})
 

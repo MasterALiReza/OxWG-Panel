@@ -5,7 +5,7 @@ from wtforms.validators import DataRequired, Optional, NumberRange
 class PeerForm(FlaskForm):
     iface                = SelectField('Interface', coerce=int, validators=[DataRequired()])
     name                 = StringField('Friendly Name', validators=[DataRequired()])
-    address              = SelectField('Peer IP Address', choices=[], validators=[DataRequired()])
+    address              = StringField('Peer IP Address', validators=[Optional()])
     allowed_ips          = StringField('Allowed IPs', validators=[Optional()])
     # Server address exported in the CLIENT's [Peer] block.
     endpoint             = StringField('Server endpoint (host:port)', validators=[Optional()])

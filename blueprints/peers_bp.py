@@ -25,6 +25,8 @@ from flask import (
     jsonify,
     abort,
     flash,
+    redirect,
+    url_for,
     make_response,
     send_file,
     current_app,
@@ -344,7 +346,8 @@ def users():
             if sel_iface:
                 form.iface.data = sel_iface.id
 
-    form.address.choices = [(ip, ip) for ip in (_available_ips(sel_iface) if sel_iface else [])]
+    if hasattr(form.address, 'choices'):
+        form.address.choices = [(ip, ip) for ip in (_available_ips(sel_iface) if sel_iface else [])]
 
     if request.method == 'GET':
         if hasattr(form, 'time_limit_hours') and form.time_limit_hours.data is None:
@@ -354,6 +357,14 @@ def users():
                 form.mtu.data = sel_iface.mtu
             if form.dns.data is None:
                 form.dns.data = sel_iface.dns
+
+    if request.method == 'POST' and not form.validate_on_submit():
+        for field_name, errs in form.errors.items():
+            field = getattr(form, field_name, None)
+            label = field.label.text if field and hasattr(field, 'label') else field_name
+            for err in errs:
+                flash(f"{label}: {err}", 'error')
+        logger.warning("Peer form validation failed: errors=%s form_data=%s", form.errors, request.form.to_dict())
 
     if form.validate_on_submit():
         iface = sel_iface or (db.session.get(InterfaceConfig, form.iface.data) if form.iface.data else None)
@@ -370,10 +381,16 @@ def users():
             pub = base64.b64encode(os.urandom(32)).decode()
 
         try:
-            addr = allocate_peer_address(iface, requested=form.address.data)
+            addr = allocate_peer_address(iface, requested=(form.address.data or '').strip() or None)
         except AddressAllocationError as e:
             flash(str(e), 'error')
             return render_template('users.html', form=form)
+
+        combined_days = _conv_time_limit({
+            'time_limit_days': form.time_limit_days.data if hasattr(form, 'time_limit_days') else None,
+            'time_limit_hours': form.time_limit_hours.data if hasattr(form, 'time_limit_hours') else None,
+        })
+        created_ts = now_ts()
 
         p = Peer(
             iface_id=iface.id,
@@ -381,18 +398,36 @@ def users():
             public_key=pub,
             private_key=priv,
             address=addr,
-            allowed_ips=form.allowed_ips.data or '0.0.0.0/0, ::/0',
-            dns=form.dns.data or None,
-            mtu=form.mtu.data or None,
+            allowed_ips=(form.allowed_ips.data or '0.0.0.0/0, ::/0').strip(),
+            endpoint=(form.endpoint.data or '').strip() or None,
+            peer_endpoint=(form.peer_endpoint.data or '').strip() or None,
+            persistent_keepalive=form.persistent_keepalive.data if hasattr(form, 'persistent_keepalive') else 25,
+            mtu=form.mtu.data if hasattr(form, 'mtu') and form.mtu.data else None,
+            dns=(form.dns.data or '').strip() or None,
             status='online',
-            created_at=from_ts(now_ts()),
-            timer_started_at=from_ts(now_ts()),
+            created_at=from_ts(created_ts),
+            timer_started_at=from_ts(created_ts),
             unlimited=bool(getattr(form, 'unlimited', None) and form.unlimited.data),
+            start_on_first_use=bool(getattr(form, 'start_on_first_use', None) and form.start_on_first_use.data),
+            time_limit_days=combined_days,
+            data_limit_value=int(getattr(form, 'data_limit', None) and form.data_limit.data or 0),
+            data_limit_unit=(getattr(form, 'limit_unit', None) and form.limit_unit.data) or 'Mi',
+            phone_number=(getattr(form, 'phone_number', None) and form.phone_number.data or '').strip(),
+            telegram_id=(getattr(form, 'telegram_id', None) and form.telegram_id.data or '').strip(),
         )
+        if p.time_limit_days and not p.start_on_first_use and not p.unlimited:
+            p.expires_at = from_ts(add_days_ts(created_ts, float(p.time_limit_days)))
+
         db.session.add(p)
         db.session.commit()
         install_local_peer(p)
+        log_event(p, 'created', f'Created on iface {iface.name}')
+        try:
+            _shortlink_for_peer(p)
+        except Exception:
+            pass
         flash(f'Peer {p.name} created successfully.', 'success')
+        return redirect(url_for('peers_bp.users'))
 
     return render_template('users.html', form=form)
 

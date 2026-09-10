@@ -345,6 +345,80 @@ class TestBlueprintLayer(unittest.TestCase):
         self.assertTrue('issuer=OxWg+Panel' in otp_uri or 'issuer=OxWg%20Panel' in otp_uri)
         self.assertIn('OxWg-Panel%3Aadmin', otp_uri)
 
+    def test_peer_creation_and_get_interfaces(self):
+        """Verify /api/get-interfaces returns available_ips and /users creates peers."""
+        with self.client.session_transaction() as sess:
+            sess['_user_id'] = '1'
+            sess['_fresh'] = True
+
+        with self.app.app_context():
+            iface = InterfaceConfig.query.filter_by(name='wg0').first()
+            if not iface:
+                iface = InterfaceConfig(
+                    id=10,
+                    name='wg0',
+                    path='/etc/wireguard/wg0.conf',
+                    address='10.88.0.1/24',
+                    listen_port=51820,
+                    private_key='aW5pdGlhbF9wcml2YXRlX2tleV9mb3JfdGVzdGluZw==',
+                    public_key='aW5pdGlhbF9wdWJsaWNfa2V5X2Zvcl90ZXN0aW5nPT0=',
+                )
+                db.session.add(iface)
+                db.session.commit()
+            iface_id = iface.id
+
+        # 1. Test /api/get-interfaces
+        resp = self.client.get('/api/get-interfaces')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.get_json()
+        self.assertIn('interfaces', data)
+        wg0_row = next((i for i in data['interfaces'] if i['name'] == 'wg0'), None)
+        self.assertIsNotNone(wg0_row)
+        self.assertIn('available_ips', wg0_row)
+        self.assertTrue(len(wg0_row['available_ips']) > 0)
+        first_ip = wg0_row['available_ips'][0]
+        self.assertTrue(first_ip.endswith('/24'))
+
+        # 2. Test POST /users with automatic IP allocation (empty address)
+        with mock.patch('blueprints.peers_bp.install_local_peer'):
+            resp_post = self.client.post('/users', data={
+                'iface': str(iface_id),
+                'name': 'auto-peer',
+                'address': '',
+                'allowed_ips': '0.0.0.0/0, ::/0',
+            }, follow_redirects=False)
+
+            self.assertEqual(resp_post.status_code, 302)
+            self.assertIn('/users', resp_post.headers['Location'])
+
+        with self.app.app_context():
+            p = Peer.query.filter_by(name='auto-peer').first()
+            self.assertIsNotNone(p)
+            self.assertEqual(p.address, first_ip)
+            self.assertEqual(p.status, 'online')
+
+        # 3. Test POST /users with explicit IP without CIDR mask
+        explicit_ip = first_ip.split('/')[0]
+        # Use next host
+        octets = explicit_ip.split('.')
+        octets[-1] = '25'
+        custom_ip = '.'.join(octets)
+
+        with mock.patch('blueprints.peers_bp.install_local_peer'):
+            resp_post2 = self.client.post('/users', data={
+                'iface': str(iface_id),
+                'name': 'explicit-peer',
+                'address': custom_ip,
+                'allowed_ips': '0.0.0.0/0, ::/0',
+            }, follow_redirects=False)
+
+            self.assertEqual(resp_post2.status_code, 302)
+
+        with self.app.app_context():
+            p2 = Peer.query.filter_by(name='explicit-peer').first()
+            self.assertIsNotNone(p2)
+            self.assertEqual(p2.address, f"{custom_ip}/24")
+
 
 if __name__ == '__main__':
     unittest.main()
