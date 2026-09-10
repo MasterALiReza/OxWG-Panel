@@ -657,27 +657,33 @@ def clone_repo():
         set_project(target)
         ok("Project root updated.")
         if confirm("Run git pull now?", default_yes=False):
-            # Detect the actual local branch name (could be 'main' or 'master')
+            # Remote branch is always 'main' on GitHub.
+            # Local branch may be 'master' or something else — detect it.
+            remote_branch = "main"
             try:
                 import subprocess as _sp
                 _r = _sp.run(
                     ["git", "-C", str(target), "rev-parse", "--abbrev-ref", "HEAD"],
                     capture_output=True, text=True, timeout=10,
                 )
-                local_branch = _r.stdout.strip() or "main"
+                local_branch = _r.stdout.strip() or remote_branch
             except Exception:
-                local_branch = "main"
+                local_branch = remote_branch
 
             _live(["git", "-C", str(target), "fetch", "origin"], "git fetch origin")
-            # Set upstream only if branch exists locally
-            _live(
+
+            # Link local branch to origin/main (ignoring local branch name)
+            rc_up = _live(
                 ["git", "-C", str(target), "branch",
-                 f"--set-upstream-to=origin/{local_branch}", local_branch],
-                f"set upstream to origin/{local_branch}",
+                 f"--set-upstream-to=origin/{remote_branch}", local_branch],
+                f"set upstream: {local_branch} → origin/{remote_branch}",
             )
+            if rc_up != 0:
+                warn(f"Could not set upstream (non-fatal). Pulling directly.")
+
             _live(
-                ["git", "-C", str(target), "pull", "origin", local_branch, "--ff-only"],
-                f"git pull origin {local_branch} --ff-only",
+                ["git", "-C", str(target), "pull", "origin", remote_branch, "--ff-only"],
+                f"git pull origin {remote_branch} --ff-only",
             )
         pause()
         return
