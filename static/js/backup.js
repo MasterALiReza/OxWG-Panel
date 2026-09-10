@@ -1510,7 +1510,7 @@
       cachedInstallCommand = [j.command, j.next_command ? `\n# Then open the node menu:\n${j.next_command}` : ""].filter(Boolean).join("\n");
     } catch {}
     if (!cachedInstallCommand) {
-      cachedInstallCommand = `sudo bash -c 'command -v curl >/dev/null 2>&1 || (apt-get update -y && apt-get install -y curl ca-certificates); bash -c "$(curl -fsSL https://raw.githubusercontent.com/Azumi67/WG_Panel/refs/heads/main/agent/node.sh)"'\n\n# Then open the node menu:\nnode`;
+      cachedInstallCommand = `sudo bash -c 'command -v curl >/dev/null 2>&1 || (apt-get update -y && apt-get install -y curl ca-certificates); bash -c "$(curl -fsSL https://raw.githubusercontent.com/MasterALiReza/OxWG-Panel/refs/heads/main/agent/node.sh)"'\n\n# Then open the node menu:\nnode`;
     }
     return cachedInstallCommand;
   }
@@ -3173,7 +3173,7 @@
       cachedInstallCommand = [j.command, j.next_command ? `\n# Then open the node menu:\n${j.next_command}` : ""].filter(Boolean).join("\n");
     } catch {}
     if (!cachedInstallCommand) {
-      cachedInstallCommand = `sudo bash -c 'command -v curl >/dev/null 2>&1 || (apt-get update -y && apt-get install -y curl ca-certificates); bash -c "$(curl -fsSL https://raw.githubusercontent.com/Azumi67/WG_Panel/refs/heads/main/agent/node.sh)"'\n\n# Then open the node menu:\nnode`;
+      cachedInstallCommand = `sudo bash -c 'command -v curl >/dev/null 2>&1 || (apt-get update -y && apt-get install -y curl ca-certificates); bash -c "$(curl -fsSL https://raw.githubusercontent.com/MasterALiReza/OxWG-Panel/refs/heads/main/agent/node.sh)"'\n\n# Then open the node menu:\nnode`;
     }
     return cachedInstallCommand;
   }
