@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${VENV_DIR:-$SCRIPT_DIR/venv}"
 PY="$VENV_DIR/bin/python"
 
-DEFAULT_WG_URL="https://raw.githubusercontent.com/MasterALiReza/OxWG-Panel/refs/heads/main/wg.py"
+DEFAULT_WG_URL="https://raw.githubusercontent.com/MasterALiReza/OxWG-Panel/main/wg.py"
 
 APT_PKGS=(
   sudo
@@ -179,10 +179,10 @@ _fetch_wg_py() {
     if command -v curl >/dev/null 2>&1; then
       remote_etag=$(curl --silent --head --location \
         --connect-timeout 8 --max-time 15 \
-        "$url" 2>/dev/null | grep -i "^etag:" | tr -d '\r' | awk '{print $2}')
+        "$url" 2>/dev/null | grep -i "^etag:" | tail -n 1 | tr -d '\r' | awk '{print $2}')
     elif command -v wget >/dev/null 2>&1; then
       remote_etag=$(wget --quiet --server-response --spider "$url" 2>&1 \
-        | grep -i "etag:" | awk '{print $2}' | tr -d '\r')
+        | grep -i "etag:" | tail -n 1 | awk '{print $2}' | tr -d '\r')
     fi
 
     local stored_etag=""

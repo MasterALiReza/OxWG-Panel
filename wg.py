@@ -629,12 +629,10 @@ def clone_repo():
     default_target = f"/usr/local/bin/{REPO_DIRNAME_DEFAULT}"
 
     clear()
-    header("Git Clone", REPO_URL)
+    header("Git Clone / Project Directory", REPO_URL)
     print(box("Tips", [
-        c("Choose the FULL target folder path.", BR_WHT),
-        c("Git clones into the folder you specify (no folder-in-folder).", BR_GRN),
-        "",
-        c("Recommended:", BR_YEL) + " " + c(_paths(default_target), BR_CYN),
+        c("Choose the target installation path.", BR_WHT),
+        c("Default & recommended:", BR_YEL) + " " + c(_paths(default_target), BR_CYN),
     ], border_color=BR_YEL))
 
     target_in = ask("Install path (full)", default=default_target, show_default=True).strip()
@@ -652,83 +650,87 @@ def clone_repo():
         pause()
         return
 
-    if target.exists() and (target / ".git").exists():
-        info(f"Repo already exists: {_paths(str(target))}")
-        set_project(target)
-        ok("Project root updated.")
-        if confirm("Run git pull now?", default_yes=False):
-            # Detect local branch name
-            try:
-                import subprocess as _sp
-                _r = _sp.run(
-                    ["git", "-C", str(target), "rev-parse", "--abbrev-ref", "HEAD"],
-                    capture_output=True, text=True, timeout=10,
-                )
-                local_branch = _r.stdout.strip()
-            except Exception:
-                local_branch = ""
-
-            # If local branch is 'master' but remote only has 'main', rename it
-            if local_branch == "master":
-                _live(
-                    ["git", "-C", str(target), "branch", "-m", "master", "main"],
-                    "rename local master → main",
-                )
-
-            # Always pull from origin main (no set-upstream needed)
-            _live(["git", "-C", str(target), "fetch", "origin"], "git fetch origin")
-            _live(
-                ["git", "-C", str(target), "pull", "origin", "main", "--ff-only"],
-                "git pull origin main --ff-only",
-            )
-        pause()
-        return
-
+    # Check if target exists and has content
+    has_files = False
     if target.exists():
-        is_empty = True
         try:
-            is_empty = not any(target.iterdir())
+            has_files = any(target.iterdir())
         except Exception:
-            err("Cannot access target directory.")
+            has_files = True
+
+    if has_files:
+        has_git = (target / ".git").exists()
+        has_app = (target / "app.py").exists()
+        has_venv = (target / "venv" / "bin" / "python").exists()
+        has_env = (target / ".env").exists()
+        svc_active = _svc_active("wg-panel.service") == "active"
+
+        status_items = [
+            f"Location: {_paths(str(target))}",
+            "",
+            f"Code repository:  {c('Found', BR_GRN) if (has_git and has_app) else c('Incomplete/Missing', BR_YEL)}",
+            f"Python venv:      {c('Installed', BR_GRN) if has_venv else c('Not created', BR_YEL)}",
+            f"Config (.env):     {c('Configured', BR_GRN) if has_env else c('Not created', BR_YEL)}",
+            f"Panel service:    {c('Active (running)', BR_GRN) if svc_active else c('Inactive/Not installed', BR_YEL)}",
+            "",
+            c("Choose how to proceed:", BR_WHT),
+            f"  {c('1)', BR_CYN)} Sync & update code to latest main (Keeps database & configs)",
+            f"  {c('2)', BR_YEL)} Clean re-install (Delete folder & clone fresh from GitHub)",
+            f"  {c('3)', BR_GRN)} Use existing files as-is (Continue to next setup steps)",
+            f"  {c('0)', DIM)} Cancel",
+        ]
+
+        print(box("Existing Directory Detected", status_items, border_color=BR_CYN))
+        choice = ask("Select option", default="1", show_default=True).strip()
+
+        if choice == "1":
+            if has_git:
+                _live(["git", "-C", str(target), "fetch", "origin", "main"], "git fetch origin main")
+                _live(["git", "-C", str(target), "checkout", "-B", "main", "origin/main"], "checkout latest main")
+                set_project(target)
+                ok("Project code synced to latest main.")
+            else:
+                _live(["git", "-C", str(target), "init"], "git init")
+                _live(["git", "-C", str(target), "remote", "add", "origin", REPO_URL], "git remote add")
+                _live(["git", "-C", str(target), "fetch", "origin", "main"], "git fetch origin main")
+                _live(["git", "-C", str(target), "checkout", "-B", "main", "origin/main"], "checkout latest main")
+                set_project(target)
+                ok("Git repository initialized and code synced to latest main.")
             pause()
             return
 
-        if not is_empty:
-            warn(f"Target directory exists and is not empty: {_paths(str(target))}")
-            print(box("Options", [
-                c("W", BR_YEL) + c(" = Wipe directory and clone fresh (recommended for failed installs)", BR_WHT),
-                c("C", BR_GRN) + c(" = Clone into it anyway (git will abort if already has content)", BR_WHT),
-                c("Q", BR_RED) + c(" = Cancel", BR_WHT),
-            ], border_color=BR_YEL))
-            choice = ask("Choose", default="Q", show_default=True).strip().upper()
-
-            if choice == "W":
-                if confirm(f"Delete everything inside {_paths(str(target))} ?", default_yes=False):
-                    import shutil as _shutil
-                    try:
-                        _shutil.rmtree(str(target))
-                        ok("Directory wiped.")
-                    except Exception as exc:
-                        err(f"Could not wipe directory: {exc}")
-                        pause()
-                        return
-                else:
-                    warn("Canceled.")
-                    pause()
-                    return
-            elif choice == "C":
-                info("Proceeding with clone into existing directory.")
-            else:
+        elif choice == "2":
+            if not confirm(f"Delete everything inside {_paths(str(target))} and clone fresh?", default_yes=False):
                 warn("Canceled.")
                 pause()
                 return
+            import shutil as _shutil
+            try:
+                _shutil.rmtree(str(target))
+                ok("Directory deleted.")
+            except Exception as exc:
+                err(f"Could not wipe directory: {exc}")
+                pause()
+                return
 
+        elif choice == "3":
+            set_project(target)
+            ok(f"Project root set: {_paths(str(target))}")
+            pause()
+            return
+
+        else:
+            warn("Canceled.")
+            pause()
+            return
+
+    # Fresh clone (when directory does not exist or was wiped above)
     if not confirm(f"Clone into {_paths(str(target))} ?", default_yes=True):
         warn("Canceled.")
         pause()
         return
 
-    rc = _live(["git", "clone", REPO_URL, str(target)], "git clone")
+    rc = _live(["git", "clone", "--branch", "main", REPO_URL, str(target)], "git clone")
     if rc == 0 and (target / "app.py").exists():
         set_project(target)
         ok(f"Project root set: {_paths(str(target))}")
@@ -765,9 +767,14 @@ def _venv_requirements(root: Path):
 
     vpy = venv_dir / "bin" / "python"
     if not vpy.exists():
-        err("venv is broken (python missing). Remove venv and re-run.")
-        pause()
-        return
+        warn("Virtual environment is incomplete. Recreating...")
+        import shutil as _shutil
+        _shutil.rmtree(str(venv_dir), ignore_errors=True)
+        if _live(["python3", "-m", "venv", str(venv_dir)], "Create virtual environment") != 0:
+            err("Failed to create virtual environment.")
+            pause()
+            return
+        vpy = venv_dir / "bin" / "python"
 
     _live([str(vpy), "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"], "Upgrade pip tooling")
     _live([str(vpy), "-m", "pip", "install", "-r", str(req)], "pip install -r requirements.txt")
@@ -4167,7 +4174,8 @@ def _wg_binary():
 
 def _wgpanel_command(root: Path):
     target = Path("/usr/local/bin/wgpanel")
-    script_path = Path(__file__).resolve()
+    project_script = root / "wg.py"
+    script_path = project_script.resolve() if project_script.is_file() else Path(__file__).resolve()
 
     if _already_installed(target, script_path):
         return
