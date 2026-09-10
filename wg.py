@@ -657,7 +657,18 @@ def clone_repo():
         set_project(target)
         ok("Project root updated.")
         if confirm("Run git pull now?", default_yes=False):
-            _live(["git", "-C", str(target), "pull", "--ff-only"], "git pull --ff-only")
+            # Fetch first, then set upstream tracking, then pull —
+            # this handles repos that were cloned without tracking info.
+            _live(["git", "-C", str(target), "fetch", "origin"], "git fetch origin")
+            _live(
+                ["git", "-C", str(target), "branch",
+                 "--set-upstream-to=origin/main", "main"],
+                "set upstream tracking",
+            )
+            _live(
+                ["git", "-C", str(target), "pull", "origin", "main", "--ff-only"],
+                "git pull origin main --ff-only",
+            )
         pause()
         return
 
