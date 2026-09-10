@@ -171,18 +171,21 @@ _fetch_wg_py() {
   local out="$cache_dir/wg.py"
   local etag_file="$cache_dir/wg.py.etag"
 
-  # ETag-based cache invalidation:
-  # Do a HEAD request to get the current ETag from GitHub.
-  # If it matches the stored ETag and cache exists → use cache.
-  # If different or no cache → re-download and store new ETag.
+  # Use cache buster so GitHub Fastly CDN never serves stale files
+  local buster
+  buster="$(date +%s)"
+  local buster_url="${url}?_t=${buster}"
+
   if [ "$FORCE_FETCH" -eq 0 ] && [ -s "$out" ]; then
     local remote_etag=""
     if command -v curl >/dev/null 2>&1; then
       remote_etag=$(curl --silent --head --location \
+        -H "Cache-Control: no-cache" -H "Pragma: no-cache" \
         --connect-timeout 8 --max-time 15 \
-        "$url" 2>/dev/null | grep -i "^etag:" | tail -n 1 | tr -d '\r' | awk '{print $2}')
+        "$buster_url" 2>/dev/null | grep -i "^etag:" | tail -n 1 | tr -d '\r' | awk '{print $2}')
     elif command -v wget >/dev/null 2>&1; then
-      remote_etag=$(wget --quiet --server-response --spider "$url" 2>&1 \
+      remote_etag=$(wget --quiet --server-response --spider \
+        --header="Cache-Control: no-cache" "$buster_url" 2>&1 \
         | grep -i "etag:" | tail -n 1 | awk '{print $2}' | tr -d '\r')
     fi
 
@@ -214,11 +217,13 @@ _fetch_wg_py() {
       --silent \
       --show-error \
       --location \
+      -H "Cache-Control: no-cache" \
+      -H "Pragma: no-cache" \
       --retry 3 \
       --retry-delay 2 \
       --connect-timeout 15 \
       --max-time 180 \
-      "$url" \
+      "$buster_url" \
       -o "$tmp" || die "Failed to download wg.py with curl."
 
   elif command -v wget >/dev/null 2>&1; then

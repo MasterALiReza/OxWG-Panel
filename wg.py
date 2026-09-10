@@ -226,7 +226,7 @@ def isitroot() -> bool:
     except Exception:
         return False
 
-def _live(cmd: List[str], title: str, timeout: Optional[int] = None, env: Optional[Dict[str, str]] = None, cwd: Optional[Union[str, Path]] = None) -> int:
+def _live(cmd: List[str], title: str, timeout: Optional[int] = None, env: Optional[Dict[str, str]] = None, cwd=None) -> int:
     lm = left_margin()
     print(hr("═", DIM))
     print(lm + c(f"{TAG_RUN} {title}", BR_CYN))
