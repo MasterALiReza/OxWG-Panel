@@ -148,6 +148,14 @@ install_stuff() {
 
 _venv() {
   command -v python3 >/dev/null 2>&1 || die "python3 not found."
+
+  # Enforce minimum Python version (3.10+)
+  _py_ver=$(python3 -c "import sys; print(sys.version_info.major * 100 + sys.version_info.minor)" 2>/dev/null || echo "0")
+  if [ "$_py_ver" -lt 310 ]; then
+    _py_str=$(python3 --version 2>&1 || echo "unknown")
+    die "Python 3.10+ is required. Found: ${_py_str}. Install a newer version (e.g. python3.11 or python3.12) and retry."
+  fi
+
   if [ ! -x "$PY" ]; then
     log "Creating venv: $VENV_DIR"
     python3 -m venv "$VENV_DIR"
