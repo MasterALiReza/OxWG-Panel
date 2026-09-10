@@ -657,33 +657,29 @@ def clone_repo():
         set_project(target)
         ok("Project root updated.")
         if confirm("Run git pull now?", default_yes=False):
-            # Remote branch is always 'main' on GitHub.
-            # Local branch may be 'master' or something else — detect it.
-            remote_branch = "main"
+            # Detect local branch name
             try:
                 import subprocess as _sp
                 _r = _sp.run(
                     ["git", "-C", str(target), "rev-parse", "--abbrev-ref", "HEAD"],
                     capture_output=True, text=True, timeout=10,
                 )
-                local_branch = _r.stdout.strip() or remote_branch
+                local_branch = _r.stdout.strip()
             except Exception:
-                local_branch = remote_branch
+                local_branch = ""
 
+            # If local branch is 'master' but remote only has 'main', rename it
+            if local_branch == "master":
+                _live(
+                    ["git", "-C", str(target), "branch", "-m", "master", "main"],
+                    "rename local master → main",
+                )
+
+            # Always pull from origin main (no set-upstream needed)
             _live(["git", "-C", str(target), "fetch", "origin"], "git fetch origin")
-
-            # Link local branch to origin/main (ignoring local branch name)
-            rc_up = _live(
-                ["git", "-C", str(target), "branch",
-                 f"--set-upstream-to=origin/{remote_branch}", local_branch],
-                f"set upstream: {local_branch} → origin/{remote_branch}",
-            )
-            if rc_up != 0:
-                warn(f"Could not set upstream (non-fatal). Pulling directly.")
-
             _live(
-                ["git", "-C", str(target), "pull", "origin", remote_branch, "--ff-only"],
-                f"git pull origin {remote_branch} --ff-only",
+                ["git", "-C", str(target), "pull", "origin", "main", "--ff-only"],
+                "git pull origin main --ff-only",
             )
         pause()
         return
