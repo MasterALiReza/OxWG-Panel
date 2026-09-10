@@ -226,17 +226,31 @@ def isitroot() -> bool:
     except Exception:
         return False
 
-def _live(cmd: List[str], title: str, timeout: Optional[int] = None, env: Optional[Dict[str, str]] = None) -> int:
+def _live(cmd: List[str], title: str, timeout: Optional[int] = None, env: Optional[Dict[str, str]] = None, cwd: Optional[Union[str, Path]] = None) -> int:
     lm = left_margin()
     print(hr("═", DIM))
     print(lm + c(f"{TAG_RUN} {title}", BR_CYN))
     print(lm + c(f"$ {' '.join(cmd)}", DIM))
     print(hr("─", DIM))
 
+    # Guard against deleted working directory in parent process
+    try:
+        os.getcwd()
+    except Exception:
+        try:
+            os.chdir(str(Path.home()))
+        except Exception:
+            try:
+                os.chdir("/tmp")
+            except Exception:
+                pass
+
+    cwd_str = str(cwd) if cwd is not None else None
+
     noisy = cmd and cmd[0] in {"apt", "apt-get", "pip", "pip3"}
     if noisy and _isatty():
         try:
-            rc = subprocess.run(cmd, env=env, timeout=timeout).returncode
+            rc = subprocess.run(cmd, env=env, timeout=timeout, cwd=cwd_str).returncode
             if rc == 0:
                 ok("Done.")
             else:
@@ -252,7 +266,7 @@ def _live(cmd: List[str], title: str, timeout: Optional[int] = None, env: Option
             _exit()
 
     try:
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env, cwd=cwd_str)
     except FileNotFoundError:
         err(f"Command not found: {cmd[0]}")
         return 127
@@ -706,6 +720,16 @@ def clone_repo():
                 return
             import shutil as _shutil
             try:
+                # Move out of target if current working directory is inside it
+                try:
+                    cur = Path.cwd().resolve()
+                    if cur == target.resolve() or target.resolve() in cur.parents:
+                        os.chdir(str(target.parent if target.parent.exists() else Path.home()))
+                except Exception:
+                    try:
+                        os.chdir(str(Path.home()))
+                    except Exception:
+                        pass
                 _shutil.rmtree(str(target))
                 ok("Directory deleted.")
             except Exception as exc:
@@ -730,7 +754,8 @@ def clone_repo():
         pause()
         return
 
-    rc = _live(["git", "clone", "--branch", "main", REPO_URL, str(target)], "git clone")
+    safe_cwd = str(target.parent if target.parent.exists() else Path.home())
+    rc = _live(["git", "clone", "--branch", "main", REPO_URL, str(target)], "git clone", cwd=safe_cwd)
     if rc == 0 and (target / "app.py").exists():
         set_project(target)
         ok(f"Project root set: {_paths(str(target))}")
