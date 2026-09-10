@@ -355,16 +355,17 @@ html[data-theme="light"] .np-pagination,
 html[data-theme="light"] .np-empty,
 html[data-theme="light"] .nodes-modal .modal-card{background:#fff!important;color:#0f172a!important;border-color:#e2e8f0!important}
 
-/* Accent card (NODES) — keep dark-green gradient in both themes */
+/* Accent card (NODES) — light-theme variant: soft teal tint, dark text */
 html[data-theme="light"] .np-stat.accent{
-  background: radial-gradient(circle at 100% 0%, rgba(45,212,191,.25), transparent 40%),
-              linear-gradient(135deg, #0f172a, #115e59) !important;
-  border-color: transparent !important;
-  color: #fff !important;
+  background: radial-gradient(circle at 90% 10%, rgba(20,184,166,.12), transparent 55%),
+              linear-gradient(160deg, #f0fdf9, #ecfdf5) !important;
+  border-color: #a7f3d0 !important;
+  color: #064e3b !important;
+  box-shadow: 0 8px 22px rgba(20,184,166,.12) !important;
 }
-html[data-theme="light"] .np-stat.accent .np-stat-icon{background: rgba(255,255,255,.16) !important; color: #fff !important;}
-html[data-theme="light"] .np-stat.accent .np-stat-label{color: rgba(255,255,255,.78) !important;}
-html[data-theme="light"] .np-stat.accent .np-stat-value{color: #fff !important;}
+html[data-theme="light"] .np-stat.accent .np-stat-icon{background: #ccfbf1 !important; color: #0d9488 !important;}
+html[data-theme="light"] .np-stat.accent .np-stat-label{color: #0f766e !important;}
+html[data-theme="light"] .np-stat.accent .np-stat-value{color: #064e3b !important;}
 html[data-theme="light"] .np-search .input,
 html[data-theme="light"] .nodes-modal .input,
 html[data-theme="light"] .np-page-controls select{background:#fff!important;color:#0f172a!important;border-color:#dbe3ec!important;color-scheme:light}
