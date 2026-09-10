@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block preload_flags %}
+{% set use_poppins_regular = true %}
+{% set use_poppins_semibold = true %}
+{% set use_fa_solid = true %}
+{% endblock %}
+
+{% block head_extras %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/backup.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/backup-dark.css') }}">
+{% endblock %}
+{% block responsive_extras %}
+{% endblock %}
+
+
+{% block content %}
+<div class="backup-shell">
+  <div class="bk-top">
+    <div class="bk-title">
+      <h1><i class="fas fa-box-archive"></i> Backup & restore</h1>
+      <p>Portable backups for database, subscriptions, short links, local WG configs, and reachable node configs.</p>
+    </div>
+    <div class="bk-pills"><span id="status-pill" class="bk-pill muted">Status: Loading</span><span id="next-run-pill" class="bk-pill muted">Next: —</span></div>
+  </div>
+
+  <nav class="bk-tabs" aria-label="Backup tabs">
+    <button class="bk-tab active" type="button" data-bk-tab="backup"><i class="fas fa-download"></i> Backup</button>
+    <button class="bk-tab" type="button" data-bk-tab="restore"><i class="fas fa-rotate-left"></i> Restore</button>
+    <button class="bk-tab" type="button" data-bk-tab="auto"><i class="fas fa-clock-rotate-left"></i> Auto-backup</button>
+  </nav>
+
+  <section class="bk-tab-panel active" data-bk-panel="backup">
+    <div class="bk-grid">
+      <div class="bk-card">
+        <div class="bk-head"><div class="ttl"><i class="fas fa-download"></i> Create backup</div><span id="full-last" class="bk-pill muted">Last: —</span></div>
+        <div class="bk-body">
+          <div class="bk-hero">
+            <div><div class="name">Full backup</div><div class="desc">DB + subscriptions + settings + optional local/node WireGuard configs</div></div>
+            <button id="btn-full" class="bk-primary-btn" type="button"><i class="fas fa-cloud-arrow-down"></i> Download</button>
+          </div>
+          <div class="bk-mini-row">
+            <div class="bk-mini"><div><div class="name">Database</div><div id="db-last" class="bk-subline">Last: —</div></div><button id="btn-db" class="bk-icon" type="button" title="Download database"><i class="fas fa-database"></i></button></div>
+            <div class="bk-mini"><div><div class="name">Settings</div><div id="settings-last" class="bk-subline">Last: —</div></div><button id="btn-settings" class="bk-icon" type="button" title="Download settings"><i class="fas fa-sliders"></i></button></div>
+          </div>
+          <div class="bk-switch-row">
+            <label class="bk-switch"><input id="include-wg" type="checkbox"><span class="track"></span><span>Include WireGuard configs</span></label>
+            <label class="bk-switch"><input id="send-telegram" type="checkbox"><span class="track"></span><span>Send copy to Telegram</span></label>
+          </div>
+          <div class="bk-compact-note warn bk-small"><strong>Safe restore:</strong> runtime/domain/port/TLS files are backed up for reference, but restore should use Keep current, Use saved, or Customize.</div>
+        </div>
+      </div>
+      <aside class="bk-card">
+        <div class="bk-head"><div class="ttl"><i class="fas fa-list-check"></i> Backup contents</div></div>
+        <div class="bk-body">
+          <div id="live-backup-preview" class="bk-preview">
+            <div class="bk-preview-title"><i class="fas fa-magnifying-glass-chart"></i> Downloaded backup contents</div>
+            <div id="live-preview-subtitle" class="bk-small bk-muted">Download a backup and its contents will appear here automatically.</div>
+            <div id="live-preview-grid" class="bk-preview-grid empty"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="bk-tab-panel" data-bk-panel="restore">
+    <div class="bk-restore-shell">
+      <div class="bk-card bk-restore-main">
+        <div class="bk-head">
+          <div class="ttl"><i class="fas fa-rotate-left"></i> Restore backup</div>
+          <span class="bk-pill warn">Review before restore</span>
+        </div>
+        <div class="bk-body bk-restore-flow">
+          <div class="bk-step-card bk-step-upload">
+            <div class="bk-step-mark">1</div>
+            <div class="bk-step-content">
+              <div class="bk-step-title">Choose backup ZIP</div>
+              <label class="bk-upload compact" for="restore-file">
+                <input id="restore-file" type="file" accept=".zip,application/zip">
+                <span class="bk-upload-ico"><i class="fas fa-file-zipper"></i></span>
+                <span>
+                  <span id="restore-file-name" class="bk-upload-name">No file chosen</span>
+                  <span id="restore-file-hint" class="bk-upload-hint">The panel will inspect the ZIP before restore.</span>
+                </span>
+                <button id="restore-file-trigger" class="bk-btn" type="button"><i class="fas fa-folder-open"></i> Choose</button>
+              </label>
+            </div>
+          </div>
+
+          <div class="bk-step-card">
+            <div class="bk-step-mark">2</div>
+            <div class="bk-step-content">
+              <div class="bk-step-title-row">
+                <div>
+                  <div class="bk-step-title">Restore options</div>
+                  <div class="bk-small bk-muted">Defaults are safe for normal restores. Change only what you need.</div>
+                </div>
+                <span id="server-settings-pill" class="bk-pill ok">Protected</span>
+              </div>
+
+              <div class="bk-option-strip" aria-label="Restore type">
+                <label class="bk-choice"><input type="radio" name="restore-kind" value="auto" checked><span><strong>Auto</strong><small>Detect</small></span></label>
+                <label class="bk-choice"><input type="radio" name="restore-kind" value="full"><span><strong>Full</strong><small>DB + settings</small></span></label>
+                <label class="bk-choice"><input type="radio" name="restore-kind" value="db"><span><strong>DB</strong><small>Data only</small></span></label>
+                <label class="bk-choice"><input type="radio" name="restore-kind" value="settings"><span><strong>Settings</strong><small>Panel files</small></span></label>
+              </div>
+
+              <div class="bk-restore-inline">
+                <label class="bk-switch"><input id="restore-wg" type="checkbox"><span class="track"></span><span>Restore WireGuard configs</span></label>
+              </div>
+
+              <div class="bk-server-compact">
+                <div class="bk-server-title"><i class="fas fa-server"></i> Server settings</div>
+                <div class="bk-mode-grid compact">
+                  <label class="bk-mode"><input type="radio" name="server-settings-mode" value="keep" checked><div><strong>Keep current</strong><span>Recommended for this panel.</span></div></label>
+                  <label class="bk-mode"><input type="radio" name="server-settings-mode" value="saved"><div><strong>Use saved</strong><span>Only for same-server restore.</span></div></label>
+                  <label class="bk-mode"><input type="radio" name="server-settings-mode" value="custom"><div><strong>Custom</strong><span>Migration or new server.</span></div></label>
+                </div>
+
+                <div id="saved-server-settings" class="bk-inline-panel" hidden>
+                  <div class="bk-inline-panel-head"><i class="fas fa-circle-info"></i> Saved settings inside selected backup</div>
+                  <div id="saved-server-settings-grid" class="bk-kv-grid"><div class="bk-small bk-muted">Select a backup to preview saved server settings.</div></div>
+                </div>
+
+                <div id="custom-server-settings" class="bk-inline-panel" hidden>
+                  <div class="bk-inline-panel-head"><i class="fas fa-wand-magic-sparkles"></i> Custom settings for this restore</div>
+                  <div class="bk-custom-grid slim">
+                    <div class="bk-field"><label>Panel port</label><input id="custom-panel-port" type="number" min="1" max="65535" placeholder="Tip: panel port, for example 443 or 5081"></div>
+                    <div class="bk-field"><label>Bind</label><input id="custom-panel-bind" placeholder="Tip: bind host, usually 0.0.0.0"></div>
+                    <div class="bk-field"><label>Domain / public IP</label><input id="custom-panel-domain" placeholder="Tip: domain or public IP for this server"></div>
+                    <div class="bk-field"><label>Scheme</label><select id="custom-panel-scheme"><option value="http">HTTP</option><option value="https">HTTPS</option></select></div>
+                    <div class="bk-field"><label>HTTP port</label><input id="custom-http-port" type="number" min="1" max="65535" placeholder="Tip: panel port, for example 443 or 5081"></div>
+                    <div class="bk-field"><label>HTTPS port</label><input id="custom-https-port" type="number" min="1" max="65535" placeholder="Tip: HTTPS port, usually 443"></div>
+                    <div class="bk-field" style="grid-column:1/-1"><label>WireGuard path</label><input id="custom-wg-path" placeholder="Tip: WireGuard config folder"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bk-step-card bk-step-action">
+            <div class="bk-step-mark">3</div>
+            <div class="bk-step-content">
+              <div class="bk-step-title">Restore</div>
+              <div class="bk-small bk-muted">After inspection, confirm the restore. Restart the panel only if the result asks for it.</div>
+              <div class="bk-action-row"><button id="btn-restore" class="bk-btn danger" type="button"><i class="fas fa-rotate-left"></i> Restore backup</button></div>
+              <div id="restore-result" class="bk-result"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="bk-card bk-restore-preview-card">
+        <div class="bk-head"><div class="ttl"><i class="fas fa-list-check"></i> Backup contents</div><span id="node-restore-state" class="bk-pill muted">Idle</span></div>
+        <div class="bk-body">
+          <div class="bk-preview clean">
+            <div class="bk-preview-title"><i class="fas fa-magnifying-glass-chart"></i> Inspection summary</div>
+            <div id="restore-preview-subtitle" class="bk-small bk-muted">Select a backup ZIP to see its contents.</div>
+            <div id="restore-preview-grid" class="bk-preview-grid"></div>
+            <div id="restore-file-list" class="bk-file-list"></div>
+          </div>
+
+          <details class="bk-node-details">
+            <summary><i class="fas fa-server"></i> Node restore details</summary>
+            <div id="restore-node-list" class="bk-file-list"></div>
+            <div id="node-status-lines"><div class="bk-node-line warn"><i class="fas fa-circle-info"></i><span>Select a backup to see node status.</span></div></div>
+            <button id="node-guide-toggle" class="bk-btn" type="button"><i class="fas fa-terminal"></i> Show install command</button>
+            <div id="node-command-box" class="bk-command"><pre id="node-install-command"></pre><div class="bk-command-actions"><button id="copy-node-command" class="bk-btn" type="button"><i class="fas fa-copy"></i> Copy command</button></div></div>
+          </details>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="bk-tab-panel" data-bk-panel="auto">
+    <div class="bk-grid">
+      <div class="bk-card">
+        <div class="bk-head"><div class="ttl"><i class="fas fa-clock-rotate-left"></i> Auto-backup</div><span id="schedule-state" class="bk-pill muted">—</span></div>
+        <div class="bk-body">
+          <label class="bk-switch"><input id="schedule-enabled" type="checkbox"><span class="track"></span><span>Enable schedule</span></label>
+          <div class="bk-form-grid">
+            <div class="bk-field"><label>Frequency</label><select id="freq"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div>
+            <div class="bk-field"><label>Run time <span class="bk-field-note">panel local time</span></label><input id="time" type="time" value="03:00"></div>
+            <div class="bk-field bk-timezone-field">
+              <label>Timezone</label>
+              <input id="tz" type="hidden" value="UTC">
+              <div class="bk-inherited-zone" aria-live="polite">
+                <span class="bk-inherited-zone__icon"><i class="fas fa-globe"></i></span>
+                <span class="bk-inherited-zone__copy">
+                  <strong id="tz-display">Loading…</strong>
+                  <small>Inherited from Settings → Panel → Regional</small>
+                </span>
+                <span class="bk-inherited-zone__state"><i class="fas fa-link"></i> Global</span>
+              </div>
+            </div>
+            <div class="bk-field"><label>Keep last</label><input id="keep" type="number" min="1" value="7"></div>
+          </div>
+          <div class="bk-switch-row">
+            <label class="bk-switch">
+              <input id="schedule-include-wg" type="checkbox">
+              <span class="track"></span>
+              <span>Include WG</span>
+            </label>
+
+            <label class="bk-switch">
+              <input id="schedule-send-telegram" type="checkbox">
+              <span class="track"></span>
+              <span>Send auto backups to Telegram</span>
+            </label>
+          </div>
+<div id="auto-telegram-target-wrap" class="bk-auto-target" hidden>
+            <label for="auto-telegram-admin">Telegram recipient</label>
+            <select id="auto-telegram-admin"><option value="">Loading active Telegram admins…</option></select>
+            <div id="auto-telegram-help" class="bk-small bk-muted">Choose one active, non-muted Telegram admin configured in Settings.</div>
+          </div>
+          <div class="bk-action-row">
+            <button id="save-schedule" class="bk-btn" type="button"><i class="fas fa-floppy-disk"></i> Save</button>
+            <button id="save-run-schedule" class="bk-btn primary" type="button"><i class="fas fa-bolt"></i> Save &amp; run now</button>
+          </div>
+          <div class="bk-small bk-muted"><strong>Save</strong> stores the schedule only. <strong>Save &amp; run now</strong> stores the same schedule, creates a complete backup immediately, saves it under <code>instance/backups</code>, and sends it to the selected Telegram recipient when Telegram is enabled.</div>
+        </div>
+      </div>
+      <aside class="bk-card">
+        <div class="bk-head"><div class="ttl"><i class="fas fa-folder"></i> Saved auto backups</div></div>
+        <div class="bk-body">
+          <div id="auto-files-list" class="bk-auto-list"><div class="bk-small bk-muted">Loading…</div></div>
+          <div id="auto-inspect-box" class="bk-preview bk-auto-inspect" hidden>
+            <div class="bk-preview-title"><i class="fas fa-magnifying-glass-chart"></i> Auto-backup inspection</div>
+            <div id="auto-inspect-subtitle" class="bk-small bk-muted">Click a saved backup to inspect its contents.</div>
+            <div id="auto-inspect-grid" class="bk-preview-grid"></div>
+            <div id="auto-inspect-files" class="bk-file-list"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</div>
+
+
+
+<div id="auto-inspect-modal" class="bk-modal" hidden>
+  <div class="bk-modal-backdrop" data-auto-inspect-close="1"></div>
+  <div class="bk-modal-card bk-inspect-modal-card" role="dialog" aria-modal="true" aria-labelledby="auto-inspect-title">
+    <div class="bk-modal-head">
+      <div>
+        <strong id="auto-inspect-title"><i class="fas fa-magnifying-glass-chart"></i> Inspect automatic backup</strong>
+        <div id="auto-inspect-modal-subtitle" class="bk-small bk-muted">Loading…</div>
+      </div>
+      <button class="bk-close" type="button" data-auto-inspect-close="1" aria-label="Close">&times;</button>
+    </div>
+    <div class="bk-inspect-modal-body">
+      <div id="auto-inspect-modal-grid" class="bk-inspect-modal-grid"></div>
+      <div>
+        <div class="bk-strong bk-small" style="margin-bottom:7px">Included configuration files</div>
+        <div id="auto-inspect-modal-files" class="bk-inspect-modal-files"></div>
+      </div>
+    </div>
+    <div class="bk-modal-actions">
+      <button id="auto-inspect-download" class="bk-btn" type="button"><i class="fas fa-download"></i> Download</button>
+      <button class="bk-btn primary" type="button" data-auto-inspect-close="1">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="auto-run-loader" class="bk-run-loader" hidden aria-live="polite" aria-busy="true">
+  <div class="bk-run-loader-backdrop"></div>
+  <div class="bk-run-loader-card" role="status">
+    <div class="bk-run-loader-head">
+      <div class="bk-run-loader-orb"><i class="fas fa-circle-notch"></i></div>
+      <div>
+        <div id="auto-run-loader-title" class="bk-run-loader-title">Creating complete backup</div>
+        <div id="auto-run-loader-text" class="bk-run-loader-text">Please keep this page open while local and node data are collected.</div>
+      </div>
+    </div>
+    <div class="bk-run-progress"><span></span></div>
+    <div class="bk-run-steps">
+      <div id="auto-run-step-save" class="bk-run-step"><i class="fas fa-floppy-disk"></i><span>Save schedule</span></div>
+      <div id="auto-run-step-build" class="bk-run-step"><i class="fas fa-box-archive"></i><span>Build local and node backup</span></div>
+      <div id="auto-run-step-telegram" class="bk-run-step"><i class="fab fa-telegram-plane"></i><span>Send to Telegram</span></div>
+      <div id="auto-run-step-refresh" class="bk-run-step"><i class="fas fa-rotate"></i><span>Refresh saved backups</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="restore-confirm" class="bk-modal" hidden>
+  <div class="bk-modal-backdrop" data-close="1"></div>
+  <div class="bk-modal-card" role="dialog" aria-modal="true">
+    <div class="bk-modal-head"><strong>Confirm restore</strong><button class="bk-close" type="button" data-close="1" aria-label="Close">&times;</button></div>
+    <div id="bk-modal-body" class="bk-modal-body"></div>
+    <div class="bk-modal-actions"><button class="bk-btn" type="button" data-close="1">Cancel</button><button id="bk-modal-ok" class="bk-btn danger" type="button">Restore</button></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block body_extras %}
+<script defer src="{{ url_for('static', filename='js/backup.js') }}"></script>
+{% endblock %}

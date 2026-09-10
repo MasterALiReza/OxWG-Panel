@@ -1,0 +1,1309 @@
+[
+  {
+    "rule": "/",
+    "endpoint": "index",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api-docs",
+    "endpoint": "api_docs_page",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/admin",
+    "endpoint": "admin_status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/admin/password",
+    "endpoint": "admin_change_password",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/admin/rename",
+    "endpoint": "admin_rename",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/admin/twofa_begin",
+    "endpoint": "twofa_begin",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/admin/twofa_confirm",
+    "endpoint": "twofa_confirm",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/admin/twofa_disable",
+    "endpoint": "twofa_disable",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/admin_logs",
+    "endpoint": "admin_logs",
+    "methods": [
+      "DELETE",
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/app_logs",
+    "endpoint": "app_logs",
+    "methods": [
+      "DELETE",
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/app_status",
+    "endpoint": "app_status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backup/db",
+    "endpoint": "backup_db",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backup/full",
+    "endpoint": "backup_full",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backup/inspect",
+    "endpoint": "backup_inspect",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/backup/last",
+    "endpoint": "backup_last_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backup/last",
+    "endpoint": "backup_last_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/backup/node-agent/install-command",
+    "endpoint": "backup_node_agent_install_command",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backup/prefs",
+    "endpoint": "backup_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backup/prefs",
+    "endpoint": "backup_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/backup/restore",
+    "endpoint": "backup_restore",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/backup/restore_api",
+    "endpoint": "backup_restore_api",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/backup/schedule",
+    "endpoint": "backup_schedule_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backup/schedule",
+    "endpoint": "backup_schedule_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/backup/settings",
+    "endpoint": "backup_settings",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backup/status",
+    "endpoint": "backup_status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backups/auto",
+    "endpoint": "backups_autolist",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backups/file/<path:fname>",
+    "endpoint": "backups_auto",
+    "methods": [
+      "DELETE",
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/backups/inspect/<path:fname>",
+    "endpoint": "inspect_saved_auto_backup",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/endpoint_presets",
+    "endpoint": "endpoint_presets",
+    "methods": [
+      "DELETE",
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/get-interfaces",
+    "endpoint": "get_interfaces",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/healthz",
+    "endpoint": "healthz",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iface_id>",
+    "endpoint": "iface_delete",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iface_id>/available_ips",
+    "endpoint": "iface_available_ips",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iface_id>/disable",
+    "endpoint": "iface_disable",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iface_id>/enable",
+    "endpoint": "iface_enable",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iid>",
+    "endpoint": "iface_settings",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iid>/<action>",
+    "endpoint": "iface_updown",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iid>/endpoint-default",
+    "endpoint": "api_iface_endpoint_default_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iid>/endpoint-default",
+    "endpoint": "api_iface_endpoint_default_put",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iid>/endpoint-default/apply",
+    "endpoint": "api_iface_endpoint_default_apply",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iid>/logs",
+    "endpoint": "iface_logs",
+    "methods": [
+      "DELETE",
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/iface/<int:iid>/status",
+    "endpoint": "iface_status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/interfaces",
+    "endpoint": "create_local_interface",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/logs/backup",
+    "endpoint": "logs_backup",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/logs/retention",
+    "endpoint": "logs_retention",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/logs/retention",
+    "endpoint": "logs_retention_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/logs/settings",
+    "endpoint": "logs_settings_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/logs/settings",
+    "endpoint": "logs_settings_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes",
+    "endpoint": "api_nodes",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>",
+    "endpoint": "node_one",
+    "methods": [
+      "DELETE",
+      "PATCH",
+      "PUT"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/health",
+    "endpoint": "node_health",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/iface/<name>",
+    "endpoint": "node_iface_delete",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/iface/<name>/<action>",
+    "endpoint": "node_iface_toggle",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/iface/<name>/available_ips",
+    "endpoint": "node_iface_available_ips",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/iface/<name>/endpoint-default",
+    "endpoint": "api_node_iface_endpoint_default_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/iface/<name>/endpoint-default",
+    "endpoint": "api_node_iface_endpoint_default_put",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/iface/<name>/endpoint-default/apply",
+    "endpoint": "api_node_iface_endpoint_default_apply",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/iface/<name>/logs",
+    "endpoint": "node_iface_logs",
+    "methods": [
+      "DELETE",
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/interfaces",
+    "endpoint": "node_ifaces",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>",
+    "endpoint": "api_edit_node_peer",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>",
+    "endpoint": "node_peer_delete",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>/config",
+    "endpoint": "node_peer_config",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>/config_qr",
+    "endpoint": "node_peer_config_qr",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>/disable",
+    "endpoint": "node_disable_peer",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>/enable",
+    "endpoint": "node_enable_peer",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>/logs",
+    "endpoint": "node_peer_logs",
+    "methods": [
+      "DELETE",
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>/reset_data",
+    "endpoint": "node_reset_peer_data_only",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>/reset_timer",
+    "endpoint": "node_reset_peer_timer_only",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peer/<path:pub>/shortlink",
+    "endpoint": "node_peer_shortlink",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/peers",
+    "endpoint": "node_peers",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/summary",
+    "endpoint": "node_summary",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/update",
+    "endpoint": "api_node_update_start",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/nodes/<int:nid>/update/status",
+    "endpoint": "api_node_update_status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/panel/restart",
+    "endpoint": "api_panel_restart",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/panel/update",
+    "endpoint": "api_panel_update_start",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/panel/update/status",
+    "endpoint": "api_panel_update_status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/panel/update/targets",
+    "endpoint": "api_panel_update_targets",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/panel/version",
+    "endpoint": "api_panel_version",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>",
+    "endpoint": "api_delete",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>",
+    "endpoint": "api_edit",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>/clear_total",
+    "endpoint": "peer_clear_total",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>/disable",
+    "endpoint": "api_disable",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>/enable",
+    "endpoint": "api_enable",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>/logs",
+    "endpoint": "clear_peer_logs",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>/logs",
+    "endpoint": "peer_logs",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>/reset_data",
+    "endpoint": "reset_data",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>/reset_timer",
+    "endpoint": "api_reset_timer",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer/<int:pid>/shortlink",
+    "endpoint": "api_shortlink",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer/<path:public_key>/config",
+    "endpoint": "api_peer_config_by_public_key",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/peer/<path:public_key>/config_qr",
+    "endpoint": "api_peer_config_qr_by_public_key",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/peer/<path:public_key>/shortlink",
+    "endpoint": "api_shortlink_by_public_key",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer_counts",
+    "endpoint": "api_peer_counts",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/peer_profile",
+    "endpoint": "delete_apipeer_profile",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/peer_profile",
+    "endpoint": "get_apipeer_profile",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/peer_profile",
+    "endpoint": "save_apipeer_profile",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer_profile/activate",
+    "endpoint": "activate_apipeer_profile",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer_profile/rename",
+    "endpoint": "rename_apipeer_profile",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peer_profiles",
+    "endpoint": "list_apipeer_profiles",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/peers",
+    "endpoint": "panel_peers",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/peers",
+    "endpoint": "peers_create",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/peers/bulk",
+    "endpoint": "panel_peers_bulk",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/runtime",
+    "endpoint": "runtime_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/runtime",
+    "endpoint": "runtime_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/security/http-protection",
+    "endpoint": "http_security_settings_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/security/http-protection",
+    "endpoint": "http_security_settings_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/security/http-protection/capabilities",
+    "endpoint": "http_security_capabilities_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/security/http-protection/events",
+    "endpoint": "http_security_events_clear",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/security/http-protection/events",
+    "endpoint": "http_security_events_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/security/http-protection/temporary-allow",
+    "endpoint": "http_security_temporary_allow_add",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/security/http-protection/temporary-allow/remove",
+    "endpoint": "http_security_temporary_allow_remove",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/security/http-protection/unban",
+    "endpoint": "http_security_unban",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/settings",
+    "endpoint": "api_settings",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/stats",
+    "endpoint": "api_stats",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/stats/mini",
+    "endpoint": "stats_mini",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/subscription_profiles",
+    "endpoint": "subscription_profile_save",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscription_profiles",
+    "endpoint": "subscription_profiles_list",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/subscription_profiles/<path:profile_name>",
+    "endpoint": "subscription_profile_delete",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/subscription_profiles/<path:profile_name>",
+    "endpoint": "subscription_profile_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/subscription_profiles/<path:profile_name>/activate",
+    "endpoint": "subscription_profile_activate",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscription_profiles/<path:profile_name>/rename",
+    "endpoint": "subscription_profile_rename",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions",
+    "endpoint": "api_subscriptions",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>",
+    "endpoint": "api_subscription_delete",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>",
+    "endpoint": "api_subscription_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>",
+    "endpoint": "api_subscription_update",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/disable",
+    "endpoint": "api_subscription_disable",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/enable",
+    "endpoint": "api_subscription_enable",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/inbounds",
+    "endpoint": "api_subscription_add_inbounds",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/inbounds/<int:link_id>",
+    "endpoint": "api_subscription_patch_inbound",
+    "methods": [
+      "PATCH"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/inbounds/<int:link_id>",
+    "endpoint": "api_subscription_remove_inbound",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/portal-settings",
+    "endpoint": "api_subscription_portal_settings",
+    "methods": [
+      "DELETE",
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/reset_data",
+    "endpoint": "api_subscription_reset_data",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/reset_timer",
+    "endpoint": "api_subscription_reset_timer",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/<int:sid>/shortlink",
+    "endpoint": "api_subscription_shortlink",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/inbounds_catalog",
+    "endpoint": "api_subscriptions_inbounds_catalog",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/locations",
+    "endpoint": "api_subscriptions_locations",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/settings",
+    "endpoint": "api_subscription_settings",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/subscriptions/template-preview",
+    "endpoint": "api_subscription_template_preview",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/telegram/admin_log",
+    "endpoint": "tg_adminlog",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/telegram/admin_logs",
+    "endpoint": "tg_admin_logs",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/telegram/admin_logs",
+    "endpoint": "tg_adminlogs_clear",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/telegram/admins",
+    "endpoint": "tg_admins_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/telegram/admins",
+    "endpoint": "tg_admins_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/telegram/admins/<tg_id>",
+    "endpoint": "tg_admins_del",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/telegram/heartbeat",
+    "endpoint": "tg_heartbeat",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/telegram/logs",
+    "endpoint": "tg_logs_del",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/telegram/logs",
+    "endpoint": "tg_logs_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/telegram/settings",
+    "endpoint": "tg_settings_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/telegram/settings",
+    "endpoint": "tg_settings_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/telegram/status",
+    "endpoint": "tg_status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/telegram/test",
+    "endpoint": "tg_test",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/telegram/token",
+    "endpoint": "tg_token_clear",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "rule": "/api/telegram/token",
+    "endpoint": "tg_token_set",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/template_settings",
+    "endpoint": "template_settings_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/template_settings",
+    "endpoint": "template_settings_post",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/timezone",
+    "endpoint": "api_timezone",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/traffic-control",
+    "endpoint": "traffic_control_get",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/traffic-control",
+    "endpoint": "traffic_control_save",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/traffic-control/apply",
+    "endpoint": "traffic_control_apply",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/traffic-control/status",
+    "endpoint": "traffic_control_status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/traffic-control/test",
+    "endpoint": "traffic_control_test",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/traffic-control/test-destination",
+    "endpoint": "traffic_control_test_destination",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/api/u/<token>",
+    "endpoint": "user_peer",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/api/u/<token>/config",
+    "endpoint": "userpeer_config",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/backup",
+    "endpoint": "backup_page",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/login",
+    "endpoint": "login",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/logout",
+    "endpoint": "logout",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/logs",
+    "endpoint": "logs_page",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/nodes",
+    "endpoint": "nodes",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/preview/template/<name>",
+    "endpoint": "preview_template",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/register",
+    "endpoint": "register",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  },
+  {
+    "rule": "/register/twofa_begin",
+    "endpoint": "register_twofa_begin",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/register/twofa_confirm",
+    "endpoint": "register_twofa_confirm",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "rule": "/s/<token>",
+    "endpoint": "subscription_public_page",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/s/<token>/api",
+    "endpoint": "subscription_public_api",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/s/<token>/config",
+    "endpoint": "subscription_public_config",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/s/<token>/inbound/<int:link_id>/config",
+    "endpoint": "subscription_public_inbound_config",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/s/<token>/inbound/<int:link_id>/geo",
+    "endpoint": "subscription_public_inbound_geo",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/s/<token>/inbound/<int:link_id>/qr",
+    "endpoint": "subscription_public_inbound_qr",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/settings",
+    "endpoint": "settings_page",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/subscriptions",
+    "endpoint": "subscriptions_page",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/u/<token>",
+    "endpoint": "user_peer_page",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/ui/nodes",
+    "endpoint": "ui_nodes",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "rule": "/users",
+    "endpoint": "users",
+    "methods": [
+      "GET",
+      "POST"
+    ]
+  }
+]

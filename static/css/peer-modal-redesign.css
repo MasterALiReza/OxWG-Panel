@@ -1,0 +1,2325 @@
+/* ==========================================================================
+   OxWg Panel - Peer Modals Pro Max Redesign
+   (Create Peer, Edit Peer, Bulk Peers)
+   Fully responsive (Desktop & Mobile) + Adaptive Dark/Light Themes
+   ========================================================================== */
+
+:root {
+  --peerx-bg-light: #ffffff;
+  --peerx-surface-light: #f8fafc;
+  --peerx-card-light: #ffffff;
+  --peerx-border-light: #e2e8f0;
+  --peerx-border-focus-light: #10b981;
+  --peerx-text-light: #0f172a;
+  --peerx-muted-light: #64748b;
+  --peerx-input-bg-light: #ffffff;
+  --peerx-input-border-light: #cbd5e1;
+
+  --peerx-bg-dark: #0d1527;
+  --peerx-surface-dark: #090e1a;
+  --peerx-card-dark: #10192d;
+  --peerx-border-dark: rgba(255, 255, 255, 0.08);
+  --peerx-border-focus-dark: #10b981;
+  --peerx-text-dark: #f1f5f9;
+  --peerx-muted-dark: #94a3b8;
+  --peerx-input-bg-dark: #090e1a;
+  --peerx-input-border-dark: #223044;
+
+  --peerx-accent: #10b981;
+  --peerx-accent-hover: #059669;
+  --peerx-accent-glow: rgba(16, 185, 129, 0.2);
+  --peerx-primary: #3b82f6;
+  --peerx-danger: #ef4444;
+  --peerx-radius-lg: 20px;
+  --peerx-radius-md: 14px;
+  --peerx-radius-sm: 10px;
+  --peerx-transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   Modal Overlay & Shell
+   ========================================================================== */
+.peerx-form-modal {
+  display: none;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10050 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.peerx-form-modal.open {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.peerx-form-modal .modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(15, 23, 42, 0.72) !important;
+  backdrop-filter: blur(10px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(160%) !important;
+  z-index: 1 !important;
+}
+
+/* ==========================================================================
+   Modal Dialog Box
+   ========================================================================== */
+#peer-modal.peerx-form-modal .peerx-dialog,
+#edit-peer-modal.peerx-form-modal .peerx-dialog,
+#bulk-modal.peerx-form-modal .peerx-dialog,
+#bulk-modal.peerx-form-modal .peerx-bulk-dialog,
+.peerx-dialog {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(1040px, calc(100vw - 32px)) !important;
+  max-width: 1040px !important;
+  max-height: min(90dvh, 900px) !important;
+  border-radius: var(--peerx-radius-lg) !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+  color: #0f172a !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  animation: peerxModalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+html[data-theme="dark"] #peer-modal.peerx-form-modal .peerx-dialog,
+html[data-theme="dark"] #edit-peer-modal.peerx-form-modal .peerx-dialog,
+html[data-theme="dark"] #bulk-modal.peerx-form-modal .peerx-dialog,
+html[data-theme="dark"] #bulk-modal.peerx-form-modal .peerx-bulk-dialog,
+html[data-theme="dark"] .peerx-dialog {
+  background: #0d1527 !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  color: #f1f5f9 !important;
+}
+
+@keyframes peerxModalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Modal Header
+   ========================================================================== */
+.peerx-modal-head {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 16px 22px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="dark"] .peerx-modal-head {
+  background: rgba(13, 21, 39, 0.94) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.peerx-modal-badge {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  font-size: 17px !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  flex-shrink: 0 !important;
+}
+
+.peerx-modal-head > div:last-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.peerx-modal-head h2,
+#peer-modal-title,
+#edit-peer-title,
+#bulk-title {
+  margin: 0 !important;
+  font-size: 1.18rem !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.025em !important;
+  color: #0f172a !important;
+  line-height: 1.25 !important;
+}
+
+html[data-theme="dark"] .peerx-modal-head h2,
+html[data-theme="dark"] #peer-modal-title,
+html[data-theme="dark"] #edit-peer-title,
+html[data-theme="dark"] #bulk-title {
+  color: #f8fafc !important;
+}
+
+.peerx-modal-head p {
+  margin: 2px 0 0 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  line-height: 1.3 !important;
+}
+
+html[data-theme="dark"] .peerx-modal-head p {
+  color: #94a3b8 !important;
+}
+
+.peerx-form-modal .modal-close {
+  position: absolute !important;
+  top: 14px !important;
+  right: 18px !important;
+  width: 34px !important;
+  height: 34px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 10px !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+  font-size: 20px !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+  z-index: 12 !important;
+}
+
+.peerx-form-modal .modal-close:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  transform: scale(1.05) !important;
+}
+
+html[data-theme="dark"] .peerx-form-modal .modal-close {
+  background: #172236 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .peerx-form-modal .modal-close:hover {
+  background: #1e2c45 !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   Form Body & Scroll Container
+   ========================================================================== */
+.peerx-smart-form {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex: 1 1 auto !important;
+  background: #f8fafc !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="dark"] .peerx-smart-form {
+  background: #090e1a !important;
+}
+
+.peerx-smart-form::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.peerx-smart-form::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.peerx-smart-form::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 999px !important;
+  border: 2px solid transparent !important;
+  background-clip: content-box !important;
+}
+
+html[data-theme="dark"] .peerx-smart-form::-webkit-scrollbar-thumb {
+  background: #253347 !important;
+}
+
+/* 2-Column Responsive Layout */
+.peerx-columns-wrap,
+#create-peer-form,
+#edit-peer-form {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 16px !important;
+  padding: 18px 20px !important;
+  box-sizing: border-box !important;
+}
+
+.peerx-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  min-width: 0 !important;
+}
+
+/* Profile Card Full Width */
+.peerx-profile-card {
+  grid-column: 1 / -1 !important;
+}
+
+/* ==========================================================================
+   Cards & Section Headers
+   ========================================================================== */
+.peerx-form-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--peerx-radius-md) !important;
+  padding: 16px !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03) !important;
+  box-sizing: border-box !important;
+  transition: var(--peerx-transition) !important;
+  min-width: 0 !important;
+}
+
+html[data-theme="dark"] .peerx-form-card {
+  background: #10192d !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+.peerx-section-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+  padding-bottom: 10px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .peerx-section-head {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.peerx-section-head > span,
+.peerx-section-head-main > span {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 9px !important;
+  background: #ecfdf5 !important;
+  color: #059669 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  flex-shrink: 0 !important;
+}
+
+html[data-theme="dark"] .peerx-section-head > span,
+html[data-theme="dark"] .peerx-section-head-main > span {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.peerx-section-head b,
+.peerx-section-head-main b {
+  display: block !important;
+  font-size: 13.5px !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+  line-height: 1.2 !important;
+}
+
+html[data-theme="dark"] .peerx-section-head b,
+html[data-theme="dark"] .peerx-section-head-main b {
+  color: #f1f5f9 !important;
+}
+
+.peerx-section-head small,
+.peerx-section-head-main small {
+  display: block !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  margin-top: 1px !important;
+}
+
+html[data-theme="dark"] .peerx-section-head small,
+html[data-theme="dark"] .peerx-section-head-main small {
+  color: #94a3b8 !important;
+}
+
+/* ==========================================================================
+   Form Fields, Inputs & Labels
+   ========================================================================== */
+.peerx-form-grid {
+  display: grid !important;
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+.peerx-form-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.peerx-form-grid.limits {
+  grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr !important;
+}
+
+.peerx-form-grid .wide {
+  grid-column: 1 / -1 !important;
+}
+
+.peerx-form-modal .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+
+.peerx-form-modal .form-group label,
+.peerx-form-modal .form-group > span,
+.peerx-form-modal label.form-group,
+.peerx-form-modal .peerx-endpoint-label-title {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  letter-spacing: -0.01em !important;
+  margin-bottom: 2px !important;
+}
+
+html[data-theme="dark"] .peerx-form-modal .form-group label,
+html[data-theme="dark"] .peerx-form-modal .form-group > span,
+html[data-theme="dark"] .peerx-form-modal label.form-group,
+html[data-theme="dark"] .peerx-form-modal .peerx-endpoint-label-title {
+  color: #cbd5e1 !important;
+}
+
+.peerx-form-modal .input,
+.peerx-form-modal input:not([type="checkbox"]):not([type="radio"]),
+.peerx-form-modal select,
+.peerx-form-modal textarea {
+  width: 100% !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 12px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  box-sizing: border-box !important;
+  transition: var(--peerx-transition) !important;
+}
+
+html[data-theme="dark"] .peerx-form-modal .input,
+html[data-theme="dark"] .peerx-form-modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] .peerx-form-modal select,
+html[data-theme="dark"] .peerx-form-modal textarea {
+  background: #090e1a !important;
+  border: 1px solid #223044 !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.peerx-form-modal .input:focus,
+.peerx-form-modal input:focus,
+.peerx-form-modal select:focus,
+.peerx-form-modal textarea:focus {
+  outline: none !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16) !important;
+}
+
+.peerx-form-modal .input::placeholder,
+.peerx-form-modal input::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 400 !important;
+}
+
+html[data-theme="dark"] .peerx-form-modal .input::placeholder,
+html[data-theme="dark"] .peerx-form-modal input::placeholder {
+  color: #64748b !important;
+}
+
+/* ==========================================================================
+   IP Address Custom Combobox (Clean modern style)
+   ========================================================================== */
+.peer-ip-combobox {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 12px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: var(--peerx-transition) !important;
+}
+
+html[data-theme="dark"] .peer-ip-combobox {
+  background: #090e1a !important;
+  border-color: #223044 !important;
+  color: #f1f5f9 !important;
+}
+
+.peer-ip-combobox:hover,
+.peer-ip-combobox:focus {
+  border-color: #10b981 !important;
+  outline: none !important;
+}
+
+.peer-ip-combobox-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #10b981 !important;
+  font-size: 14px !important;
+  margin-right: 8px !important;
+}
+
+.peer-ip-combobox-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  text-align: left !important;
+  min-width: 0 !important;
+}
+
+.peer-ip-combobox-copy strong {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: inherit !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.peer-ip-combobox-copy small {
+  font-size: 10.5px !important;
+  color: #64748b !important;
+}
+
+html[data-theme="dark"] .peer-ip-combobox-copy small {
+  color: #94a3b8 !important;
+}
+
+.peer-ip-combobox-chevron {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  margin-left: 6px !important;
+}
+
+/* IP Dropdown Menu */
+.peer-ip-menu {
+  z-index: 10060 !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--peerx-radius-md) !important;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.22) !important;
+  overflow: hidden !important;
+}
+
+html[data-theme="dark"] .peer-ip-menu {
+  background: #10192d !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75) !important;
+}
+
+/* ==========================================================================
+   Modern Switch & Toggle Cards
+   ========================================================================== */
+.peerx-limit-switch-row {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 4px !important;
+}
+
+.peerx-switch {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 42px !important;
+  padding: 8px 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: var(--peerx-transition) !important;
+}
+
+html[data-theme="dark"] .peerx-switch {
+  background: #0d1527 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.peerx-switch:hover {
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .peerx-switch:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.peerx-switch input {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Note: .peerx-switch and .auto-network-switch styling is consolidated in the master switch section below */
+
+.peerx-switch b {
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  color: #1e293b !important;
+  line-height: 1.25 !important;
+}
+
+html[data-theme="dark"] .peerx-switch b {
+  color: #e2e8f0 !important;
+}
+
+/* ==========================================================================
+   WireGuard Config & Endpoint Overrides
+   ========================================================================== */
+.peerx-endpoint-label {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+}
+
+.peerx-endpoint-label-meta {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  font-size: 11px !important;
+}
+
+.peerx-endpoint-chip {
+  padding: 1px 6px !important;
+  border-radius: 6px !important;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="dark"] .peerx-endpoint-chip {
+  background: #172236 !important;
+  color: #94a3b8 !important;
+}
+
+.endpoint-effective {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  margin-top: 6px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  background: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+  color: #166534 !important;
+}
+
+html[data-theme="dark"] .endpoint-effective {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+  color: #6ee7b7 !important;
+}
+
+/* Saved Endpoint Preset Container (Fixed theme contrast) */
+.endpoint-presets-compact,
+#peer-modal .endpoint-presets-compact,
+#edit-peer-modal .endpoint-presets-compact,
+#bulk-modal .endpoint-presets-compact {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 36px 36px 36px !important;
+  grid-template-areas: "copy copy copy copy" "select apply save delete" !important;
+  gap: 8px !important;
+  align-items: center !important;
+  padding: 10px 12px !important;
+  margin-top: 8px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact,
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact,
+html[data-theme="dark"] #bulk-modal .endpoint-presets-compact {
+  background: #0d1527 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.endpoint-presets-copy {
+  grid-area: copy !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.endpoint-presets-copy i {
+  color: #3b82f6 !important;
+  font-size: 13px !important;
+}
+
+.endpoint-presets-copy span {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.endpoint-presets-copy b {
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-copy b {
+  color: #f1f5f9 !important;
+}
+
+.endpoint-presets-copy small {
+  font-size: 10.5px !important;
+  color: #64748b !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-copy small {
+  color: #94a3b8 !important;
+}
+
+.endpoint-presets-compact select,
+.endpoint-presets-compact #ep-saved {
+  grid-area: select !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+}
+
+.endpoint-presets-compact > .btn,
+.endpoint-presets-compact > .endpoint-preset-action {
+  height: 36px !important;
+  min-height: 36px !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  transition: var(--peerx-transition) !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact > .btn,
+html[data-theme="dark"] .endpoint-presets-compact > .endpoint-preset-action {
+  background: #172236 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+.endpoint-presets-compact > #ep-apply {
+  grid-area: apply !important;
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #059669 !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact > #ep-apply {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #34d399 !important;
+}
+
+.endpoint-presets-compact > #ep-save {
+  grid-area: save !important;
+}
+
+.endpoint-presets-compact > #ep-del {
+  grid-area: delete !important;
+  color: #dc2626 !important;
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact > #ep-del {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #f87171 !important;
+}
+
+/* Fixed Client Endpoint Box (Fixed theme contrast) */
+.peerx-fixed-endpoint-field {
+  padding: 10px 12px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  margin-top: 4px !important;
+}
+
+html[data-theme="dark"] .peerx-fixed-endpoint-field {
+  background: #0d1527 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ==========================================================================
+   Allowed IPs Route Chips & Tag Input
+   ========================================================================== */
+.peer-route-host {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  margin-top: 4px !important;
+}
+
+html[data-theme="dark"] .peer-route-host {
+  background: #0d1527 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.peer-route-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  align-items: center !important;
+}
+
+.peer-route-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  font-family: monospace !important;
+}
+
+html[data-theme="dark"] .peer-route-chip {
+  background: #172236 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f1f5f9 !important;
+}
+
+.peer-route-chip button {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  color: #94a3b8 !important;
+  cursor: pointer !important;
+  font-size: 11px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.peer-route-chip button:hover {
+  color: #ef4444 !important;
+}
+
+.peer-route-add-row {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.peer-route-add-row .input {
+  height: 36px !important;
+  min-height: 36px !important;
+  font-size: 12px !important;
+}
+
+.peer-route-add-btn {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.peer-route-default {
+  font-size: 11px !important;
+  font-weight: 650 !important;
+  color: #3b82f6 !important;
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+}
+
+/* ==========================================================================
+   Modal Footer Actions
+   ========================================================================== */
+.peerx-form-actions,
+.modal-footer.peerx-form-actions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 10 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 14px 22px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-top: 1px solid #e2e8f0 !important;
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.04) !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="dark"] .peerx-form-actions,
+html[data-theme="dark"] .modal-footer.peerx-form-actions {
+  background: rgba(13, 21, 39, 0.94) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+.peerx-form-actions .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 20px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+  border: 1px solid transparent !important;
+}
+
+.peerx-form-actions .btn.secondary,
+#create-cancel,
+#edit-cancel,
+#bulk-cancel {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.peerx-form-actions .btn.secondary:hover,
+#create-cancel:hover,
+#edit-cancel:hover,
+#bulk-cancel:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .peerx-form-actions .btn.secondary,
+html[data-theme="dark"] #create-cancel,
+html[data-theme="dark"] #edit-cancel,
+html[data-theme="dark"] #bulk-cancel {
+  background: #172236 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .peerx-form-actions .btn.secondary:hover,
+html[data-theme="dark"] #create-cancel:hover,
+html[data-theme="dark"] #edit-cancel:hover,
+html[data-theme="dark"] #bulk-cancel:hover {
+  background: #1e2c45 !important;
+  color: #ffffff !important;
+}
+
+.peerx-form-actions .btn:not(.secondary) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+
+.peerx-form-actions .btn:not(.secondary):hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   Mobile & Tablet Responsiveness (< 880px and < 560px)
+   ========================================================================== */
+@media (max-width: 880px) {
+  .peerx-form-modal {
+    padding: 10px !important;
+    align-items: flex-end !important; /* Bottom-sheet feel on mobile */
+  }
+
+  #peer-modal.peerx-form-modal .peerx-dialog,
+  #edit-peer-modal.peerx-form-modal .peerx-dialog,
+  #bulk-modal.peerx-form-modal .peerx-dialog,
+  #bulk-modal.peerx-form-modal .peerx-bulk-dialog,
+  .peerx-dialog {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    border-radius: 18px 18px 0 0 !important;
+    margin: 0 !important;
+  }
+
+  .peerx-columns-wrap,
+  #create-peer-form,
+  #edit-peer-form {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  .peerx-form-grid.two,
+  .peerx-form-grid.limits {
+    grid-template-columns: 1fr !important;
+  }
+
+  .peerx-limit-switch-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .peerx-modal-head {
+    padding: 14px 16px !important;
+  }
+
+  .peerx-modal-head h2 {
+    font-size: 1.1rem !important;
+  }
+
+  .peerx-modal-badge {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 15px !important;
+  }
+
+  .peerx-form-modal .modal-close {
+    top: 12px !important;
+    right: 14px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .peerx-form-actions,
+  .modal-footer.peerx-form-actions {
+    padding: 12px 16px !important;
+    gap: 8px !important;
+  }
+
+  .peerx-form-actions .btn {
+    flex: 1 1 auto !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .endpoint-presets-compact,
+  #peer-modal .endpoint-presets-compact,
+  #edit-peer-modal .endpoint-presets-compact,
+  #bulk-modal .endpoint-presets-compact {
+    grid-template-columns: minmax(0, 1fr) 38px 38px 38px !important;
+    padding: 10px !important;
+  }
+
+  .endpoint-presets-compact > .btn,
+  .endpoint-presets-compact > .endpoint-preset-action {
+    height: 38px !important;
+    width: 38px !important;
+  }
+}
+
+/* ==========================================================================
+   Profile Defaults Picker
+   ========================================================================== */
+.peerx-profile-row,
+#peer-modal .peerx-profile-row,
+#edit-peer-modal .peerx-profile-row,
+#bulk-modal .peerx-profile-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="dark"] .peerx-profile-row,
+html[data-theme="dark"] #peer-modal .peerx-profile-row,
+html[data-theme="dark"] #edit-peer-modal .peerx-profile-row,
+html[data-theme="dark"] #bulk-modal .peerx-profile-row {
+  background: #111a28 !important;
+  border-color: #223044 !important;
+}
+
+/* Peer Profile Row Switch */
+.peerx-profile-row .peerx-switch,
+#peer-modal .peerx-profile-row .peerx-switch,
+#edit-peer-modal .peerx-profile-row .peerx-switch,
+#bulk-modal .peerx-profile-row .peerx-switch {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 0 0 auto !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.peerx-profile-row .peerx-switch > input[type="checkbox"],
+#peer-modal .peerx-profile-row .peerx-switch > input[type="checkbox"] {
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+
+.peerx-profile-row .peerx-switch > b,
+#peer-modal .peerx-profile-row .peerx-switch > b {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+html[data-theme="dark"] .peerx-profile-row .peerx-switch > b,
+html[data-theme="dark"] #peer-modal .peerx-profile-row .peerx-switch > b {
+  color: #cbd5e1 !important;
+}
+
+.peerx-profile-row .peerx-switch > b i,
+#peer-modal .peerx-profile-row .peerx-switch > b i {
+  font-size: 12px !important;
+  color: #64748b !important;
+}
+
+html[data-theme="dark"] .peerx-profile-row .peerx-switch > b i,
+html[data-theme="dark"] #peer-modal .peerx-profile-row .peerx-switch > b i {
+  color: #94a3b8 !important;
+}
+
+.profile-picker,
+#peer-modal .profile-picker,
+#edit-peer-modal .profile-picker,
+#bulk-modal .profile-picker {
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr) 30px 30px !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 1 1 auto !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0 6px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  box-sizing: border-box !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .profile-picker,
+html[data-theme="dark"] #peer-modal .profile-picker,
+html[data-theme="dark"] #edit-peer-modal .profile-picker,
+html[data-theme="dark"] #bulk-modal .profile-picker {
+  background: #0d1527 !important;
+  border-color: #263850 !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.profile-picker > i,
+#peer-modal .profile-picker > i {
+  color: #10b981 !important;
+  font-size: 13px !important;
+  justify-self: center !important;
+}
+
+html[data-theme="dark"] .profile-picker > i,
+html[data-theme="dark"] #peer-modal .profile-picker > i {
+  color: #34d399 !important;
+}
+
+.profile-picker select,
+#peer-modal .profile-picker select,
+#profile-select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 34px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  outline: none !important;
+  cursor: pointer !important;
+  padding: 0 6px !important;
+  color-scheme: light !important;
+}
+
+html[data-theme="dark"] .profile-picker select,
+html[data-theme="dark"] #peer-modal .profile-picker select,
+html[data-theme="dark"] #profile-select {
+  background: transparent !important;
+  color: #f1f5f9 !important;
+  color-scheme: dark !important;
+}
+
+.profile-picker select option,
+#profile-select option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  padding: 8px 10px !important;
+}
+
+html[data-theme="dark"] .profile-picker select option,
+html[data-theme="dark"] #profile-select option {
+  background: #0d1527 !important;
+  color: #f1f5f9 !important;
+}
+
+/* OxSelect Integration for Profile Picker */
+.profile-picker .ox-select-shell {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.profile-picker .ox-select-trigger {
+  height: 34px !important;
+  padding: 0 4px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .profile-picker .ox-select-trigger {
+  color: #f1f5f9 !important;
+}
+
+.profile-picker .ox-select-menu {
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  min-width: 220px !important;
+}
+
+.profile-picker .icon-btn,
+#save-profile-btn,
+#profile-menu-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  border-radius: 8px !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+}
+
+.profile-picker .icon-btn:hover,
+#save-profile-btn:hover,
+#profile-menu-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .profile-picker .icon-btn,
+html[data-theme="dark"] #save-profile-btn,
+html[data-theme="dark"] #profile-menu-btn {
+  background: #172236 !important;
+  border-color: #2b3e58 !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .profile-picker .icon-btn:hover,
+html[data-theme="dark"] #save-profile-btn:hover,
+html[data-theme="dark"] #profile-menu-btn:hover {
+  background: #22324e !important;
+  color: #ffffff !important;
+  border-color: #3b506f !important;
+}
+
+.peerx-profile-menu,
+#profile-menu {
+  position: absolute !important;
+  right: 0 !important;
+  top: calc(100% + 6px) !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08) !important;
+  min-width: 180px !important;
+  padding: 6px !important;
+  z-index: 50 !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="dark"] .peerx-profile-menu,
+html[data-theme="dark"] #profile-menu {
+  background: #0d1527 !important;
+  border-color: #263850 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+}
+
+.peerx-profile-menu .menu-item,
+#profile-menu .menu-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  padding: 8px 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+  text-align: left !important;
+  box-sizing: border-box !important;
+}
+
+.peerx-profile-menu .menu-item:hover,
+#profile-menu .menu-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .peerx-profile-menu .menu-item,
+html[data-theme="dark"] #profile-menu .menu-item {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .peerx-profile-menu .menu-item:hover,
+html[data-theme="dark"] #profile-menu .menu-item:hover {
+  background: #172236 !important;
+  color: #ffffff !important;
+}
+
+.peerx-profile-menu .menu-item.danger,
+#profile-menu .menu-item.danger,
+html[data-theme="dark"] .peerx-profile-menu .menu-item.danger,
+html[data-theme="dark"] #profile-menu .menu-item.danger {
+  color: #ef4444 !important;
+}
+
+.peerx-profile-menu .menu-item.danger:hover,
+#profile-menu .menu-item.danger:hover,
+html[data-theme="dark"] .peerx-profile-menu .menu-item.danger:hover,
+html[data-theme="dark"] #profile-menu .menu-item.danger:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+.peerx-profile-menu .menu-sep,
+#profile-menu .menu-sep {
+  height: 1px !important;
+  background: #e2e8f0 !important;
+  margin: 4px 0 !important;
+}
+
+html[data-theme="dark"] .peerx-profile-menu .menu-sep,
+html[data-theme="dark"] #profile-menu .menu-sep {
+  background: #223044 !important;
+}
+
+/* ==========================================================================
+   Endpoint Presets Compact (#ep-saved)
+   ========================================================================== */
+.endpoint-presets-compact,
+#peer-modal .endpoint-presets-compact,
+#edit-peer-modal .endpoint-presets-compact,
+#bulk-modal .endpoint-presets-compact {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 36px 36px 36px !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact,
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact,
+html[data-theme="dark"] #bulk-modal .endpoint-presets-compact {
+  background: #111a28 !important;
+  border-color: #223044 !important;
+}
+
+.endpoint-presets-compact select:not(.ox-select-shell select),
+.endpoint-presets-compact #ep-saved:not(.ox-select-shell select),
+#peer-modal .endpoint-presets-compact #ep-saved:not(.ox-select-shell select),
+#edit-peer-modal .endpoint-presets-compact #ep-saved:not(.ox-select-shell select),
+#bulk-modal .endpoint-presets-compact #ep-saved:not(.ox-select-shell select) {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 38px 0 13px !important;
+  background-color: #ffffff !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 13px center !important;
+  background-size: 16px 16px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 11px !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  outline: none !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+  color-scheme: light !important;
+  cursor: pointer !important;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.endpoint-presets-compact select:hover,
+.endpoint-presets-compact #ep-saved:hover {
+  border-color: #94a3b8 !important;
+}
+
+.endpoint-presets-compact select:focus,
+.endpoint-presets-compact #ep-saved:focus {
+  border-color: #10b981 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
+}
+
+.endpoint-presets-compact select option,
+.endpoint-presets-compact #ep-saved option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  padding: 10px 14px !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact select,
+html[data-theme="dark"] .endpoint-presets-compact #ep-saved,
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact #ep-saved,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact #ep-saved,
+html[data-theme="dark"] #bulk-modal .endpoint-presets-compact #ep-saved {
+  background-color: #0d1527 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  border-color: #263850 !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+  color-scheme: dark !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact select:hover,
+html[data-theme="dark"] .endpoint-presets-compact #ep-saved:hover {
+  border-color: #3b506c !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact select:focus,
+html[data-theme="dark"] .endpoint-presets-compact #ep-saved:focus {
+  border-color: #10b981 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25) !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact select option,
+html[data-theme="dark"] .endpoint-presets-compact #ep-saved option {
+  background: #0d1527 !important;
+  color: #f1f5f9 !important;
+}
+
+.endpoint-presets-compact > .btn,
+.endpoint-presets-compact > .endpoint-preset-action,
+#ep-apply,
+#ep-save,
+#ep-del {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+}
+
+.endpoint-presets-compact > .btn:hover,
+#ep-apply:hover,
+#ep-save:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+#ep-del:hover {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact > .btn,
+html[data-theme="dark"] .endpoint-presets-compact > .endpoint-preset-action,
+html[data-theme="dark"] #ep-apply,
+html[data-theme="dark"] #ep-save,
+html[data-theme="dark"] #ep-del {
+  background: #172236 !important;
+  border-color: #2b3e58 !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .endpoint-presets-compact > .btn:hover,
+html[data-theme="dark"] #ep-apply:hover,
+html[data-theme="dark"] #ep-save:hover {
+  background: #22324e !important;
+  border-color: #3b506f !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] #ep-del:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #fca5a5 !important;
+}
+
+/* ==========================================================================
+   Auto Network Toggle ("Include private networks")
+   ========================================================================== */
+.auto-network-toggle,
+#peer-modal .auto-network-toggle,
+#edit-peer-modal .auto-network-toggle,
+#bulk-modal .auto-network-toggle {
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 48px !important;
+  padding: 8px 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+}
+
+.auto-network-toggle:hover,
+#peer-modal .auto-network-toggle:hover {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .auto-network-toggle,
+html[data-theme="dark"] #peer-modal .auto-network-toggle,
+html[data-theme="dark"] #edit-peer-modal .auto-network-toggle,
+html[data-theme="dark"] #bulk-modal .auto-network-toggle {
+  background: #111a28 !important;
+  border-color: #223044 !important;
+}
+
+html[data-theme="dark"] .auto-network-toggle:hover,
+html[data-theme="dark"] #peer-modal .auto-network-toggle:hover {
+  background: #162337 !important;
+  border-color: #2d415d !important;
+}
+
+.auto-network-copy b,
+#peer-modal .auto-network-copy b {
+  display: block !important;
+  font-size: 12.5px !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] .auto-network-copy b,
+html[data-theme="dark"] #peer-modal .auto-network-copy b {
+  color: #f8fafc !important;
+}
+
+.auto-network-copy small,
+#peer-modal .auto-network-copy small {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  margin-top: 1px !important;
+}
+
+html[data-theme="dark"] .auto-network-copy small,
+html[data-theme="dark"] #peer-modal .auto-network-copy small {
+  color: #94a3b8 !important;
+}
+
+/* Consolidated auto-network-switch rules moved to master switch section */
+
+/* ==========================================================================
+   Limit Switches (.peerx-switch)
+   ========================================================================== */
+.peerx-switch,
+#peer-modal .peerx-switch,
+#edit-peer-modal .peerx-switch,
+#bulk-modal .peerx-switch,
+#peer-modal .peerx-limit-switch-row > .peerx-switch,
+#edit-peer-modal .peerx-limit-switch-row > .peerx-switch,
+#bulk-modal .peerx-limit-switch-row > .peerx-switch {
+  display: grid !important;
+  grid-template-columns: 44px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 48px !important;
+  padding: 8px 12px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+  box-shadow: none !important;
+}
+
+.peerx-switch:hover,
+#peer-modal .peerx-switch:hover,
+#peer-modal .peerx-limit-switch-row > .peerx-switch:hover {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .peerx-switch,
+html[data-theme="dark"] #peer-modal .peerx-switch,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch,
+html[data-theme="dark"] #bulk-modal .peerx-switch,
+html[data-theme="dark"] #peer-modal .peerx-limit-switch-row > .peerx-switch,
+html[data-theme="dark"] #edit-peer-modal .peerx-limit-switch-row > .peerx-switch,
+html[data-theme="dark"] #bulk-modal .peerx-limit-switch-row > .peerx-switch {
+  background: #111a28 !important;
+  border-color: #223044 !important;
+}
+
+html[data-theme="dark"] .peerx-switch:hover,
+html[data-theme="dark"] #peer-modal .peerx-switch:hover,
+html[data-theme="dark"] #peer-modal .peerx-limit-switch-row > .peerx-switch:hover {
+  background: #162337 !important;
+  border-color: #2d415d !important;
+}
+
+.peerx-switch > b,
+#peer-modal .peerx-switch > b,
+#peer-modal .peerx-limit-switch-row > .peerx-switch > b {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 24px !important;
+  font-size: 12.5px !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+}
+
+html[data-theme="dark"] .peerx-switch > b,
+html[data-theme="dark"] #peer-modal .peerx-switch > b,
+html[data-theme="dark"] #peer-modal .peerx-limit-switch-row > .peerx-switch > b {
+  color: #f8fafc !important;
+}
+
+.peerx-switch > span,
+#peer-modal .peerx-switch > span,
+#edit-peer-modal .peerx-switch > span,
+#bulk-modal .peerx-switch > span,
+.peerx-limit-switch-row > .peerx-switch > span,
+#peer-modal .peerx-limit-switch-row > .peerx-switch > span,
+#edit-peer-modal .peerx-limit-switch-row > .peerx-switch > span,
+#bulk-modal .peerx-limit-switch-row > .peerx-switch > span,
+#peer-modal .peerx-form-grid.limits > .peerx-switch > span,
+#edit-peer-modal .peerx-form-grid.limits > .peerx-switch > span,
+#bulk-modal .peerx-form-grid.limits > .peerx-switch > span,
+.auto-network-switch,
+#peer-modal .auto-network-switch,
+#edit-peer-modal .auto-network-switch,
+#bulk-modal .auto-network-switch,
+.iface-auto-up-switch,
+#iface-create-modal .iface-auto-up-switch,
+.subx-switch > span {
+  position: relative !important;
+  display: inline-block !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  flex: 0 0 44px !important;
+  border-radius: 9999px !important;
+  background: #cbd5e1 !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12) !important;
+  vertical-align: middle !important;
+  cursor: pointer !important;
+}
+
+.peerx-switch > span:after,
+#peer-modal .peerx-switch > span:after,
+#edit-peer-modal .peerx-switch > span:after,
+#bulk-modal .peerx-switch > span:after,
+.peerx-limit-switch-row > .peerx-switch > span:after,
+#peer-modal .peerx-limit-switch-row > .peerx-switch > span:after,
+#edit-peer-modal .peerx-limit-switch-row > .peerx-switch > span:after,
+#bulk-modal .peerx-limit-switch-row > .peerx-switch > span:after,
+#peer-modal .peerx-form-grid.limits > .peerx-switch > span:after,
+#edit-peer-modal .peerx-form-grid.limits > .peerx-switch > span:after,
+#bulk-modal .peerx-form-grid.limits > .peerx-switch > span:after,
+.auto-network-switch:after,
+#peer-modal .auto-network-switch:after,
+#edit-peer-modal .auto-network-switch:after,
+#bulk-modal .auto-network-switch:after,
+.iface-auto-up-switch:after,
+#iface-create-modal .iface-auto-up-switch:after,
+.subx-switch > span:after {
+  content: "" !important;
+  position: absolute !important;
+  top: 3px !important;
+  bottom: auto !important;
+  left: 3px !important;
+  right: auto !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  max-height: 18px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18), 0 0 1px rgba(15, 23, 42, 0.1) !important;
+  transform: none !important;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease !important;
+  box-sizing: border-box !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+.peerx-switch > input:checked + span,
+#peer-modal .peerx-switch > input:checked + span,
+#edit-peer-modal .peerx-switch > input:checked + span,
+#bulk-modal .peerx-switch > input:checked + span,
+.peerx-limit-switch-row > .peerx-switch > input:checked + span,
+#peer-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span,
+#edit-peer-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span,
+#bulk-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span,
+#peer-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span,
+#edit-peer-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span,
+#bulk-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span,
+.auto-network-toggle input:checked + .auto-network-switch,
+#peer-modal .auto-network-toggle input:checked + .auto-network-switch,
+#edit-peer-modal .auto-network-toggle input:checked + .auto-network-switch,
+#bulk-modal .auto-network-toggle input:checked + .auto-network-switch,
+.iface-auto-up-toggle input:checked + .iface-auto-up-switch,
+#iface-create-modal .iface-auto-up-toggle input:checked + .iface-auto-up-switch,
+.subx-switch > input:checked + span {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+.peerx-switch > input:checked + span:after,
+#peer-modal .peerx-switch > input:checked + span:after,
+#edit-peer-modal .peerx-switch > input:checked + span:after,
+#bulk-modal .peerx-switch > input:checked + span:after,
+.peerx-limit-switch-row > .peerx-switch > input:checked + span:after,
+#peer-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span:after,
+#edit-peer-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span:after,
+#bulk-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span:after,
+#peer-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span:after,
+#edit-peer-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span:after,
+#bulk-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span:after,
+.auto-network-toggle input:checked + .auto-network-switch:after,
+#peer-modal .auto-network-toggle input:checked + .auto-network-switch:after,
+#edit-peer-modal .auto-network-toggle input:checked + .auto-network-switch:after,
+#bulk-modal .auto-network-toggle input:checked + .auto-network-switch:after,
+.iface-auto-up-toggle input:checked + .iface-auto-up-switch:after,
+#iface-create-modal .iface-auto-up-toggle input:checked + .iface-auto-up-switch:after,
+.subx-switch > input:checked + span:after {
+  transform: translateX(20px) !important;
+}
+
+html[data-theme="dark"] .peerx-switch > span,
+html[data-theme="dark"] #peer-modal .peerx-switch > span,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch > span,
+html[data-theme="dark"] #bulk-modal .peerx-switch > span,
+html[data-theme="dark"] .peerx-limit-switch-row > .peerx-switch > span,
+html[data-theme="dark"] #peer-modal .peerx-limit-switch-row > .peerx-switch > span,
+html[data-theme="dark"] #edit-peer-modal .peerx-limit-switch-row > .peerx-switch > span,
+html[data-theme="dark"] #bulk-modal .peerx-limit-switch-row > .peerx-switch > span,
+html[data-theme="dark"] #peer-modal .peerx-form-grid.limits > .peerx-switch > span,
+html[data-theme="dark"] #edit-peer-modal .peerx-form-grid.limits > .peerx-switch > span,
+html[data-theme="dark"] #bulk-modal .peerx-form-grid.limits > .peerx-switch > span,
+html[data-theme="dark"] .auto-network-switch,
+html[data-theme="dark"] #peer-modal .auto-network-switch,
+html[data-theme="dark"] #edit-peer-modal .auto-network-switch,
+html[data-theme="dark"] #bulk-modal .auto-network-switch,
+html[data-theme="dark"] .iface-auto-up-switch,
+html[data-theme="dark"] #iface-create-modal .iface-auto-up-switch,
+html[data-theme="dark"] .subx-switch > span {
+  background: #334155 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme="dark"] .peerx-switch > input:checked + span,
+html[data-theme="dark"] #peer-modal .peerx-switch > input:checked + span,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch > input:checked + span,
+html[data-theme="dark"] #bulk-modal .peerx-switch > input:checked + span,
+html[data-theme="dark"] .peerx-limit-switch-row > .peerx-switch > input:checked + span,
+html[data-theme="dark"] #peer-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span,
+html[data-theme="dark"] #edit-peer-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span,
+html[data-theme="dark"] #bulk-modal .peerx-limit-switch-row > .peerx-switch > input:checked + span,
+html[data-theme="dark"] #peer-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span,
+html[data-theme="dark"] #edit-peer-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span,
+html[data-theme="dark"] #bulk-modal .peerx-form-grid.limits > .peerx-switch > input:checked + span,
+html[data-theme="dark"] .auto-network-toggle input:checked + .auto-network-switch,
+html[data-theme="dark"] #peer-modal .auto-network-toggle input:checked + .auto-network-switch,
+html[data-theme="dark"] #edit-peer-modal .auto-network-toggle input:checked + .auto-network-switch,
+html[data-theme="dark"] #bulk-modal .auto-network-toggle input:checked + .auto-network-switch,
+html[data-theme="dark"] .iface-auto-up-toggle input:checked + .iface-auto-up-switch,
+html[data-theme="dark"] #iface-create-modal .iface-auto-up-toggle input:checked + .iface-auto-up-switch,
+html[data-theme="dark"] .subx-switch > input:checked + span {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+/* ==========================================================================
+   Effective Endpoint Banner
+   ========================================================================== */
+.endpoint-effective,
+#peer-modal .endpoint-effective,
+#edit-peer-modal .endpoint-effective,
+#bulk-modal .endpoint-effective {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 38px !important;
+  margin-top: 8px !important;
+  padding: 8px 12px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  box-sizing: border-box !important;
+}
+
+.endpoint-effective i {
+  color: #10b981 !important;
+  font-size: 12px !important;
+}
+
+.endpoint-effective[data-state="missing"] {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #92400e !important;
+}
+
+.endpoint-effective[data-state="missing"] i {
+  color: #d97706 !important;
+}
+
+.endpoint-effective b {
+  font-weight: 750 !important;
+}
+
+html[data-theme="dark"] .endpoint-effective,
+html[data-theme="dark"] #peer-modal .endpoint-effective,
+html[data-theme="dark"] #edit-peer-modal .endpoint-effective,
+html[data-theme="dark"] #bulk-modal .endpoint-effective {
+  background: #111a28 !important;
+  border-color: #223044 !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .endpoint-effective i {
+  color: #34d399 !important;
+}
+
+html[data-theme="dark"] .endpoint-effective[data-state="missing"] {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #fcd34d !important;
+}
+
+html[data-theme="dark"] .endpoint-effective[data-state="missing"] i {
+  color: #fbbf24 !important;
+}
+
+/* ==========================================================================
+   New Interface Modal (#iface-create-modal) Complete Design
+   ========================================================================== */
+#iface-create-modal.open {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10050 !important;
+  padding: 16px !important;
+}
+
+#iface-create-modal .iface-create-card.peerx-dialog {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(680px, calc(100vw - 32px)) !important;
+  max-width: 680px !important;
+  max-height: min(90dvh, 800px) !important;
+  border-radius: var(--peerx-radius-lg) !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.2) !important;
+  color: #0f172a !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  animation: peerxModalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .iface-create-card.peerx-dialog {
+  background: #0d1527 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.8) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Modal Header */
+#iface-create-modal .peerx-modal-head {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 18px 24px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .peerx-modal-head {
+  background: rgba(13, 21, 39, 0.96) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+#iface-create-modal .peerx-modal-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #059669 !important;
+  font-size: 18px !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .peerx-modal-badge {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.35) 100%) !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+  color: #34d399 !important;
+}
+
+#iface-create-modal h2#iface-create-title {
+  margin: 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  color: #0f172a !important;
+  line-height: 1.2 !important;
+}
+
+html[data-theme="dark"] #iface-create-modal h2#iface-create-title {
+  color: #f8fafc !important;
+}
+
+#iface-create-modal .peerx-modal-head p {
+  margin: 3px 0 0 0 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  line-height: 1.3 !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .peerx-modal-head p {
+  color: #94a3b8 !important;
+}
+
+/* Close button */
+#iface-create-modal .modal-close {
+  position: absolute !important;
+  top: 16px !important;
+  right: 18px !important;
+  z-index: 20 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 10px !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+}
+
+#iface-create-modal .modal-close:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  transform: scale(1.05) !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .modal-close {
+  background: #172236 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .modal-close:hover {
+  background: #202e48 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Form body */
+#iface-create-modal form#iface-create-form {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#iface-create-modal .iface-create-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  padding: 20px 24px !important;
+  box-sizing: border-box !important;
+}
+
+#iface-create-modal .iface-create-grid .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+#iface-create-modal .iface-create-grid .form-group.wide {
+  grid-column: 1 / -1 !important;
+}
+
+#iface-create-modal label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] #iface-create-modal label {
+  color: #f1f5f9 !important;
+}
+
+#iface-create-modal .input,
+#iface-create-modal input:not([type="checkbox"]) {
+  width: 100% !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 14px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  transition: var(--peerx-transition) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+#iface-create-modal .input:focus,
+#iface-create-modal input:not([type="checkbox"]):focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .input,
+html[data-theme="dark"] #iface-create-modal input:not([type="checkbox"]) {
+  background: #090e1a !important;
+  border-color: #223044 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .input:focus,
+html[data-theme="dark"] #iface-create-modal input:not([type="checkbox"]):focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22) !important;
+}
+
+#iface-create-modal .small-text {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  line-height: 1.35 !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .small-text {
+  color: #94a3b8 !important;
+}
+
+#iface-create-modal .small-text code {
+  padding: 1px 5px !important;
+  border-radius: 5px !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  font-size: 11px !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .small-text code {
+  background: #172236 !important;
+  border-color: #263850 !important;
+  color: #cbd5e1 !important;
+}
+
+/* Auto-up toggle card in new interface modal */
+#iface-create-modal .iface-auto-up-toggle {
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+}
+
+#iface-create-modal .iface-auto-up-toggle:hover {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .iface-auto-up-toggle {
+  background: #111a28 !important;
+  border-color: #223044 !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .iface-auto-up-toggle:hover {
+  background: #162337 !important;
+  border-color: #2d415d !important;
+}
+
+#iface-create-modal .iface-auto-up-toggle input {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Note: #iface-create-modal .iface-auto-up-switch is consolidated in the master switch system */
+
+#iface-create-modal .iface-auto-up-copy b {
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .iface-auto-up-copy b {
+  color: #f8fafc !important;
+}
+
+#iface-create-modal .iface-auto-up-copy small {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  margin-top: 1px !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .iface-auto-up-copy small {
+  color: #94a3b8 !important;
+}
+
+/* Modal Actions */
+#iface-create-modal .iface-create-actions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 10 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 14px 24px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-top: 1px solid #e2e8f0 !important;
+  box-sizing: border-box !important;
+  margin-top: auto !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .iface-create-actions {
+  background: rgba(13, 21, 39, 0.96) !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+#iface-create-modal .iface-create-actions .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 20px !important;
+  border-radius: var(--peerx-radius-sm) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: var(--peerx-transition) !important;
+  border: 1px solid transparent !important;
+}
+
+#iface-create-modal .iface-create-actions .btn.secondary,
+#iface-create-cancel {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+#iface-create-modal .iface-create-actions .btn.secondary:hover,
+#iface-create-cancel:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .iface-create-actions .btn.secondary,
+html[data-theme="dark"] #iface-create-cancel {
+  background: #172236 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] #iface-create-modal .iface-create-actions .btn.secondary:hover,
+html[data-theme="dark"] #iface-create-cancel:hover {
+  background: #1e2c45 !important;
+  color: #ffffff !important;
+}
+
+#iface-create-modal .iface-create-actions .btn:not(.secondary) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+
+#iface-create-modal .iface-create-actions .btn:not(.secondary):hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+@media (max-width: 640px) {
+  #iface-create-modal .iface-create-grid {
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+    gap: 12px !important;
+  }
+  #iface-create-modal .iface-create-card.peerx-dialog {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 18px 18px 0 0 !important;
+    max-height: 92dvh !important;
+  }
+  #iface-create-modal .peerx-modal-head {
+    padding: 14px 16px !important;
+  }
+  #iface-create-modal .iface-create-actions {
+    padding: 12px 16px !important;
+  }
+  #iface-create-modal .iface-create-actions .btn {
+    flex: 1 1 auto !important;
+    height: 44px !important;
+  }
+}
+
+

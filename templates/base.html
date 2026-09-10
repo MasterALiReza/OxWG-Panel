@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>{% block title %}OxWg Panel{% endblock %}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+
+    <link rel="icon" href="{{ url_for('static', filename='img/wireguard-badge.svg') }}" type="image/svg+xml" />
+    <link rel="alternate icon" href="{{ url_for('static', filename='img/wireguard-badge-32.png') }}" sizes="32x32" />
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/wireguard-badge-180.png') }}" sizes="180x180" />
+    <link rel="mask-icon" href="{{ url_for('static', filename='img/wireguard-badge.svg') }}" color="#6ee7b7" />
+    <meta name="theme-color" content="#0b1020" />
+    <script>
+      (function () {
+        var allowed = { light: true, auto: true, dark: true };
+        var mode = 'auto';
+
+        try {
+          mode = String(localStorage.getItem('wg-theme') || '').toLowerCase();
+
+          if (!allowed[mode]) {
+            var legacy = String(
+              localStorage.getItem('wg-panel:theme-mode') || ''
+            ).toLowerCase();
+
+            mode = allowed[legacy] ? legacy : 'auto';
+            localStorage.setItem('wg-theme', mode);
+          }
+        } catch (_) {
+          mode = 'auto';
+        }
+
+        var systemDark = false;
+
+        try {
+          systemDark = window.matchMedia(
+            '(prefers-color-scheme: dark)'
+          ).matches;
+        } catch (_) {}
+
+        var effective = mode === 'auto'
+          ? (systemDark ? 'dark' : 'light')
+          : mode;
+
+        var root = document.documentElement;
+        root.dataset.themeMode = mode;
+        root.dataset.theme = effective;
+        root.style.colorScheme = effective;
+      })();
+    </script>
+    <link rel="preload" as="image" href="{{ url_for('static', filename='img/wireguard-badge.svg') }}" />
+
+    {% if current_user.is_authenticated and config is defined and config.get('API_KEY') %}
+    <meta name="api-key" content="{{ config['API_KEY'] }}">
+    {% endif %}
+
+    {% block preload_flags %}{% endblock %}
+
+    {% if not preview|default(false) %}
+    {% if use_poppins_regular|default(true) %}
+    <link rel="preload" href="{{ url_for('static', filename='fonts/Poppins-Regular.woff2') }}" as="font" type="font/woff2" crossorigin />
+    {% endif %}
+    {% if use_poppins_semibold|default(false) %}
+    <link rel="preload" href="{{ url_for('static', filename='fonts/Poppins-SemiBold.woff2') }}" as="font" type="font/woff2" crossorigin />
+    {% endif %}
+    {% if use_poppins_bold|default(false) %}
+    <link rel="preload" href="{{ url_for('static', filename='fonts/Poppins-Bold.woff2') }}" as="font" type="font/woff2" crossorigin />
+    {% endif %}
+    {% if use_fa_solid|default(true) %}
+    <link rel="preload" href="{{ url_for('static', filename='vendor/fa/webfonts/fa-solid-900.woff2') }}" as="font" type="font/woff2" crossorigin />
+    {% endif %}
+    {% if use_fa_brands|default(true) %}
+    <link rel="preload" href="{{ url_for('static', filename='vendor/fa/webfonts/fa-brands-400.woff2') }}" as="font" type="font/woff2" crossorigin />
+    {% endif %}
+    {% endif %}
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fa/css/all.min.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/panel-version.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v=1.4.4" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-compact.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/panel-update.css') }}" />
+
+    {% block head_extras %}{% endblock %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-dashboard-peers.css') }}" />
+    {% block responsive_extras %}{% endblock %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base-responsive.css') }}" />
+
+    {% if request.endpoint in ['index', 'misc_bp.index'] or (request.endpoint and request.endpoint.endswith('.index')) or request.path == '/' %}
+    <script defer src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js', v='4.4.4') }}"></script>
+    {% endif %}
+    <script defer src="{{ url_for('static', filename='js/toast.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/csrf.js') }}"></script>
+    <script>
+      // Seed from the rendered page, then verify against the live authoritative
+      // endpoint before any peer/subscription data is first rendered. This
+      // defeats stale HTML/proxy caches and never consults the browser timezone.
+      window.WG_PANEL_TIMEZONE = {{ PANEL_TIMEZONE|default('UTC', true)|tojson }};
+      window.WG_PANEL_TIMEZONE_READY = fetch(
+        {{ url_for('api_timezone')|tojson }} + '?_=' + Date.now(),
+        { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } }
+      ).then(function (response) {
+        if (!response.ok) throw new Error('timezone endpoint returned ' + response.status);
+        return response.json();
+      }).then(function (payload) {
+        var timezone = String((payload && payload.timezone) || '').trim();
+        if (!timezone) throw new Error('timezone endpoint returned an empty timezone');
+        new Intl.DateTimeFormat('en', { timeZone: timezone }).format(new Date());
+        window.WG_PANEL_TIMEZONE = timezone;
+        return timezone;
+      }).catch(function () {
+        return window.WG_PANEL_TIMEZONE || 'UTC';
+      });
+      window.WG_TZ_FIX_BUILD = '20260903-v6';
+    </script>
+    <script defer src="{{ url_for('static', filename='js/base.js', v='20260903-time-v6') }}"></script>
+</head>
+
+<body data-preview="{{ '1' if preview|default(false) else '0' }}">
+    <header class="wg-mobile-topbar" id="wg-mobile-topbar" aria-label="Mobile navigation">
+        <button type="button" class="wg-mobile-menu-btn" id="wg-mobile-menu-btn" aria-controls="panel-sidebar" aria-expanded="false" aria-label="Open menu">
+            <span class="wg-mobile-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span>
+        </button>
+        <div class="wg-mobile-brand" aria-hidden="true">
+            <img src="{{ url_for('static', filename='img/wireguard-badge.svg') }}" alt="">
+            <strong>OxWg Panel</strong>
+        </div>
+    </header>
+    <button type="button" class="wg-mobile-menu-backdrop" id="wg-mobile-menu-backdrop" tabindex="-1" aria-hidden="true"></button>
+    <aside class="sidebar sb2" id="panel-sidebar" aria-label="Sidebar">
+        <div class="logo" data-tip="OxWg Panel">
+            <img src="{{ url_for('static', filename='img/wireguard-badge.svg') }}" alt="WireGuard badge" class="wg-logo-img">
+            <span class="brand-title">OxWg Panel</span>
+            <span class="brand-abbr" aria-hidden="true">OxWg</span>
+        </div>
+
+        <div class="sb2-body">
+            <nav role="navigation" aria-label="Primary">
+                {% set ep = request.endpoint or '' %}
+
+                <div class="sb2-section">Overview</div>
+                <a href="{{ url_for('index') }}" class="sb2-link{{ ' active' if ep in ['index', 'misc_bp.index'] or request.path == '/' else '' }}" data-tip="Dashboard" aria-current="{{ 'page' if ep in ['index', 'misc_bp.index'] or request.path == '/' else '' }}">
+                    <i class="fas fa-gauge-simple" aria-hidden="true"></i><span class="sb2-text">Dashboard</span>
+                </a>
+
+                <a href="{{ url_for('users') }}" class="sb2-link{{ ' active' if ep in ['users', 'peers_bp.users'] or request.path == '/users' else '' }}" data-tip="Peers" aria-current="{{ 'page' if ep in ['users', 'peers_bp.users'] or request.path == '/users' else '' }}">
+                    <i class="fas fa-people-group" aria-hidden="true"></i><span class="sb2-text">Peers</span>
+                </a>
+
+                <a href="/subscriptions" class="sb2-link{{ ' active' if ep.startswith(('subscriptions', 'subscriptions_bp')) or request.path.startswith('/subscriptions') else '' }}" data-tip="Subscriptions" aria-current="{{ 'page' if ep.startswith(('subscriptions', 'subscriptions_bp')) or request.path.startswith('/subscriptions') else '' }}">
+                    <i class="fas fa-link" aria-hidden="true"></i><span class="sb2-text">Subscriptions</span>
+                </a>
+
+                {% if HAS_NODES %}
+                <div class="sb2-section">Infrastructure</div>
+                <a href="{{ url_for('nodes') }}" class="sb2-link{{ ' active' if ep.startswith(('nodes', 'nodes_bp')) or request.path.startswith('/nodes') else '' }}" data-tip="Nodes" aria-current="{{ 'page' if ep.startswith(('nodes', 'nodes_bp')) or request.path.startswith('/nodes') else '' }}">
+                    <i class="fas fa-server" aria-hidden="true"></i><span class="sb2-text">Nodes</span>
+                </a>
+                {% endif %}
+
+                <div class="sb2-section">Admin</div>
+                <a href="{{ url_for('logs_page') }}" class="sb2-link{{ ' active' if ep.startswith(('logs', 'logs_bp')) or request.path.startswith('/logs') else '' }}" data-tip="Logs" aria-current="{{ 'page' if ep.startswith(('logs', 'logs_bp')) or request.path.startswith('/logs') else '' }}">
+                    <i class="fa fa-file-alt" aria-hidden="true"></i><span class="sb2-text">Logs</span>
+                </a>
+
+                <a href="{{ url_for('backup_page') }}" class="sb2-link{{ ' active' if ep.startswith(('backup', 'backup_bp')) or request.path.startswith('/backup') else '' }}" data-tip="Backup" aria-current="{{ 'page' if ep.startswith(('backup', 'backup_bp')) or request.path.startswith('/backup') else '' }}">
+                    <i class="fas fa-box-archive" aria-hidden="true"></i><span class="sb2-text">Backup</span>
+                </a>
+
+                {% if HAS_SETTINGS %}
+                <a href="{{ url_for('settings_page') }}" class="sb2-link{{ ' active' if ep in ['settings_page', 'settings', 'settings_bp.settings_page'] or request.path.startswith('/settings') else '' }}" data-tip="Settings" aria-current="{{ 'page' if ep in ['settings_page', 'settings', 'settings_bp.settings_page'] or request.path.startswith('/settings') else '' }}">
+                    <i class="fas fa-sliders" aria-hidden="true"></i><span class="sb2-text">Settings</span>
+                </a>
+                {% endif %}
+
+                <a href="/api-docs" class="sb2-link{{ ' active' if ep in ['api_docs_page', 'misc_bp.api_docs_page'] or request.path == '/api-docs' else '' }}" data-tip="API Docs" aria-current="{{ 'page' if ep in ['api_docs_page', 'misc_bp.api_docs_page'] or request.path == '/api-docs' else '' }}">
+                    <i class="fa-solid fa-code" aria-hidden="true"></i><span class="sb2-text">API Docs</span>
+                </a>
+            </nav>
+
+            <div class="sb2-bottom">
+                <button
+                    type="button"
+                    class="sb2-update-card"
+                    id="sb2-update-open"
+                    data-current-version="{{ PANEL_VERSION|default('1.0.0') }}"
+                    aria-haspopup="dialog"
+                    aria-controls="panel-update-modal"
+                    data-tip="Open Update Center">
+                    <span class="sb2-update-icon">
+                        <i class="fas fa-code-branch" aria-hidden="true"></i>
+                    </span>
+                    <span class="sb2-update-copy">
+                        <span class="sb2-update-k">OxWg Panel</span>
+                        <strong class="sb2-update-versions">
+                            <span id="sb2-version-current">v{{ PANEL_VERSION|default('1.0.0') }}</span>
+                            <i class="fas fa-arrow-right sb2-version-direction" id="sb2-version-direction" hidden aria-hidden="true"></i>
+                            <span id="sb2-version-latest" hidden></span>
+                        </strong>
+                        <small class="sb2-update-hint" id="sb2-update-hint">Checking releases…</small>
+                    </span>
+                    <span class="sb2-update-badges">
+                        <span class="sb2-node-update-count" id="sb2-node-update-count" hidden></span>
+                        <span class="sb2-update-state" id="sb2-version-state">checking</span>
+                    </span>
+                    <i class="fas fa-chevron-right sb2-update-arrow" aria-hidden="true"></i>
+                </button>
+
+                <div class="sb2-utility-row">
+                    {% if current_user.is_authenticated %}
+                    {% set is_admin = current_user.is_authenticated and (current_user.is_admin|default(false) or current_user.is_superuser|default(false)) %}
+                    <div class="sb2-account-mini" {% if is_admin %}data-role="admin"{% endif %}>
+                        <span class="sb2-account-avatar"><i class="fas fa-user-shield" aria-hidden="true"></i></span>
+                        <span class="sb2-account-copy">
+                            <strong>{{ current_user.username|default(current_user.name|default('Admin')) }}</strong>
+                            {% if is_admin %}<small>Admin</small>{% endif %}
+                        </span>
+                        <a class="sb2-account-logout" href="{{ url_for('logout') }}" aria-label="Logout" title="Logout">
+                            <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="theme-switcher theme-switcher-compact" id="theme-switcher" role="group" aria-label="Color theme">
+                        <button type="button" data-theme-choice="light" title="Light mode" aria-label="Light mode">
+                            <i class="fas fa-sun"></i>
+                        </button>
+                        <button type="button" data-theme-choice="auto" title="Use system theme" aria-label="Use system theme">
+                            <i class="fas fa-desktop"></i>
+                        </button>
+                        <button type="button" data-theme-choice="dark" title="Dark mode" aria-label="Dark mode">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sb2-footer-actions">
+                    <a href="{{ PANEL_REPO_URL|default('https://github.com/Azumi67/WG_Panel') }}"
+                       target="_blank" rel="noopener" class="sb2-footer-icon"
+                       aria-label="GitHub repository" title="GitHub repository">
+                        <i class="fa-brands fa-github" aria-hidden="true"></i>
+                    </a>
+
+                    <button class="sb2-pin-ctl sb2-pin-compact" id="sb2-pin" type="button"
+                        data-tip="Collapse / Expand sidebar" aria-pressed="false"
+                        aria-label="Collapse sidebar">
+                        <i class="fas fa-angles-left" aria-hidden="true"></i>
+                        <span>Collapse</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div id="ui-toast-container" role="status" aria-live="polite"></div>
+
+        {% with msgs = get_flashed_messages(with_categories=true) %}
+        {% if msgs %}
+        <div id="flask-flashes" hidden>
+            {% for cat, msg in msgs %}
+            <div data-toast-category="{{ cat|e }}" data-toast-message="{{ msg|e }}"></div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script defer src="{{ url_for('static', filename='js/panel-version.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/panel-update.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/ox-dropdown.js') }}"></script>
+
+
+    <div class="pu-modal" id="panel-update-modal" hidden aria-hidden="true" role="dialog"
+         aria-modal="true" aria-labelledby="pu-title">
+        <div class="pu-backdrop" data-pu-close></div>
+        <section class="pu-dialog">
+            <header class="pu-head">
+                <div class="pu-title-wrap">
+                    <span class="pu-logo"><i class="fas fa-cloud-arrow-down"></i></span>
+                    <div>
+                        <h2 id="pu-title">Panel Update Center</h2>
+                        <p>Safely update the local panel and registered nodes.</p>
+                    </div>
+                </div>
+                <button class="pu-close" type="button" data-pu-close aria-label="Close">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </header>
+
+            <div class="pu-summary">
+                <div><span>Local panel</span><strong id="pu-local-summary">Checking…</strong></div>
+                <div><span>Registered nodes</span><strong id="pu-node-count">—</strong></div>
+                <button class="pu-refresh" id="pu-refresh" type="button">
+                    <i class="fas fa-rotate"></i><span>Refresh</span>
+                </button>
+            </div>
+
+            <div class="pu-body">
+                <section class="pu-target pu-local" data-target-kind="local">
+                    <div class="pu-target-main">
+                        <span class="pu-target-icon"><i class="fas fa-server"></i></span>
+                        <div class="pu-target-copy">
+                            <div class="pu-target-title">
+                                <strong>Local panel</strong>
+                                <span class="pu-pill" id="pu-local-state">Checking</span>
+                            </div>
+                            <div class="pu-versions">
+                                <span>Current <b id="pu-local-current">—</b></span>
+                                <i class="fas fa-arrow-right"></i>
+                                <span>Latest <b id="pu-local-latest">—</b></span>
+                            </div>
+                        </div>
+                        <button class="pu-update-btn" id="pu-update-local" type="button" disabled>
+                            <i class="fas fa-download"></i><span>Update local</span>
+                        </button>
+                    </div>
+                    <div class="pu-progress" id="pu-local-progress" hidden>
+                        <div class="pu-progress-top">
+                            <span id="pu-local-stage">Preparing update…</span>
+                            <b id="pu-local-percent">0%</b>
+                        </div>
+                        <div class="pu-track"><i id="pu-local-bar"></i></div>
+                    </div>
+                </section>
+
+                <div class="pu-section-title">
+                    <div>
+                        <strong>Remote nodes</strong>
+                        <span>Each node updates independently and restarts its own agent.</span>
+                    </div>
+                    <button type="button" id="pu-update-all" class="pu-update-all" disabled>
+                        <i class="fas fa-layer-group"></i><span>Update all available</span>
+                    </button>
+                </div>
+
+                <div class="pu-node-list" id="pu-node-list">
+                    <div class="pu-empty"><i class="fas fa-spinner fa-spin"></i> Loading nodes…</div>
+                </div>
+            </div>
+
+            <footer class="pu-foot">
+                <div class="pu-safety">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>Every update creates a code backup, validates Python, installs dependencies, and reports rollback status.</span>
+                </div>
+                <button type="button" class="pu-log-toggle" id="pu-log-toggle">
+                    <i class="fas fa-terminal"></i><span>Update log</span>
+                </button>
+            </footer>
+
+            <div class="pu-log-drawer" id="pu-log-drawer" hidden>
+                <div class="pu-log-head">
+                    <strong><i class="fas fa-terminal"></i> Update activity</strong>
+                    <button type="button" id="pu-log-clear">Clear view</button>
+                </div>
+                <pre id="pu-log-output">No update activity yet.</pre>
+            </div>
+        </section>
+    </div>
+
+
+    {% block body_extras %}{% endblock %}
+
+    
+</body>
+
+</html>

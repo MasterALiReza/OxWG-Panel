@@ -1,0 +1,7 @@
+{
+  "panel_update_compile": true,
+  "successful_restart_detached": true,
+  "service_active_verified": true,
+  "completed_status_written_after_restart": true,
+  "rollback_detached_restart_preserved": true
+}

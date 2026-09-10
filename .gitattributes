@@ -1,0 +1,9 @@
+# Treat CRLF's carriage return as part of the line ending during whitespace
+# checks. Several legacy files are intentionally still CRLF; real trailing
+# spaces, blank-at-EOF, and space-before-tab problems remain reportable.
+* text=auto whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+static/css/subscriptions.css linguist-generated=true
+static/css/subscription_public.css linguist-generated=true
+static/css/users.css linguist-generated=true
+static/css/peer-workspace.css linguist-generated=true
+static/css/subscription_studio.css linguist-generated=true

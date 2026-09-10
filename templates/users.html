@@ -1,0 +1,813 @@
+{% extends 'base.html' %}
+{% block head_extras %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users-page.css') }}?v=1.4.4">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-dark.css') }}?v=1.4.4">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-workspace.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-interface-inline.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-modal-redesign.css') }}?v=1.4.4">
+{% endblock %}
+{% block responsive_extras %}
+{% endblock %}
+{% block content %}
+
+<section class="peer-page-hero" aria-label="Peers workspace">
+    <div class="peer-hero-icon"><i class="fas fa-users" aria-hidden="true"></i></div>
+    <div class="peer-hero-copy">
+        <h1 class="page-title">Peers</h1>
+        <p>Manage peers, configs, limits, timers, and QR in one place.</p>
+    </div>
+    <div class="peer-hero-live"><span></span><b>Live</b><small id="peer-hero-updated">Auto refresh</small></div>
+</section>
+
+<section class="peer-context-workspace" aria-label="Server and interface context">
+    <div class="peer-context-toolbar">
+        <div class="peer-context-server">
+            <div class="peer-context-key">
+                <i class="fas fa-server" aria-hidden="true"></i>
+                <span>Server</span>
+            </div>
+            <div class="peer-scope-picker">
+                <button type="button" id="peer-scope-trigger" class="peer-scope-trigger" aria-expanded="false">
+                    <span class="peer-scope-trigger-main">
+                        <i class="fas fa-server" aria-hidden="true"></i>
+                        <span id="peer-scope-trigger-label">Local (this server)</span>
+                    </span>
+                    <i class="fas fa-chevron-down peer-scope-trigger-chevron" aria-hidden="true"></i>
+                </button>
+                <div id="peer-scope-menu" class="peer-scope-menu" hidden></div>
+                <select id="peer-scope" class="peer-scope-native" aria-hidden="true" tabindex="-1">
+                    <option value="">Local (this server)</option>
+                </select>
+                <span id="scope-current" class="peer-scope-current peer-scope-current-hidden">Local server</span>
+            </div>
+        </div>
+
+        <div class="peer-context-separator" aria-hidden="true"></div>
+
+        <div class="peer-context-interface">
+            <div class="peer-interface-selector-row">
+                <div class="peer-context-key">
+                    <i class="fas fa-network-wired" aria-hidden="true"></i>
+                    <span>Interface</span>
+                </div>
+
+                <div class="iface-picker iface-status-picker" id="iface-picker">
+                    <button type="button"
+                            id="iface-status-trigger"
+                            class="iface-status-trigger"
+                            aria-haspopup="listbox"
+                            aria-expanded="false">
+                        <span class="iface-status-trigger-main">
+                            <span id="iface-status-dot" class="iface-dot" aria-hidden="true"></span>
+                            <span id="iface-status-label">Loading interfaces…</span>
+                        </span>
+                        <i class="fas fa-chevron-down iface-picker-chevron" aria-hidden="true"></i>
+                    </button>
+
+                    <div id="iface-status-menu"
+                         class="iface-status-menu"
+                         role="listbox"
+                         aria-label="WireGuard interfaces"
+                         hidden></div>
+
+                    <button type="button"
+                            id="iface-picker-trigger"
+                            class="iface-picker-compat-trigger"
+                            aria-expanded="false"
+                            tabindex="-1">
+                        <span id="iface-picker-label"></span>
+                    </button>
+                    <div id="iface-picker-menu"
+                         class="iface-picker-menu iface-picker-compat-menu"
+                         role="listbox"
+                         hidden></div>
+                </div>
+            </div>
+
+            <div id="iface-bar" class="iface-bar iface-bar-legacy" aria-hidden="true"></div>
+
+            <div id="iface-active-row" class="iface-active-row" aria-label="Selected interface state and actions">
+                <div id="active-iface-chip" class="iface-chip" aria-live="polite" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="{{ url_for('static', filename='js/users-scope.js', v='20260903-time-v6') }}"></script>
+
+<section class="peer-manage-section" aria-label="Manage peers">
+    <div class="peer-manage-mobile-head">
+        <span class="peer-manage-mobile-icon"><i class="fas fa-sliders" aria-hidden="true"></i></span>
+        <div>
+            <strong>Manage peers</strong>
+            <small>Create peers or manage the selected interface.</small>
+        </div>
+    </div>
+    <div class="peer-page-actions">
+        <button id="create-peer-btn" class="btn" type="button">
+            <i class="fas fa-plus"></i> Create Peer
+        </button>
+        <button id="bulk-btn" class="btn secondary" type="button">
+            <i class="fas fa-layer-group"></i> Bulk create
+        </button>
+        <button id="create-iface-btn" class="btn secondary" type="button">
+            <i class="fas fa-diagram-project"></i> New interface
+        </button>
+    </div>
+</section>
+
+<div id="iface-create-modal" class="modal peerx-form-modal" aria-hidden="true" aria-labelledby="iface-create-title" role="dialog">
+    <div class="modal-backdrop" tabindex="-1"></div>
+    <div class="modal-content iface-create-card peerx-dialog" role="document">
+        <button id="iface-create-close" class="modal-close" aria-label="Close" type="button">&times;</button>
+        <div class="peerx-modal-head">
+            <div class="peerx-modal-badge"><i class="fas fa-diagram-project"></i></div>
+            <div>
+                <h2 id="iface-create-title">New interface</h2>
+                <p>Creates a WireGuard interface on the selected scope: local server or selected node.</p>
+            </div>
+        </div>
+        <form id="iface-create-form" autocomplete="off" class="peerx-smart-form">
+            <div class="iface-create-grid">
+                <div class="form-group">
+                    <label for="iface-new-name">Interface name</label>
+                    <input id="iface-new-name" name="name" class="input" placeholder="wg1" required pattern="[A-Za-z0-9_.\-]{1,32}">
+                    <div class="small-text">Use a unique name such as <code>wg1</code> or <code>vpn1</code>.</div>
+                </div>
+                <div class="form-group">
+                    <label for="iface-new-address">Server address</label>
+                    <input id="iface-new-address" name="address" class="input" placeholder="10.77.0.1/24" required>
+                    <div class="small-text">This becomes the server address for this interface.</div>
+                </div>
+                <div class="form-group">
+                    <label for="iface-new-port">Listen port</label>
+                    <input id="iface-new-port" name="listen_port" class="input" type="number" min="1" max="65535" placeholder="51821" required>
+                </div>
+                <div class="form-group">
+                    <label for="iface-new-dns">Client DNS</label>
+                    <input id="iface-new-dns" name="dns" class="input" placeholder="1.1.1.1, 1.0.0.1">
+                    <div class="small-text">
+                        Used as the default DNS in generated client configs.
+                        It does not change the server DNS or write a DNS directive to the server WireGuard interface.
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="iface-new-mtu">MTU</label>
+                    <input id="iface-new-mtu" name="mtu" class="input" type="number" min="576" max="9000" placeholder="optional">
+                </div>
+                <div class="form-group wide iface-auto-up-row">
+                    <label class="iface-auto-up iface-auto-up-toggle compact-inline" for="iface-new-auto-up">
+                        <input id="iface-new-auto-up" name="auto_up" type="checkbox" checked>
+                        <span class="iface-auto-up-switch" aria-hidden="true"></span>
+                        <span class="iface-auto-up-copy"><b>Start after creation</b><small>Bring the new interface online immediately.</small></span>
+                    </label>
+                </div>
+            </div>
+            <div class="iface-create-actions modal-footer peerx-form-actions">
+                <button type="button" class="btn secondary" id="iface-create-cancel">Cancel</button>
+                <button type="submit" class="btn"><i class="fas fa-save"></i> Create interface</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="spinner-peers" class="spinner overlay" style="display:none"></div>
+<div class="peers-container"></div>
+<div id="peer-modal" class="modal peerx-form-modal" aria-hidden="true" aria-labelledby="peer-modal-title" role="dialog">
+    <div class="modal-backdrop" tabindex="-1"></div>
+    <div class="modal-content peerx-dialog" role="document">
+        <button id="modal-close" class="modal-close" aria-label="Close" type="button">&times;</button>
+        <div class="peerx-modal-head">
+            <div class="peerx-modal-badge"><i class="fas fa-user-plus"></i></div>
+            <div>
+                <h2 id="peer-modal-title">Create peer</h2>
+                <p>Set the name, WireGuard defaults, limits, and contact details in one clean form.</p>
+            </div>
+        </div>
+
+        <form id="create-peer-form" method="post" autocomplete="off" class="peerx-smart-form">
+            {{ form.hidden_tag() }}
+            <input type="hidden" id="create-iface-id" name="iface">
+
+            
+            <div class="peerx-column peerx-left-col">
+            <section class="peerx-form-card peerx-profile-card">
+                <div class="peerx-section-head">
+                    <span><i class="fas fa-sliders"></i></span>
+                    <div><b>Profile defaults</b><small>Apply or save reusable peer defaults.</small></div>
+                </div>
+                <div class="peer-toolbar-compact peerx-profile-row">
+                    <label class="peerx-switch" title="Apply saved defaults to this form">
+                        <input id="use-profile-toggle" type="checkbox">
+                        <span></span>
+                        <b><i class="fas fa-user-cog"></i> Use profile</b>
+                    </label>
+                    <div class="profile-picker" style="position:relative;">
+                        <i class="fas fa-layer-group" aria-hidden="true"></i>
+                        <select id="profile-select" title="Choose a saved profile"><option value="Default" selected>Default ★</option></select>
+                        <button id="save-profile-btn" type="button" class="icon-btn" title="Save to this profile"><i class="fas fa-save"></i></button>
+                        <button id="profile-menu-btn" type="button" class="icon-btn" title="More actions" aria-haspopup="true" aria-expanded="false"><i class="fas fa-ellipsis-vertical"></i></button>
+                        <div id="profile-menu" class="dropdown-panel peerx-profile-menu">
+                            <button type="button" data-act="new" class="menu-item"><i class="fas fa-plus"></i> New profile</button>
+                            <button type="button" data-act="saveas" class="menu-item"><i class="fas fa-copy"></i> Save as…</button>
+                            <div class="menu-sep"></div>
+                            <button type="button" data-act="activate" class="menu-item"><i class="fas fa-star"></i> Set active</button>
+                            <button type="button" data-act="rename" class="menu-item"><i class="fas fa-i-cursor"></i> Rename</button>
+                            <button type="button" data-act="delete" class="menu-item danger"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+<section class="peerx-form-card">
+                <div class="peerx-section-head"><span><i class="fas fa-id-card"></i></span><div><b>Identity</b><small>Name and client address.</small></div></div>
+                <div class="peerx-form-grid two">
+                    <label class="form-group">{{ form.name.label }} {{ form.name(class="input", placeholder="e.g. oxwg") }}</label>
+                    <label class="form-group peer-ip-address-group"><span>IP Address</span><select id="create-address-select" class="input peerx-ip-select"></select><small class="hint peer-ip-address-hint">Choose from the free addresses on the selected interface.</small></label>
+                    <input type="hidden" id="create-address" name="address">
+                </div>
+            </section>
+<section class="peerx-form-card">
+                <div class="peerx-section-head"><span><i class="fas fa-gauge-high"></i></span><div><b>Limits</b><small>Traffic, timer, first-use, and unlimited rules.</small></div></div>
+                <div class="peerx-form-grid limits">
+                    <label class="form-group">{{ form.data_limit.label }} {{ form.data_limit(class="input", id="peer-data-limit-value", placeholder="e.g. 10") }}</label>
+                    <label class="form-group">{{ form.limit_unit.label }} {{ form.limit_unit(class="input", id="peer-data-limit-unit") }}</label>
+                    <label class="form-group"><span>Days</span>{{ form.time_limit_days(class="input", id="time_limit_days", min="0", placeholder="0") }}</label>
+                    <label class="form-group"><span>Hours</span>{{ form.time_limit_hours(class="input", id="time_limit_hours", min="0", max="23", placeholder="0–23") }}</label>
+                    <div class="peerx-limit-switch-row">
+                    <label class="peerx-switch">{{ form.start_on_first_use(id="peer-start-first-use") }}<span></span><b>Start timer on first connection</b></label>
+                    <label class="peerx-switch">{{ form.unlimited(id="peer-unlimited") }}<span></span><b>Unlimited</b></label>
+                    </div>
+                </div>
+            </section>
+<section class="peerx-form-card peerx-contact-side-card">
+                <div class="peerx-section-head"><span><i class="fas fa-address-book"></i></span><div><b>Contact</b><small>Optional details for search and management.</small></div></div>
+                <div class="peerx-form-grid two">
+                    <label class="form-group">{{ form.phone_number.label }} {{ form.phone_number(class="input", placeholder="+31...") }}</label>
+                    <label class="form-group">{{ form.telegram_id.label }} {{ form.telegram_id(class="input", placeholder="@username or ID") }}</label>
+                </div>
+            </section>
+            </div>
+            <div class="peerx-column peerx-right-col">
+<section class="peerx-form-card peerx-wireguard-card">
+                <div class="peerx-section-head peerx-section-head-endpoint">
+                    <div class="peerx-section-head-main">
+                        <span><i class="fas fa-network-wired"></i></span>
+                        <div><b>WireGuard config</b><small>Routing, endpoints, DNS, keepalive, and MTU.</small></div>
+                    </div>
+                    <details class="peerx-endpoint-help peerx-inline-help-endpoint">
+                        <summary aria-label="Endpoint information" title="Endpoint information"><span class="peerx-help-pulse" aria-hidden="true"></span><i class="fas fa-circle-info" aria-hidden="true"></i></summary>
+                        <div class="peerx-endpoint-help-pop"><b>Endpoint information</b><p><strong>Server endpoint</strong> is written into the exported client config. <strong>Saved endpoint</strong> is a reusable override. <strong>Fixed client endpoint</strong> is only for a peer with a stable reachable IP or domain; leave it empty for roaming clients.</p></div>
+                    </details>
+                </div>
+                <div class="peerx-form-grid two peerx-wireguard-grid">
+                    <label class="form-group wide peerx-endpoint-field">
+                        <span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Server endpoint</span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span>
+                        {{ form.endpoint(class="input", id="peer-endpoint", placeholder="Leave empty to use interface default") }}
+                        <span class="endpoint-effective" id="peer-endpoint-effective" data-state="loading"><i class="fas fa-link" aria-hidden="true"></i><span>Interface default:</span><b id="peer-endpoint-effective-value">Detecting…</b></span>
+                    </label>
+                    <label class="form-group wide peerx-fixed-endpoint-field">
+                        <span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Fixed client endpoint <em class="field-optional">Optional</em></span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span>
+                        {{ form.peer_endpoint(class="input", id="peer-fixed-endpoint", placeholder="Leave empty for roaming clients") }}
+                        <small class="field-hint">Only for a client with a stable reachable IP or domain.</small>
+                    </label>
+                    <div class="form-group wide auto-network-field">{{ form.allowed_ips.label }} {{ form.allowed_ips(class="input", id="peer-allowed-ips", value=(form.allowed_ips.data or "0.0.0.0/0, ::/0"), placeholder="0.0.0.0/0, ::/0") }}<label class="auto-network-toggle" for="peer-include-internal-network"><input type="checkbox" id="peer-include-internal-network"><span class="auto-network-switch" aria-hidden="true"></span><span class="auto-network-copy"><b>Include private networks</b><small>Append detected networks; disable to remove only those added automatically.</small></span></label><input type="hidden" id="peer-internal-network" value=""></div>
+                    <label class="form-group wide">{{ form.dns.label }} {{ form.dns(class="input", id="peer-dns", placeholder="1.1.1.1, 1.0.0.1") }}</label>
+                    <div class="peerx-inline-wireguard wide">
+                        <label class="form-group">{{ form.persistent_keepalive.label }} {{ form.persistent_keepalive(class="input", id="peer-keepalive", placeholder="25") }}</label>
+                        <label class="form-group">{{ form.mtu.label }} {{ form.mtu(class="input", id="peer-mtu", placeholder="Interface/profile default") }}</label>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-footer peerx-form-actions">
+                <button type="button" class="btn secondary" id="create-cancel">Cancel</button>
+                <button type="submit" class="btn"><i class="fas fa-save"></i> Save peer</button>
+            </footer>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="edit-peer-modal" class="modal peerx-form-modal" aria-hidden="true" aria-labelledby="edit-peer-title" role="dialog">
+    <div class="modal-backdrop" tabindex="-1"></div>
+    <div class="modal-content peerx-dialog" role="document">
+        <button id="edit-close" class="modal-close" aria-label="Close" type="button">&times;</button>
+        <div class="peerx-modal-head">
+            <div class="peerx-modal-badge"><i class="fas fa-pen-to-square"></i></div>
+            <div>
+                <h2 id="edit-peer-title">Edit peer</h2>
+                <p>Update only this peer. Interface and attachment context stay unchanged.</p>
+            </div>
+        </div>
+
+        <form id="edit-peer-form" autocomplete="off" class="peerx-smart-form">
+            
+            <div class="peerx-column peerx-left-col">
+<section class="peerx-form-card">
+                <div class="peerx-section-head"><span><i class="fas fa-id-card"></i></span><div><b>Identity</b><small>Basic peer information.</small></div></div>
+                <div class="peerx-form-grid two">
+                    <label class="form-group"><span>Name</span><input name="name" class="input" placeholder="Friendly name"></label>
+                    <label class="form-group"><span>IP Address</span><select name="address" class="input"></select></label>
+                </div>
+            </section>
+<section class="peerx-form-card">
+                <div class="peerx-section-head"><span><i class="fas fa-gauge-high"></i></span><div><b>Limits</b><small>Traffic and timer rules.</small></div></div>
+                <div class="peerx-form-grid limits">
+                    <label class="form-group"><span>Traffic Limit</span><input name="data_limit_value" class="input" placeholder="e.g. 10"></label>
+                    <label class="form-group"><span>Unit</span><select name="data_limit_unit" class="input"><option value="Mi">MiB</option><option value="Gi">GiB</option></select></label>
+                    <label class="form-group"><span>Days</span><input name="time_limit_days" type="number" class="input" min="0" placeholder="0"></label>
+                    <label class="form-group"><span>Hours</span><input name="time_limit_hours" type="number" class="input" min="0" max="23" placeholder="0–23"></label>
+                    <div class="peerx-limit-switch-row">
+                        <label class="peerx-switch">
+                            <input type="checkbox" name="start_on_first_use">
+                            <span></span>
+                            <b>Start timer on first connection</b>
+                        </label>
+                    
+                        <label class="peerx-switch">
+                            <input type="checkbox" name="unlimited">
+                            <span></span>
+                            <b>Unlimited</b>
+                        </label>
+                    </div>
+                </div>
+            </section>
+<section class="peerx-form-card peerx-contact-side-card">
+                <div class="peerx-section-head"><span><i class="fas fa-address-book"></i></span><div><b>Contact</b><small>Optional phone and Telegram data.</small></div></div>
+                <div class="peerx-form-grid two">
+                    <label class="form-group"><span>Phone Number</span><input name="phone_number" class="input" placeholder="+31..."></label>
+                    <label class="form-group"><span>Telegram ID</span><input name="telegram_id" class="input" placeholder="@username or ID"></label>
+                </div>
+            </section>
+            </div>
+            <div class="peerx-column peerx-right-col">
+<section class="peerx-form-card peerx-wireguard-card">
+                <div class="peerx-section-head peerx-section-head-endpoint">
+                    <div class="peerx-section-head-main">
+                        <span><i class="fas fa-network-wired"></i></span>
+                        <div><b>WireGuard config</b><small>Routing and endpoint settings.</small></div>
+                    </div>
+                    <details class="peerx-endpoint-help peerx-inline-help-endpoint">
+                        <summary aria-label="Endpoint information" title="Endpoint information"><span class="peerx-help-pulse" aria-hidden="true"></span><i class="fas fa-circle-info" aria-hidden="true"></i></summary>
+                        <div class="peerx-endpoint-help-pop"><b>Endpoint information</b><p><strong>Server endpoint</strong> is written into the client config. <strong>Fixed client endpoint</strong> is only for a stable reachable client IP or domain.</p></div>
+                    </details>
+                </div>
+                <div class="peerx-form-grid two peerx-wireguard-grid">
+                    <label class="form-group wide peerx-endpoint-field">
+                        <span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Server endpoint</span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span>
+                        <input name="endpoint" class="input" placeholder="Leave empty to use interface default">
+                        <span class="endpoint-effective" id="edit-endpoint-effective" data-state="loading"><i class="fas fa-link" aria-hidden="true"></i><span>Interface default:</span><b id="edit-endpoint-effective-value">Detecting…</b></span>
+                    </label>
+                    <label class="form-group wide peerx-fixed-endpoint-field"><span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Fixed client endpoint <em class="field-optional">Optional</em></span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span><input name="peer_endpoint" class="input" placeholder="Leave empty for roaming clients"><small class="field-hint">Only for a client with a stable reachable IP or domain.</small></label>
+                    <label class="form-group wide"><input id="edit-allowed-ips" name="allowed_ips" class="input" placeholder="0.0.0.0/0, ::/0"></label>
+                    <input type="hidden" id="edit-internal-network" value="">
+                    <label class="peerx-switch peerx-internal-switch wide" for="edit-include-internal-network"><input type="checkbox" id="edit-include-internal-network" name="include_internal_network" value="1"><span aria-hidden="true"></span><b>Include local networks <small>Add detected private networks without changing existing Allowed IPs.</small></b></label>
+                    <label class="form-group wide"><span>DNS</span><input name="dns" class="input" placeholder="1.1.1.1, 8.8.8.8"></label>
+                    <div class="peerx-inline-wireguard wide">
+                        <label class="form-group"><span>Keepalive (s)</span><input name="persistent_keepalive" type="number" class="input" placeholder="25"></label>
+                        <label class="form-group"><span>MTU</span><input name="mtu" type="number" class="input" placeholder="Interface/profile default"></label>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-footer peerx-form-actions">
+                <button type="button" class="btn secondary" id="edit-cancel">Cancel</button>
+                <button type="submit" class="btn"><i class="fas fa-save"></i> Save changes</button>
+            </footer>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="bulk-modal" class="modal peerx-form-modal" aria-hidden="true" aria-labelledby="bulk-title" role="dialog">
+    <div class="modal-backdrop" tabindex="-1"></div>
+    <div class="modal-content peerx-dialog peerx-bulk-dialog" role="document">
+        <button id="bulk-close" class="modal-close" aria-label="Close" type="button">&times;</button>
+        <div class="peerx-modal-head">
+            <div class="peerx-modal-badge"><i class="fas fa-layer-group"></i></div>
+            <div>
+                <h2 id="bulk-title">Bulk create</h2>
+                <p>Create multiple peers with shared WireGuard defaults, limits, and optional contact lists.</p>
+            </div>
+        </div>
+
+        <form id="bulk-form" autocomplete="off" novalidate class="peerx-smart-form">
+            <div class="form-group" style="display:none;"><label for="bulk-iface">Interface</label><select id="bulk-iface" name="iface" class="input"></select></div>
+
+            
+            <div class="peerx-column peerx-left-col">
+<section class="peerx-form-card peerx-bulk-count-card">
+                <div class="peerx-section-head"><span><i class="fas fa-list-ol"></i></span><div><b>Batch</b><small>Choose count and naming pattern.</small></div></div>
+                <div class="peerx-form-grid two">
+                    <label class="form-group"><span>How many peers?</span><input id="bulk-count" name="count" type="number" min="1" class="input" placeholder="e.g. 5" required><small class="hint">Available IPs: <strong id="bulk-available-ips">–</strong></small></label>
+                    <label class="form-group"><span>Name prefix</span><input id="bulk-prefix" name="prefix" class="input" placeholder="e.g. b" value="b"></label>
+                </div>
+            </section>
+<section class="peerx-form-card">
+                <div class="peerx-section-head"><span><i class="fas fa-gauge-high"></i></span><div><b>Limits</b><small>Traffic and timer rules for the batch.</small></div></div>
+                <div class="peerx-form-grid limits">
+                    <label class="form-group"><span>Traffic Limit</span><input id="bulk-data_limit_value" name="data_limit_value" class="input" placeholder="e.g. 10"></label>
+                    <label class="form-group"><span>Unit</span><select id="bulk-data_limit_unit" name="data_limit_unit" class="input"><option value="Mi">MiB</option><option value="Gi" selected>GiB</option></select></label>
+                    <label class="form-group"><span>Days</span><input id="bulk-time-days" name="time_limit_days" type="number" class="input" min="0" placeholder="0"></label>
+                    <label class="form-group"><span>Hours</span><input id="bulk-time-hours" name="time_limit_hours" type="number" class="input" min="0" max="23" placeholder="0–23"></label>
+                    <div class="peerx-limit-switch-row">
+                        <label class="peerx-switch">
+                            <input id="bulk-start-first" type="checkbox" name="start_on_first_use">
+                            <span></span>
+                            <b>Start timer on first connection</b>
+                        </label>
+                    
+                        <label class="peerx-switch">
+                            <input id="bulk-unlimited" type="checkbox" name="unlimited">
+                            <span></span>
+                            <b>Unlimited</b>
+                        </label>
+                    </div>
+                </div>
+            </section>
+<section class="peerx-form-card peerx-contact-side-card">
+                <div class="peerx-section-head"><span><i class="fas fa-address-book"></i></span><div><b>Contact lists</b><small>Optional. One item per line or comma-separated.</small></div></div>
+                <div class="peerx-form-grid two">
+                    <label class="form-group"><span>Phone numbers</span><textarea id="bulk-phone_numbers" name="phone_numbers" rows="3" class="input" placeholder="+15551234567, +15557654321"></textarea></label>
+                    <label class="form-group"><span>Telegram IDs</span><textarea id="bulk-telegram_ids" name="telegram_ids" rows="3" class="input" placeholder="@alice, @bob"></textarea></label>
+                </div>
+            </section>
+            </div>
+            <div class="peerx-column peerx-right-col">
+<section class="peerx-form-card peerx-wireguard-card">
+                <div class="peerx-section-head peerx-section-head-endpoint">
+                    <div class="peerx-section-head-main">
+                        <span><i class="fas fa-network-wired"></i></span>
+                        <div><b>WireGuard config</b><small>Shared routing and endpoint settings.</small></div>
+                    </div>
+                    <details class="peerx-endpoint-help peerx-inline-help-endpoint">
+                        <summary aria-label="Endpoint information" title="Endpoint information"><span class="peerx-help-pulse" aria-hidden="true"></span><i class="fas fa-circle-info" aria-hidden="true"></i></summary>
+                        <div class="peerx-endpoint-help-pop"><b>Endpoint information</b><p>Server endpoint is written into each exported client config. Fixed client endpoint should normally remain empty in bulk creation.</p></div>
+                    </details>
+                </div>
+                <div class="peerx-form-grid two peerx-wireguard-grid">
+                    <label class="form-group wide peerx-endpoint-field"><span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Server endpoint</span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span><input id="bulk-endpoint" name="endpoint" class="input" placeholder="Leave empty to use interface default"><span class="endpoint-effective" id="bulk-endpoint-effective" data-state="loading"><i class="fas fa-link" aria-hidden="true"></i><span>Interface default:</span><b id="bulk-endpoint-effective-value">Detecting…</b></span></label>
+                    <label class="form-group wide peerx-fixed-endpoint-field"><span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Fixed client endpoint <em class="field-optional">Optional</em></span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span><input id="bulk-fixed-endpoint" name="peer_endpoint" class="input" placeholder="Leave empty for roaming clients"><small class="field-hint">Usually leave empty for a batch of roaming clients.</small></label>
+                    <div class="form-group wide auto-network-field"><label for="bulk-allowed-ips">Allowed IPs</label><input id="bulk-allowed-ips" name="allowed_ips" class="input" value="0.0.0.0/0, ::/0" placeholder="0.0.0.0/0, ::/0"><label class="auto-network-toggle" for="bulk-include-internal-network"><input type="checkbox" id="bulk-include-internal-network"><span class="auto-network-switch" aria-hidden="true"></span><span class="auto-network-copy"><b>Include private networks</b><small>Append detected networks; disable to remove only those added automatically.</small></span></label><input type="hidden" id="bulk-internal-network" value=""></div>
+                    <label class="form-group wide"><span>DNS</span><input id="bulk-dns" name="dns" class="input" placeholder="1.1.1.1, 8.8.8.8"></label>
+                    <div class="peerx-inline-wireguard wide"><label class="form-group"><span>Keepalive (s)</span><input id="bulk-keepalive" name="persistent_keepalive" type="number" class="input" placeholder="e.g. 25"></label><label class="form-group"><span>MTU</span><input id="bulk-mtu" name="mtu" type="number" class="input" placeholder="Interface/profile default"></label></div>
+                </div>
+            </section>
+            <footer class="modal-footer peerx-form-actions">
+                <button type="button" id="bulk-close-btn" class="btn secondary">Cancel</button>
+                <button type="submit" class="btn"><i class="fas fa-layer-group"></i> Create batch</button>
+            </footer>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/ox-dropdown.js', v='1.0.0') }}"></script>
+<script src="{{ url_for('static', filename='js/users.js', v='20260910-oxdropdown-v1') }}"></script>
+<script src="{{ url_for('static', filename='js/users-more-info.js', v='20260903-time-v6') }}"></script>
+<script src="{{ url_for('static', filename='js/peer-ui-stability.js') }}"></script>
+<script>
+(() => {
+  const picker = document.getElementById('iface-picker');
+  const trigger = document.getElementById('iface-status-trigger');
+  const menu = document.getElementById('iface-status-menu');
+  const label = document.getElementById('iface-status-label');
+  const visibleDot = document.getElementById('iface-status-dot');
+
+  const legacy = document.getElementById('iface-bar');
+  const compatMenu = document.getElementById('iface-picker-menu');
+
+  if (!picker || !trigger || !menu || !label || !visibleDot) return;
+
+  let renderScheduled = false;
+
+  const interfaces = () =>
+    Array.isArray(window.IFACES)
+      ? window.IFACES
+      : [];
+
+  const ifaceId = iface =>
+    String(iface?.id ?? iface?.name ?? '');
+
+  const ifaceName = iface =>
+    String(iface?.name ?? iface?.id ?? 'Interface');
+
+  const stateClass = iface =>
+    iface?.is_up === true
+      ? 'up'
+      : iface?.is_up === false
+        ? 'down'
+        : '';
+
+  const stateText = iface =>
+    iface?.is_up === true
+      ? 'Online'
+      : iface?.is_up === false
+        ? 'Offline'
+        : 'Unknown';
+
+  const currentSelectedId = () => {
+    const compatOptions = compatMenu
+      ? [...compatMenu.querySelectorAll('.iface-picker-option')]
+      : [];
+
+    const activeCompat = compatOptions.find(
+      option =>
+        option.getAttribute('aria-selected') === 'true' ||
+        option.classList.contains('is-active')
+    );
+
+    if (activeCompat) {
+      const index = compatOptions.indexOf(activeCompat);
+      const list = interfaces();
+
+      if (index >= 0 && list[index]) {
+        return ifaceId(list[index]);
+      }
+    }
+
+    if (legacy) {
+      const buttons = [...legacy.querySelectorAll('.iface-btn')];
+      const activeLegacy = buttons.find(
+        btn =>
+          btn.getAttribute('aria-pressed') === 'true' ||
+          btn.classList.contains('is-active')
+      );
+
+      if (activeLegacy) {
+        const index = buttons.indexOf(activeLegacy);
+        const list = interfaces();
+
+        if (index >= 0 && list[index]) {
+          return ifaceId(list[index]);
+        }
+      }
+    }
+
+    const currentLabel =
+      document.getElementById('iface-picker-label')
+        ?.textContent
+        ?.trim();
+
+    const byName = interfaces().find(
+      iface => ifaceName(iface) === currentLabel
+    );
+
+    return byName
+      ? ifaceId(byName)
+      : (interfaces()[0] ? ifaceId(interfaces()[0]) : '');
+  };
+
+  const closeMenu = () => {
+    trigger.setAttribute('aria-expanded', 'false');
+    menu.hidden = true;
+    picker.classList.remove('is-open');
+  };
+
+  const openMenu = () => {
+    if (trigger.disabled) return;
+    render();
+    trigger.setAttribute('aria-expanded', 'true');
+    menu.hidden = false;
+    picker.classList.add('is-open');
+  };
+
+  const activateByIndex = index => {
+    const compatOptions = compatMenu
+      ? [...compatMenu.querySelectorAll('.iface-picker-option')]
+      : [];
+
+    if (compatOptions[index]) {
+      compatOptions[index].click();
+      return true;
+    }
+
+    if (legacy) {
+      const buttons = [...legacy.querySelectorAll('.iface-btn')];
+
+      if (buttons[index]) {
+        buttons[index].click();
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  const render = () => {
+    renderScheduled = false;
+
+    const list = interfaces();
+    menu.replaceChildren();
+
+    if (!list.length) {
+      trigger.disabled = true;
+      label.textContent = 'Loading interfaces…';
+      visibleDot.className = 'iface-dot';
+      closeMenu();
+      return;
+    }
+
+    trigger.disabled = false;
+
+    const selectedId = currentSelectedId();
+    const selected =
+      list.find(iface => ifaceId(iface) === selectedId) ||
+      list[0];
+
+    label.textContent = ifaceName(selected);
+    visibleDot.className =
+      ['iface-dot', stateClass(selected)]
+        .filter(Boolean)
+        .join(' ');
+
+    const fragment = document.createDocumentFragment();
+
+    list.forEach((iface, index) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'iface-status-option';
+      option.setAttribute('role', 'option');
+
+      const selectedNow =
+        ifaceId(iface) === ifaceId(selected);
+
+      option.classList.toggle('is-active', selectedNow);
+      option.setAttribute(
+        'aria-selected',
+        selectedNow ? 'true' : 'false'
+      );
+
+      const main = document.createElement('span');
+      main.className = 'iface-status-option-main';
+
+      const dot = document.createElement('span');
+      dot.className =
+        ['iface-dot', stateClass(iface)]
+          .filter(Boolean)
+          .join(' ');
+      dot.setAttribute('aria-hidden', 'true');
+
+      const copy = document.createElement('span');
+      copy.className = 'iface-status-copy';
+
+      const top = document.createElement('span');
+      top.className = 'iface-status-top';
+
+      const name = document.createElement('strong');
+      name.textContent = ifaceName(iface);
+
+      const state = document.createElement('span');
+      state.className =
+        ['iface-status-badge', stateClass(iface)]
+          .filter(Boolean)
+          .join(' ');
+      state.textContent = stateText(iface);
+
+      top.append(name, state);
+
+      const meta = document.createElement('small');
+      const details = [];
+
+      if (iface.address) {
+        details.push(String(iface.address));
+      }
+
+      if (iface.listen_port) {
+        details.push(`UDP ${iface.listen_port}`);
+      }
+
+      meta.textContent = details.length
+        ? details.join(' • ')
+        : 'WireGuard interface';
+
+      copy.append(top, meta);
+      main.append(dot, copy);
+      option.appendChild(main);
+
+      if (selectedNow) {
+        const check = document.createElement('i');
+        check.className = 'fas fa-check iface-status-check';
+        check.setAttribute('aria-hidden', 'true');
+        option.appendChild(check);
+      }
+
+      option.addEventListener('click', () => {
+        closeMenu();
+
+        if (activateByIndex(index)) {
+          requestAnimationFrame(scheduleRender);
+        }
+      });
+
+      fragment.appendChild(option);
+    });
+
+    menu.appendChild(fragment);
+  };
+
+  const scheduleRender = () => {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(render);
+  };
+
+  trigger.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    trigger.getAttribute('aria-expanded') === 'true'
+      ? closeMenu()
+      : openMenu();
+  });
+
+  document.addEventListener('click', event => {
+    if (!picker.contains(event.target)) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      closeMenu();
+    }
+  });
+
+  if (legacy) {
+    new MutationObserver(scheduleRender).observe(
+      legacy,
+      {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'aria-pressed']
+      }
+    );
+  }
+
+  if (compatMenu) {
+    new MutationObserver(scheduleRender).observe(
+      compatMenu,
+      {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'aria-selected']
+      }
+    );
+  }
+
+  let attempts = 0;
+
+  const startup = setInterval(
+    () => {
+      scheduleRender();
+      attempts += 1;
+
+      if (interfaces().length || attempts >= 50) {
+        clearInterval(startup);
+      }
+    },
+    100
+  );
+
+  scheduleRender();
+})();
+</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-mobile.css') }}?v=1.4.4">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-modal-redesign.css') }}?v=1.4.4">
+<script>
+
+(() => {
+  const mq = window.matchMedia('(max-width: 760px)');
+  const ids = ['peer-modal', 'edit-peer-modal', 'bulk-modal', 'iface-create-modal'];
+  const homes = new Map();
+
+  function syncPeerModalPortal() {
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      if (!homes.has(el)) {
+        homes.set(el, { parent: el.parentNode, next: el.nextSibling });
+      }
+
+      const home = homes.get(el);
+      if (mq.matches) {
+        if (el.parentNode !== document.body) document.body.appendChild(el);
+      } else if (home && el.parentNode !== home.parent) {
+        if (home.next && home.next.parentNode === home.parent) home.parent.insertBefore(el, home.next);
+        else home.parent.appendChild(el);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', syncPeerModalPortal, { once: true });
+  } else {
+    syncPeerModalPortal();
+  }
+  if (mq.addEventListener) mq.addEventListener('change', syncPeerModalPortal);
+  else mq.addListener(syncPeerModalPortal);
+})();
+</script>
+{% endblock %}

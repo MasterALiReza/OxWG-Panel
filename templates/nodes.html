@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% block head_extras %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nodes.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nodes-dark.css') }}">
+{% endblock %}
+{% block responsive_extras %}
+{% endblock %}
+
+{% block content %}
+
+<div class="nodes-page np-pro">
+  <section class="np-hero">
+    <div class="np-title-wrap">
+      <div class="np-icon"><i class="fas fa-server"></i></div>
+      <div>
+        <h1 class="np-title">Nodes</h1>
+        <p class="np-subtitle">Monitor remote WireGuard nodes, health, interfaces, peers, and actions from one compact workspace.</p>
+      </div>
+    </div>
+
+    <div class="np-actions">
+      <button id="nodes-refresh" class="btn secondary np-refresh" type="button">
+        <i class="fas fa-rotate-right"></i>
+        <span>Refresh</span>
+      </button>
+      <button id="open-node-modal" class="btn np-primary" type="button">
+        <i class="fas fa-plus"></i>
+        <span>New node</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="np-stats" aria-label="Node summary">
+    <article class="np-stat accent">
+      <div class="np-stat-icon"><i class="fas fa-server"></i></div>
+      <div>
+        <div class="np-stat-label">Nodes</div>
+        <div class="np-stat-value" id="nodes-total">0</div>
+        <div class="np-stat-note">registered agents</div>
+      </div>
+    </article>
+    <article class="np-stat">
+      <div class="np-stat-icon ok"><i class="fas fa-signal"></i></div>
+      <div>
+        <div class="np-stat-label">Online</div>
+        <div class="np-stat-value" id="nodes-online">0</div>
+        <div class="np-stat-note">healthy now</div>
+      </div>
+    </article>
+    <article class="np-stat">
+      <div class="np-stat-icon blue"><i class="fas fa-toggle-on"></i></div>
+      <div>
+        <div class="np-stat-label">Enabled</div>
+        <div class="np-stat-value" id="nodes-enabled">0</div>
+        <div class="np-stat-note">active in panel</div>
+      </div>
+    </article>
+    <article class="np-stat">
+      <div class="np-stat-icon purple"><i class="fas fa-users"></i></div>
+      <div>
+        <div class="np-stat-label">Peers</div>
+        <div class="np-stat-value" id="nodes-peers">0</div>
+        <div class="np-stat-note">across nodes</div>
+      </div>
+    </article>
+    <article class="np-stat np-status-card">
+      <div class="np-status-dot idle" id="nodes-sync-dot"></div>
+      <div>
+        <div class="np-stat-label">Sync</div>
+        <div class="np-stat-note strong" id="nodes-sync-text">Waiting</div>
+      </div>
+    </article>
+  </section>
+
+  <section class="np-panel">
+    <div class="np-panel-head">
+      <div>
+        <h2><i class="fas fa-diagram-project"></i> Node inventory</h2>
+        <p>Search, filter, and manage remote agents without opening each node.</p>
+      </div>
+      <div class="np-legend" aria-label="Legend">
+        <span><i class="dot online"></i>Online</span>
+        <span><i class="dot offline"></i>Offline</span>
+        <span><i class="dot disabled"></i>Disabled</span>
+      </div>
+    </div>
+
+    <div class="np-toolbar" id="nodes-toolbar">
+      <div class="np-search">
+        <i class="fas fa-search"></i>
+        <input id="nodes-search" class="input" placeholder="Search node name, endpoint, ID, or status">
+      </div>
+      <div class="np-filters" aria-label="Node filters">
+        <button type="button" class="active" data-node-filter="all">All</button>
+        <button type="button" data-node-filter="online">Online</button>
+        <button type="button" data-node-filter="offline">Offline</button>
+        <button type="button" data-node-filter="enabled">Enabled</button>
+        <button type="button" data-node-filter="disabled">Disabled</button>
+        <button type="button" data-node-filter="with-peers">With peers</button>
+      </div>
+    </div>
+
+    <div class="np-table-wrap">
+      <table class="nodes-table np-table">
+        <thead>
+          <tr>
+            <th>Node</th>
+            <th>Endpoint</th>
+            <th>Health</th>
+            <th>Peers</th>
+            <th>Interfaces</th>
+            <th>Last seen</th>
+            <th class="np-actions-th">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="nodes-body"></tbody>
+      </table>
+
+      <div id="nodes-empty" class="np-empty" style="display:none">
+        <div class="np-empty-icon"><i class="fas fa-diagram-project"></i></div>
+        <h3>No nodes found</h3>
+        <p>Add your first remote node, or clear the search and filters.</p>
+        <button id="empty-add-node" class="btn" type="button"><i class="fas fa-plus"></i> Add node</button>
+      </div>
+    </div>
+
+    <div id="nodes-pagination" class="np-pagination" hidden></div>
+  </section>
+</div>
+
+<div id="node-mini-modal" class="modal nodes-modal">
+  <div class="modal-backdrop" data-close="1"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="node-mini-title">
+    <div class="modal-header">
+      <div>
+        <h2 id="node-mini-title" class="modal-title"><i class="fas fa-circle-plus"></i> Add node</h2>
+        <p class="modal-subtitle">Connect a remote WireGuard node agent.</p>
+      </div>
+      <button class="icon-btn" id="node-mini-close" aria-label="Close" type="button"><i class="fas fa-times"></i></button>
+    </div>
+
+    <form id="node-form" class="nodes-form" autocomplete="off">
+      <div class="modal-body np-form-grid">
+        <label for="n-name">
+          <div class="label">Node name</div>
+          <input id="n-name" name="name" class="input" placeholder="e.g. Netherlands-1" autocomplete="organization" required>
+        </label>
+
+        <label for="n-url">
+          <div class="label">Base URL</div>
+          <input id="n-url" name="base_url" class="input" type="url" placeholder="https://node.example.com:9109" spellcheck="false" autocapitalize="off" required>
+          <p class="field-help">Include scheme and port. Example: <b>https://node.example.com:9109</b></p>
+        </label>
+
+        <label for="n-key" class="np-full">
+          <div class="label">API key</div>
+          <input id="n-key" name="api_key" class="input" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" required>
+          <p class="field-help">When editing, leave this empty to keep the existing key.</p>
+        </label>
+      </div>
+
+      <div class="modal-footer nodes-modal-footer">
+        <button type="button" class="btn ghost" id="node-mini-cancel">Cancel</button>
+        <button class="btn" type="submit"><i class="fas fa-save"></i> Save node</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="ui-confirm" class="ui-confirm" hidden>
+  <div class="ui-confirm__sheet">
+    <div class="ui-confirm__title"></div>
+    <div class="ui-confirm__body"></div>
+    <div class="ui-confirm__actions">
+      <button class="btn ghost" data-act="cancel">Cancel</button>
+      <button class="btn danger" data-act="ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.showToast = (m, t = 'info', sticky = false) => toastSafe(m, t, sticky);
+  window.toastInfo = (m, s = false) => toastSafe(m, 'info', s);
+  window.toastWarn = (m, s = false) => toastSafe(m, 'warn', s);
+  window.toastError = (m, s = false) => toastSafe(m, 'error', s);
+  window.toastSuccess = (m, s = false) => toastSafe(m, 'success', s);
+
+  (function setupUiConfirm() {
+    if (window.uiConfirm) return;
+    const root = document.getElementById('ui-confirm');
+    if (!root) {
+      window.uiConfirm = (opts = {}) => Promise.resolve(confirm(opts.body || 'Are you sure?'));
+      return;
+    }
+    const titleEl = root.querySelector('.ui-confirm__title');
+    const bodyEl = root.querySelector('.ui-confirm__body');
+    const okBtn = root.querySelector('[data-act="ok"]');
+    const cancelBtn = root.querySelector('[data-act="cancel"]');
+    window.uiConfirm = function (opts = {}) {
+      const { title = 'Are you sure?', body = '', okText = 'OK', cancelText = 'Cancel' } = opts;
+      titleEl.textContent = title;
+      bodyEl.textContent = body;
+      okBtn.textContent = okText;
+      cancelBtn.textContent = cancelText;
+      root.hidden = false;
+      root.classList.add('open');
+      return new Promise((resolve) => {
+        function cleanup(result) {
+          root.classList.remove('open');
+          root.hidden = true;
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          root.removeEventListener('click', onBackdrop);
+          document.removeEventListener('keydown', onKey);
+          resolve(result);
+        }
+        function onOk(e) { e.preventDefault(); cleanup(true); }
+        function onCancel(e) { e.preventDefault(); cleanup(false); }
+        function onBackdrop(e) { if (e.target === root) cleanup(false); }
+        function onKey(e) { if (e.key === 'Escape') cleanup(false); }
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        root.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onKey);
+      });
+    };
+  })();
+</script>
+
+<script defer src="{{ url_for('static', filename='js/nodes.js') }}"></script>
+
+
+{% endblock %}
