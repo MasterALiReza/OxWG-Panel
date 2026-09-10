@@ -847,7 +847,7 @@ def iface_enable(iface_id):
     try:
         _check_iface_up(iface)
     except Exception as e:
-        current_app.logger.exception("Interface enable failed for %s", iface.name)
+        current_app.logger.error("Interface enable failed for %s: %s", iface.name, e)
         return jsonify(
             success=False,
             error="interface_enable_failed",
@@ -1068,7 +1068,7 @@ def iface_updown(iid, action):
         return jsonify(ok=False, error='interface_command_timeout', detail=str(exc), name=dev, is_up=_iface_up(dev)), 504
 
     except (RuntimeError, FileNotFoundError) as exc:
-        current_app.logger.exception('Interface %s failed for %s: %s', action, dev, exc)
+        current_app.logger.error('Interface %s failed for %s: %s', action, dev, exc)
         _iface_log(iid, f'Interface {action} failed: {exc}')
         return jsonify(ok=False, error=f'interface_{action}_failed', detail=str(exc), name=dev, is_up=_iface_up(dev),
                        hint='Open Interface Logs for the complete output.'), 409
