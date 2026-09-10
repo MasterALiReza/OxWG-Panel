@@ -461,7 +461,7 @@ html {
   border-radius: 16px !important;
   transform: none !important;
 }
-.sb2.is-collapsed .sb2-link:hover { transform: translateY(-1px) !important; }
+.sb2.is-collapsed .sb2-link:hover { transform: none !important; box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
 .sb2.is-collapsed .sb2-link i {
   width: 30px !important;
   height: 30px !important;

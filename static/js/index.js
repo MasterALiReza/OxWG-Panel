@@ -48,15 +48,81 @@ function setBadgeUI(target, tone, text) {
 function hideSpinner(id){ const el = $(id); if (el) el.style.display = 'none'; }
 function setText(id, t){ const el = $(id); if (el) el.textContent = t; }
 
+const FONT_SANS = "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const FONT_MONO = "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+
+function getTooltipTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    bg: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.97)',
+    border: isDark ? 'rgba(148, 163, 184, 0.22)' : 'rgba(203, 213, 225, 0.9)',
+    title: isDark ? '#f8fafc' : '#0f172a',
+    body: isDark ? '#e2e8f0' : '#334155',
+    footer: isDark ? '#94a3b8' : '#64748b',
+  };
+}
+
 function chartLabels() {
   return Array.from({ length: 30 }, (_, i) => `${-29 + i}s`);
 }
+
 function tooltipTitle(items) {
   const point = items?.[0];
   if (!point) return 'Current sample';
-  const ago = Math.max(0, 29 - Number(point.dataIndex || 0));
-  return ago === 0 ? 'Now' : `${ago} seconds ago`;
+  const idx = Number(point.dataIndex ?? 29);
+  const agoSec = Math.max(0, (29 - idx) * 2);
+  return agoSec === 0 ? '● Real-time (Now)' : `⏱ ${agoSec}s ago`;
 }
+
+function baseTooltipConfig(customCallbacks = {}) {
+  return {
+    enabled: true,
+    padding: { top: 8, right: 12, bottom: 8, left: 12 },
+    cornerRadius: 10,
+    borderWidth: 1,
+    boxPadding: 6,
+    usePointStyle: true,
+    boxWidth: 7,
+    boxHeight: 7,
+    titleMarginBottom: 6,
+    bodySpacing: 4,
+    footerMarginTop: 8,
+    backgroundColor: () => getTooltipTheme().bg,
+    borderColor: () => getTooltipTheme().border,
+    titleColor: () => getTooltipTheme().title,
+    bodyColor: () => getTooltipTheme().body,
+    footerColor: () => getTooltipTheme().footer,
+    titleFont: {
+      family: FONT_SANS,
+      size: 11.5,
+      weight: '700',
+      lineHeight: 1.3
+    },
+    bodyFont: {
+      family: FONT_MONO,
+      size: 11.5,
+      weight: '600',
+      lineHeight: 1.35
+    },
+    footerFont: {
+      family: FONT_SANS,
+      size: 10.5,
+      weight: '500',
+      lineHeight: 1.2
+    },
+    callbacks: {
+      title: tooltipTitle,
+      labelTextColor: () => getTooltipTheme().body,
+      labelColor: (ctx) => ({
+        borderColor: ctx.dataset.borderColor || '#38bdf8',
+        backgroundColor: ctx.dataset.borderColor || '#38bdf8',
+        borderRadius: 3
+      }),
+      ...customCallbacks
+    }
+  };
+}
+
 function lineChart(ctx, label, unit = '%') {
   return new Chart(ctx, {
     type: 'line',
@@ -77,17 +143,13 @@ function lineChart(ctx, label, unit = '%') {
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
+      transitions: { active: { animation: { duration: 0 } } },
       interaction: { mode: 'nearest', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          displayColors: true,
-          callbacks: {
-            title: tooltipTitle,
-            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}${unit}`,
-            afterLabel: () => 'Sample interval: 2 seconds'
-          }
-        }
+        tooltip: baseTooltipConfig({
+          label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y || 0).toFixed(1)}${unit}`
+        })
       },
       scales: {
         x: { display: false },
@@ -96,6 +158,7 @@ function lineChart(ctx, label, unit = '%') {
     }
   });
 }
+
 function makeChart(ctx) {
   return new Chart(ctx, {
     type: 'line',
@@ -103,14 +166,14 @@ function makeChart(ctx) {
       labels: chartLabels(),
       datasets: [
         {
-          label: 'Download / RX',
+          label: 'Download (RX)',
           data: Array(30).fill(0),
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59,130,246,.15)',
           tension: 0.3, pointRadius: 2, pointHoverRadius: 5, pointHitRadius: 10, borderWidth: 2, fill: false
         },
         {
-          label: 'Upload / TX',
+          label: 'Upload (TX)',
           data: Array(30).fill(0),
           borderColor: '#f472b6',
           backgroundColor: 'rgba(244,114,182,.15)',
@@ -122,17 +185,14 @@ function makeChart(ctx) {
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
+      transitions: { active: { animation: { duration: 0 } } },
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          displayColors: true,
-          callbacks: {
-            title: tooltipTitle,
-            label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y || 0).toFixed(2)} MB/s`,
-            afterBody: () => 'RX is inbound/download. TX is outbound/upload.'
-          }
-        }
+        tooltip: baseTooltipConfig({
+          label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y || 0).toFixed(2)} MB/s`,
+          footer: () => '↓ RX: Inbound   •   ↑ TX: Outbound'
+        })
       },
       scales: { x: { display: false }, y: { beginAtZero: true } }
     }
@@ -144,6 +204,23 @@ function initCharts() {
   memChart  = lineChart($('memChart').getContext('2d'), 'Memory usage', '%');
   diskChart = lineChart($('diskChart').getContext('2d'), 'Disk usage', '%');
   netChart  = makeChart($('netChart').getContext('2d'));
+
+  function applyChartsTheme() {
+    const t = getTooltipTheme();
+    [cpuChart, memChart, diskChart, netChart].filter(Boolean).forEach(chart => {
+      const tt = chart?.options?.plugins?.tooltip;
+      if (!tt) return;
+      tt.backgroundColor = t.bg;
+      tt.borderColor = t.border;
+      tt.titleColor = t.title;
+      tt.bodyColor = t.body;
+      tt.footerColor = t.footer;
+      chart.update('none');
+    });
+  }
+
+  const themeObs = new MutationObserver(() => applyChartsTheme());
+  themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 }
 
 function fmtUptime(s) {

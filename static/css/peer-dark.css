@@ -211,7 +211,7 @@ html[data-theme="dark"] body .iface-btn, html[data-theme="dark"] body .iface-chi
 html[data-theme="dark"] body .iface-btn[aria-pressed="true"], html[data-theme="dark"] body .iface-btn.is-active{background: #24313c !important;color: #f3f6f8 !important;border-color: #4a5b69 !important;}
 
 html[data-theme="dark"] body .peer-card{background: var(--pd-surface-0) !important;border: 1px solid var(--pd-border) !important;box-shadow: none !important;}
-html[data-theme="dark"] body .peer-card:hover, html[data-theme="dark"] body .peer-card:focus-within{background: #0c131a !important;border-color: var(--pd-border-strong) !important;box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24) !important;transform: translateY(-1px) !important;}
+html[data-theme="dark"] body .peer-card:hover, html[data-theme="dark"] body .peer-card:focus-within{background: #0c131a !important;border-color: var(--pd-border-strong) !important;box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24) !important;transform: none !important;}
 html[data-theme="dark"] body .peer-name, html[data-theme="dark"] body .peer-card strong, html[data-theme="dark"] body .peer-card b{color: var(--pd-text) !important;}
 html[data-theme="dark"] body .peer-index, html[data-theme="dark"] body .peer-traffic, html[data-theme="dark"] body .peer-ip, html[data-theme="dark"] body .peer-card small{color: var(--pd-muted) !important;}
 html[data-theme="dark"] body .peer-data, html[data-theme="dark"] body .peer-timer, html[data-theme="dark"] body .peer-data.chip, html[data-theme="dark"] body .peer-timer.chip{background: var(--pd-surface-2) !important;border: 1px solid #31404d !important;color: var(--pd-text-2) !important;box-shadow: none !important;}
@@ -584,7 +584,7 @@ html[data-theme="dark"] .peer-card .peer-action-dock > button{color: #aebbc5 !im
 
 html[data-theme="dark"] .peer-card .peer-action-dock > button i{color: #b9c4cc !important;opacity: 1 !important;}
 
-html[data-theme="dark"] .peer-card .peer-action-dock > button:hover, html[data-theme="dark"] .peer-card .peer-action-dock > button:focus-visible{color: #f2f6f8 !important;background: #21313d !important;border-color: #587084 !important;box-shadow: 0 0 0 3px rgba(115, 169, 199, 0.13) !important;transform: translateY(-1px) !important;}
+html[data-theme="dark"] .peer-card .peer-action-dock > button:hover, html[data-theme="dark"] .peer-card .peer-action-dock > button:focus-visible{color: #f2f6f8 !important;background: #21313d !important;border-color: #587084 !important;box-shadow: 0 0 0 3px rgba(115, 169, 199, 0.13) !important;transform: none !important;}
 
 html[data-theme="dark"] .peer-card .peer-action-dock > button:hover i, html[data-theme="dark"] .peer-card .peer-action-dock > button:focus-visible i{color: #eef4f7 !important;}
 
@@ -1098,7 +1098,7 @@ html[data-theme="dark"] body .peers-container .peer-card .peer-iface-line i{colo
 
 .peer-confirm-actions .btn.danger{border-color: #dc2626 !important;background: linear-gradient(180deg, #f05252, #dc2626) !important;color: #ffffff !important;box-shadow: 0 14px 30px rgba(220, 38, 38, 0.22) !important;}
 
-.peer-confirm-actions .btn.danger:hover{border-color: #b91c1c !important;background: linear-gradient(180deg, #ef4444, #b91c1c) !important;color: #ffffff !important;box-shadow: 0 16px 34px rgba(185, 28, 28, 0.28) !important;transform: translateY(-1px) !important;}
+.peer-confirm-actions .btn.danger:hover{border-color: #b91c1c !important;background: linear-gradient(180deg, #ef4444, #b91c1c) !important;color: #ffffff !important;box-shadow: 0 16px 34px rgba(185, 28, 28, 0.28) !important;transform: none !important;}
 
 .peer-confirm-actions .btn.danger:focus-visible{outline: none !important;box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18), 0 16px 34px rgba(185, 28, 28, 0.25) !important;}
 
@@ -1202,7 +1202,7 @@ html[data-theme="dark"] .peer-context-workspace .peer-scope-current, html.dark .
 
 .peer-page-actions{display: grid !important;grid-template-columns: repeat(3, minmax(0, 1fr)) !important;gap: 9px !important;margin: 0 0 10px !important;padding: 0 !important;border: 0 !important;background: transparent !important;box-shadow: none !important;}
 
-.peer-page-actions .btn, #create-peer-btn, #bulk-btn, #create-iface-btn{width: 100% !important;min-width: 0 !important;height: 44px !important;min-height: 44px !important;display: flex !important;align-items: center !important;justify-content: flex-start !important;gap: 10px !important;padding: 0 12px !important;border: 1px solid var(--pw-border) !important;border-radius: 14px !important;background: var(--pw-surface) !important;color: var(--pw-text) !important;box-shadow: var(--pw-shadow) !important;font-size: 12.5px !important;font-weight: 950 !important;transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease !important;}
+.peer-page-actions .btn, #create-peer-btn, #bulk-btn, #create-iface-btn{width: 100% !important;min-width: 0 !important;height: 44px !important;min-height: 44px !important;display: flex !important;align-items: center !important;justify-content: flex-start !important;gap: 10px !important;padding: 0 12px !important;border: 1px solid var(--pw-border) !important;border-radius: 14px !important;background: var(--pw-surface) !important;color: var(--pw-text) !important;box-shadow: var(--pw-shadow) !important;font-size: 12.5px !important;font-weight: 950 !important;transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease !important;}
 
 .peer-page-actions .btn i, #create-peer-btn i, #bulk-btn i, #create-iface-btn i{width: 30px !important;height: 30px !important;flex: 0 0 30px !important;display: grid !important;place-items: center !important;border: 1px solid rgba(16, 185, 129, 0.2) !important;border-radius: 10px !important;background: var(--pw-accent-soft) !important;color: #0b8d66 !important;font-size: 12px !important;}
 
@@ -1210,7 +1210,7 @@ html[data-theme="dark"] .peer-page-actions .btn i, html.dark .peer-page-actions 
 
 .peer-page-actions .btn:first-child, #create-peer-btn{border-color: rgba(16, 185, 129, 0.34) !important;background: linear-gradient( 180deg, var(--pw-surface), var(--pw-accent-soft) ) !important;color: var(--pw-text) !important;}
 
-.peer-page-actions .btn:hover, #create-peer-btn:hover, #bulk-btn:hover, #create-iface-btn:hover{border-color: rgba(16, 185, 129, 0.42) !important;transform: translateY(-1px) !important;box-shadow: var(--pw-shadow-hover) !important;}
+.peer-page-actions .btn:hover, #create-peer-btn:hover, #bulk-btn:hover, #create-iface-btn:hover{border-color: rgba(16, 185, 129, 0.42) !important;transform: none !important;box-shadow: var(--pw-shadow-hover) !important;}
 
 .peer-page-actions .btn::after, #create-peer-btn::after, #bulk-btn::after, #create-iface-btn::after{display: none !important;}
 
@@ -1232,11 +1232,11 @@ html[data-theme="dark"] .peer-page-actions .btn i, html.dark .peer-page-actions 
 
 .peer-summary-grid{display: grid !important;grid-template-columns: repeat(6, minmax(92px, 1fr)) !important;gap: 7px !important;min-width: 0 !important;}
 
-.summary-stat{position: relative !important;min-width: 0 !important;min-height: 42px !important;display: grid !important;grid-template-columns: 28px minmax(0, 1fr) !important;align-items: center !important;gap: 7px !important;padding: 6px 8px !important;border: 1px solid var(--pw-border) !important;border-radius: 12px !important;background: var(--pw-surface-soft) !important;color: var(--pw-text-soft) !important;box-shadow: none !important;text-align: left !important;transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease !important;}
+.summary-stat{position: relative !important;min-width: 0 !important;min-height: 42px !important;display: grid !important;grid-template-columns: 28px minmax(0, 1fr) !important;align-items: center !important;gap: 7px !important;padding: 6px 8px !important;border: 1px solid var(--pw-border) !important;border-radius: 12px !important;background: var(--pw-surface-soft) !important;color: var(--pw-text-soft) !important;box-shadow: none !important;text-align: left !important;transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease !important;}
 
 .summary-stat::after{display: none !important;}
 
-.summary-stat:hover{transform: translateY(-1px) !important;border-color: var(--pw-border-strong) !important;}
+.summary-stat:hover{transform: none !important;border-color: var(--pw-border-strong) !important;}
 
 .summary-stat .stat-ico{width: 28px !important;height: 28px !important;display: grid !important;place-items: center !important;border-radius: 9px !important;background: var(--pw-slate-soft) !important;color: var(--pw-muted) !important;font-size: 11px !important;}
 
@@ -1268,9 +1268,9 @@ html[data-theme="dark"] .peer-page-actions .btn i, html.dark .peer-page-actions 
 
 .peers-container{display: grid !important;gap: 9px !important;}
 
-.peer-card{position: relative !important;overflow: hidden !important;border: 1px solid var(--pw-border) !important;border-left: 3px solid #94a3b8 !important;border-radius: 17px !important;background: var(--pw-surface) !important;color: var(--pw-text) !important;box-shadow: var(--pw-shadow) !important;transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease !important;}
+.peer-card{position: relative !important;overflow: hidden !important;border: 1px solid var(--pw-border) !important;border-left: 3px solid #94a3b8 !important;border-radius: 17px !important;background: var(--pw-surface) !important;color: var(--pw-text) !important;box-shadow: var(--pw-shadow) !important;transition: box-shadow 0.16s ease, border-color 0.16s ease !important;}
 
-.peer-card:hover, .peer-card:focus-within{transform: translateY(-1px) !important;box-shadow: var(--pw-shadow-hover) !important;border-color: var(--pw-border-strong) !important;}
+.peer-card:hover, .peer-card:focus-within{transform: none !important;box-shadow: var(--pw-shadow-hover) !important;border-color: var(--pw-border-strong) !important;}
 
 .peer-card[data-panel-status="online"][data-status="online"]{border-left-color: #10b981 !important;}
 .peer-card[data-panel-status="online"][data-status="offline"]{border-left-color: #64748b !important;}
@@ -1332,7 +1332,7 @@ html[data-theme="dark"] .peer-page-actions .btn i, html.dark .peer-page-actions 
 
 .peer-actions button{width: 30px !important;height: 30px !important;min-width: 30px !important;display: grid !important;place-items: center !important;padding: 0 !important;border: 1px solid var(--pw-border) !important;border-radius: 10px !important;background: var(--pw-surface) !important;color: var(--pw-text-soft) !important;box-shadow: none !important;}
 
-.peer-actions button:hover{border-color: var(--pw-border-strong) !important;background: var(--pw-surface-muted) !important;color: var(--pw-text) !important;transform: translateY(-1px) !important;}
+.peer-actions button:hover{border-color: var(--pw-border-strong) !important;background: var(--pw-surface-muted) !important;color: var(--pw-text) !important;transform: none !important;}
 
 .peer-actions button[data-action="delete"], .peer-actions .delete-peer, .peer-actions .danger{border-color: rgba(220, 38, 38, 0.22) !important;background: var(--pw-red-soft) !important;color: var(--pw-red) !important;}
 
