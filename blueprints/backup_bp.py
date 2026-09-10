@@ -949,7 +949,7 @@ def backup_node_agent_install_command():
             api_key = ''
         base_url = getattr(node, 'base_url', '') or ''
 
-    command = """sudo bash -c 'command -v curl >/dev/null 2>&1 || (apt-get update -y && apt-get install -y curl ca-certificates); bash -c "$(curl -fsSL https://raw.githubusercontent.com/MasterALiReza/WG_Panel/refs/heads/main/agent/node.sh)"'"""
+    command = """sudo bash -c 'command -v curl >/dev/null 2>&1 || (apt-get update -y && apt-get install -y curl ca-certificates); bash -c "$(curl -fsSL https://raw.githubusercontent.com/MasterALiReza/OxWG-Panel/refs/heads/main/agent/node.sh)"'"""
     return jsonify(
         ok=True,
         node_id=node_id,

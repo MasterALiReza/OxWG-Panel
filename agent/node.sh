@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NODE_URL="${WG_NODE_PY_URL:-https://raw.githubusercontent.com/MasterALiReza/WG_Panel/main/agent/node.py}"
+NODE_URL="${WG_NODE_PY_URL:-https://raw.githubusercontent.com/MasterALiReza/OxWG-Panel/main/agent/node.py}"
 BOOTSTRAP_DIR="${WG_NODE_BOOTSTRAP_DIR:-/usr/local/lib/wg-panel-node-bootstrap}"
 NODE_PY="$BOOTSTRAP_DIR/node.py"
 

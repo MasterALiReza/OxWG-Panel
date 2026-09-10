@@ -39,7 +39,7 @@ def _project_version() -> str:
 
 
 PANEL_VERSION = _project_version()
-PANEL_REPO = os.environ.get("PANEL_REPO", "MasterALiReza/WG_Panel")
+PANEL_REPO = os.environ.get("PANEL_REPO", "MasterALiReza/OxWG-Panel")
 _PANEL_UPDATE_CACHE: dict[str, Any] = {
     "ts": 0,
     "data": None,

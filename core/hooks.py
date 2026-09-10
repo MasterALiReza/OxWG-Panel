@@ -90,7 +90,7 @@ def inject_panel_timezone():
 
 def inject_brand():
     """Inject panel branding constants into Jinja templates."""
-    repo = os.getenv('PANEL_REPO', 'MasterALiReza/WG_Panel')
+    repo = os.getenv('PANEL_REPO', 'MasterALiReza/OxWG-Panel')
     return {
         'PANEL_BRAND_NAME': os.getenv('PANEL_BRAND_NAME', 'OxWg Panel'),
         'PANEL_SHORT_NAME': 'OxWg',

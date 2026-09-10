@@ -1823,7 +1823,7 @@ def _api_data(method: str, path: str, *, payload: dict | None = None, timeout: i
     except Exception as exc:
         return {"ok": False, "error": type(exc).__name__, "detail": str(exc)}
 
-GITHUB_REPO = "MasterALiReza/WG_Panel"
+GITHUB_REPO = "MasterALiReza/OxWG-Panel"
 GITHUB_MAIN_ARCHIVE = (
     "https://codeload.github.com/"
     f"{GITHUB_REPO}/tar.gz/refs/heads/main"
@@ -3309,7 +3309,7 @@ def render_update_center(*, fresh: bool = False):
 
     rows = [
         [InlineKeyboardButton("↻ Check releases", callback_data="system:refresh"), InlineKeyboardButton("⌘ Manage nodes", callback_data="system:nodes")],
-        [InlineKeyboardButton("◇ Repository", url="https://github.com/MasterALiReza/WG_Panel"), InlineKeyboardButton("✦ Releases", url="https://github.com/MasterALiReza/WG_Panel/releases")],
+        [InlineKeyboardButton("◇ Repository", url="https://github.com/MasterALiReza/OxWG-Panel"), InlineKeyboardButton("✦ Releases", url="https://github.com/MasterALiReza/OxWG-Panel/releases")],
     ]
     if not _update_busy(status):
         if available:

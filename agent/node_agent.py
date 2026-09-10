@@ -2322,7 +2322,7 @@ def _node_version() -> str:
     return "0.0.0"
 
 
-NODE_REPO = "MasterALiReza/WG_Panel"
+NODE_REPO = "MasterALiReza/OxWG-Panel"
 
 def _node_root():
     configured = (os.getenv("WG_PANEL_ROOT") or "").strip()

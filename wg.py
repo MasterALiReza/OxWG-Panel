@@ -73,7 +73,7 @@ TAG_ERR  = "[ERROR]"
 TAG_RUN  = "[RUN]"
 
 
-REPO_URL = "https://github.com/MasterALiReza/WG_Panel"
+REPO_URL = "https://github.com/MasterALiReza/OxWG-Panel"
 REPO_DIRNAME_DEFAULT = "WG_Panel"
 
 
@@ -3362,7 +3362,7 @@ def _github_json(url: str, timeout: int = 20):
 def _github_panel_releases() -> List[dict]:
     data = _github_json(
         "https://api.github.com/repos/"
-        "MasterALiReza/WG_Panel/releases?per_page=40"
+        "MasterALiReza/OxWG-Panel/releases?per_page=40"
     )
 
     if not isinstance(data, list):
@@ -3383,7 +3383,7 @@ def _github_panel_releases() -> List[dict]:
             continue
 
         zip_url = (
-            "https://github.com/MasterALiReza/WG_Panel/"
+            "https://github.com/MasterALiReza/OxWG-Panel/"
             f"archive/refs/tags/{tag}.zip"
         )
 

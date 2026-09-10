@@ -46,3 +46,9 @@ logs/
 
 # Developers
 my-notes/
+
+# Agent / AI tools (not part of the project)
+.agents/
+
+# Backup of monolithic app
+app_monolithic.py.bak
