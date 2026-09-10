@@ -769,7 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       for (const item of items.slice(-limit)) {
-        const message = (
+        let message = (
           item.msg
           || item.text
           || item.message
@@ -777,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
           || ''
         );
 
-        const rawLevel = (
+        let rawLevel = (
           item.level
           || item.kind
           || item.severity
@@ -785,22 +785,30 @@ document.addEventListener('DOMContentLoaded', () => {
           || 'info'
         );
 
+        let rawTime = item.ts || item.time || '';
+
+        // If rawTime is empty, extract ISO timestamp and level from message if present
+        if (!rawTime && message) {
+          const isoMatch = message.match(/^(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\s*(?:(DEBUG|INFO|WARN(?:ING)?|ERROR|CRIT(?:ICAL)?|FATAL|SUCCESS):?\s+)?(.*)$/i);
+          if (isoMatch) {
+            rawTime = isoMatch[1];
+            if (isoMatch[2]) {
+              rawLevel = isoMatch[2];
+            }
+            message = isoMatch[3] || message;
+          }
+        }
+
         const level = normalizeLevel(rawLevel, message);
-        const rawTime = item.ts || item.time || '';
+        const formattedTime = formatTime(rawTime);
 
         const row = document.createElement('div');
         row.className = 'dlog';
 
         row.innerHTML = `
-          <div class="when" title="${escapeHtml(rawTime)}">
-            ${escapeHtml(formatTime(rawTime))}
-          </div>
-          <div class="msg" title="${escapeHtml(message)}">
-            ${escapeHtml(message)}
-          </div>
-          <div class="lvl ${level}">
-            ${escapeHtml(level.toUpperCase())}
-          </div>
+          <div class="when"${rawTime ? ` title="${escapeHtml(rawTime)}"` : ''}>${formattedTime ? escapeHtml(formattedTime) : ''}</div>
+          <div class="msg" title="${escapeHtml(message)}">${escapeHtml(message)}</div>
+          <div class="lvl ${level}">${escapeHtml(level.toUpperCase())}</div>
         `;
 
         list.appendChild(row);

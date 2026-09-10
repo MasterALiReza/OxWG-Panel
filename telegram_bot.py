@@ -21,7 +21,7 @@ from telegram.ext import (
     MessageHandler, filters
 )
 from telegram.error import BadRequest
-import telegram_admin as admin_azumi
+import telegram_admin as telegram_admin_mod
 import html as py_html
 import qrcode
 try:
@@ -920,7 +920,7 @@ async def cmd_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @admin_only
 async def cmd_subscriptions(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text_out, keyboard = await asyncio.to_thread(admin_azumi.render_list, globals(), 1, "")
+    text_out, keyboard = await asyncio.to_thread(telegram_admin_mod.render_list, globals(), 1, "")
     await send_text(update, text_out, kb=keyboard)
 
 
@@ -932,7 +932,7 @@ async def cmd_clients(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @admin_only
 async def cmd_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text_out, keyboard = await asyncio.to_thread(admin_azumi.diagnostics, globals())
+    text_out, keyboard = await asyncio.to_thread(telegram_admin_mod.diagnostics, globals())
     await send_text(update, text_out, kb=keyboard)
 
 
@@ -4400,7 +4400,7 @@ async def on_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-    if await admin_azumi.handle_callback(globals(), update, context):
+    if await telegram_admin_mod.handle_callback(globals(), update, context):
         return
 
     if data.startswith("security:"):
@@ -7142,7 +7142,7 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await edit_send(update, "● <b>Policy created and applied.</b>\n\n" + out, kb)
             return
 
-    if await admin_azumi.handle_text(globals(), update, context):
+    if await telegram_admin_mod.handle_text(globals(), update, context):
         return
 
     stp1 = context.user_data.get(STATE.get("P_EDIT_ONE"))
