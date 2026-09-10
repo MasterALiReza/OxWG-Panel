@@ -168,11 +168,38 @@ _fetch_wg_py() {
   local cache_dir="$SCRIPT_DIR/.cache"
   mkdir -p "$cache_dir"
   local out="$cache_dir/wg.py"
+  local etag_file="$cache_dir/wg.py.etag"
 
+  # ETag-based cache invalidation:
+  # Do a HEAD request to get the current ETag from GitHub.
+  # If it matches the stored ETag and cache exists → use cache.
+  # If different or no cache → re-download and store new ETag.
   if [ "$FORCE_FETCH" -eq 0 ] && [ -s "$out" ]; then
-    echo -e "${c_ok}[ OK ]${c_reset} Using cached wg.py: $out" >&2
-    echo "$out"
-    return 0
+    local remote_etag=""
+    if command -v curl >/dev/null 2>&1; then
+      remote_etag=$(curl --silent --head --location \
+        --connect-timeout 8 --max-time 15 \
+        "$url" 2>/dev/null | grep -i "^etag:" | tr -d '\r' | awk '{print $2}')
+    elif command -v wget >/dev/null 2>&1; then
+      remote_etag=$(wget --quiet --server-response --spider "$url" 2>&1 \
+        | grep -i "etag:" | awk '{print $2}' | tr -d '\r')
+    fi
+
+    local stored_etag=""
+    [ -f "$etag_file" ] && stored_etag=$(cat "$etag_file")
+
+    if [ -n "$remote_etag" ] && [ "$remote_etag" = "$stored_etag" ]; then
+      echo -e "${c_ok}[ OK ]${c_reset} Using cached wg.py (up-to-date): $out" >&2
+      echo "$out"
+      return 0
+    elif [ -n "$remote_etag" ] && [ -n "$stored_etag" ]; then
+      echo -e "${c_info}[INFO]${c_reset} Remote wg.py updated — re-downloading." >&2
+    elif [ -z "$remote_etag" ]; then
+      # Could not check ETag (no network HEAD support); use cache to avoid blocking
+      echo -e "${c_ok}[ OK ]${c_reset} Using cached wg.py (could not verify remote): $out" >&2
+      echo "$out"
+      return 0
+    fi
   fi
 
   echo -e "${c_info}[INFO]${c_reset} Downloading wg.py from: $url" >&2
@@ -229,6 +256,15 @@ PY
 
   mv -f "$tmp" "$out"
   chmod 755 "$out"
+
+  # Save the current ETag for next-run cache comparison
+  if command -v curl >/dev/null 2>&1; then
+    local new_etag
+    new_etag=$(curl --silent --head --location \
+      --connect-timeout 8 --max-time 15 \
+      "$url" 2>/dev/null | grep -i "^etag:" | tr -d '\r' | awk '{print $2}')
+    [ -n "$new_etag" ] && echo "$new_etag" > "$etag_file"
+  fi
 
   echo -e "${c_ok}[ OK ]${c_reset} Downloaded and validated wg.py -> $out" >&2
   echo "$out"

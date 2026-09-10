@@ -3875,21 +3875,31 @@ def update_menu():
             downgrade_project(root)
 
         elif ch == "3":
-            if (
-                not _cmd("git")
-                or not (root / ".git").exists()
-            ):
+            if not _cmd("git"):
+                warn("git is not installed. Run system requirements first.")
+                pause()
+                continue
+
+            if not (root / ".git").exists():
                 warn("The active project is not a git repository.")
+                print(box("Options", [
+                    c("I", BR_GRN) + c(" = Initialize git + link remote (fixes update/status)", BR_WHT),
+                    c("Q", BR_RED) + c(" = Cancel", BR_WHT),
+                ], border_color=BR_YEL))
+                ch2 = ask("Choose", default="Q", show_default=True).strip().upper()
+                if ch2 == "I":
+                    if _live(["git", "-C", str(root), "init"], "git init") == 0:
+                        _live(["git", "-C", str(root), "remote", "add", "origin", REPO_URL], "git remote add")
+                        _live(["git", "-C", str(root), "fetch", "--depth=1", "origin", "main"], "git fetch")
+                        ok("Git repository initialized and remote linked.")
+                        ok("You can now use Update and git status normally.")
+                    else:
+                        err("git init failed.")
                 pause()
                 continue
 
             _live(
-                [
-                    "git",
-                    "-C",
-                    str(root),
-                    "status",
-                ],
+                ["git", "-C", str(root), "status"],
                 "git status",
                 timeout=120,
             )
@@ -3901,6 +3911,7 @@ def update_menu():
         else:
             warn("Invalid option.")
             time.sleep(0.25)
+
 
 
 
