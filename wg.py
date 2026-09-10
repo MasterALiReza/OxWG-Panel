@@ -18,7 +18,7 @@ import socket
 import ipaddress
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 import tempfile
 import urllib.request
 import zipfile
