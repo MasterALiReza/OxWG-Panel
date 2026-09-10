@@ -657,17 +657,27 @@ def clone_repo():
         set_project(target)
         ok("Project root updated.")
         if confirm("Run git pull now?", default_yes=False):
-            # Fetch first, then set upstream tracking, then pull —
-            # this handles repos that were cloned without tracking info.
+            # Detect the actual local branch name (could be 'main' or 'master')
+            try:
+                import subprocess as _sp
+                _r = _sp.run(
+                    ["git", "-C", str(target), "rev-parse", "--abbrev-ref", "HEAD"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                local_branch = _r.stdout.strip() or "main"
+            except Exception:
+                local_branch = "main"
+
             _live(["git", "-C", str(target), "fetch", "origin"], "git fetch origin")
+            # Set upstream only if branch exists locally
             _live(
                 ["git", "-C", str(target), "branch",
-                 "--set-upstream-to=origin/main", "main"],
-                "set upstream tracking",
+                 f"--set-upstream-to=origin/{local_branch}", local_branch],
+                f"set upstream to origin/{local_branch}",
             )
             _live(
-                ["git", "-C", str(target), "pull", "origin", "main", "--ff-only"],
-                "git pull origin main --ff-only",
+                ["git", "-C", str(target), "pull", "origin", local_branch, "--ff-only"],
+                f"git pull origin {local_branch} --ff-only",
             )
         pause()
         return
