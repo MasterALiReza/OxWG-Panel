@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "$HOME")"
+cd "$SCRIPT_DIR" 2>/dev/null || cd "$HOME" 2>/dev/null || cd / 2>/dev/null || true
 VENV_DIR="${VENV_DIR:-$SCRIPT_DIR/venv}"
 PY="$VENV_DIR/bin/python"
 
