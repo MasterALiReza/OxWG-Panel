@@ -662,15 +662,43 @@ def clone_repo():
         return
 
     if target.exists():
+        is_empty = True
         try:
-            if any(target.iterdir()):
-                err("Target exists and is not empty. Choose another path.")
-                pause()
-                return
+            is_empty = not any(target.iterdir())
         except Exception:
             err("Cannot access target directory.")
             pause()
             return
+
+        if not is_empty:
+            warn(f"Target directory exists and is not empty: {_paths(str(target))}")
+            print(box("Options", [
+                c("W", BR_YEL) + c(" = Wipe directory and clone fresh (recommended for failed installs)", BR_WHT),
+                c("C", BR_GRN) + c(" = Clone into it anyway (git will abort if already has content)", BR_WHT),
+                c("Q", BR_RED) + c(" = Cancel", BR_WHT),
+            ], border_color=BR_YEL))
+            choice = ask("Choose", default="Q", show_default=True).strip().upper()
+
+            if choice == "W":
+                if confirm(f"Delete everything inside {_paths(str(target))} ?", default_yes=False):
+                    import shutil as _shutil
+                    try:
+                        _shutil.rmtree(str(target))
+                        ok("Directory wiped.")
+                    except Exception as exc:
+                        err(f"Could not wipe directory: {exc}")
+                        pause()
+                        return
+                else:
+                    warn("Canceled.")
+                    pause()
+                    return
+            elif choice == "C":
+                info("Proceeding with clone into existing directory.")
+            else:
+                warn("Canceled.")
+                pause()
+                return
 
     if not confirm(f"Clone into {_paths(str(target))} ?", default_yes=True):
         warn("Canceled.")
