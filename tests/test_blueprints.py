@@ -432,6 +432,75 @@ class TestBlueprintLayer(unittest.TestCase):
             self.assertIsNotNone(p2)
             self.assertEqual(p2.address, f"{custom_ip}/24")
 
+    def test_app_log_line_parsing(self):
+        """Verify _app_log_line correctly parses ISO, Bracket, Access, and continuation lines."""
+        from blueprints.logs_bp import _app_log_line
+
+        # 1. ISO UTC log
+        line1 = "2026-09-11T22:51:12Z INFO sqlalchemy.engine.Engine: ROLLBACK"
+        r1 = _app_log_line(line1)
+        self.assertEqual(r1['ts'], '2026-09-11T22:51:12Z')
+        self.assertEqual(r1['level'], 'INFO')
+        self.assertEqual(r1['logger'], 'sqlalchemy.engine.Engine')
+        self.assertEqual(r1['msg'], 'ROLLBACK')
+
+        # 2. Date with space
+        line2 = "2026-09-12 02:08:55 WARNING app: Cache expired"
+        r2 = _app_log_line(line2)
+        self.assertEqual(r2['ts'], '2026-09-12 02:08:55')
+        self.assertEqual(r2['level'], 'WARNING')
+        self.assertEqual(r2['logger'], 'app')
+        self.assertEqual(r2['msg'], 'Cache expired')
+
+        # 3. Gunicorn bracketed log
+        line3 = "[2026-09-11 22:38:42 +0000] [3829999] [INFO] Starting gunicorn 23.0.0"
+        r3 = _app_log_line(line3)
+        self.assertEqual(r3['ts'], '2026-09-11 22:38:42 +0000')
+        self.assertEqual(r3['level'], 'INFO')
+        self.assertEqual(r3['msg'], 'Starting gunicorn 23.0.0')
+
+        # 4. Access log
+        line4 = '94.183.56.238 - - [11/Sep/2026:22:38:42 +0000] "GET /api/peers HTTP/1.1" 200 1234'
+        r4 = _app_log_line(line4)
+        self.assertEqual(r4['ts'], '2026-09-11T22:38:42Z')
+        self.assertEqual(r4['level'], 'INFO')
+        self.assertIn('HTTP GET /api/peers 200', r4['msg'])
+
+        # 5. Continuation line
+        line5 = "FROM peer"
+        r5 = _app_log_line(line5, default_ts='2026-09-11T22:51:12Z', default_level='INFO', default_logger='sqlalchemy')
+        self.assertEqual(r5['ts'], '2026-09-11T22:51:12Z')
+        self.assertEqual(r5['level'], 'INFO')
+        self.assertEqual(r5['msg'], 'FROM peer')
+
+    def test_app_logs_api_endpoint(self):
+        """Verify /api/app_logs returns parsed logs with time_display populated."""
+        import tempfile
+        from blueprints.logs_bp import APP_LOG_FILE
+
+        sample_content = (
+            "2026-09-11T22:51:12Z INFO sqlalchemy.engine.Engine: BEGIN (implicit)\n"
+            "2026-09-11T22:51:12Z INFO sqlalchemy.engine.Engine: SELECT peer.id FROM peer\n"
+            "2026-09-11T22:51:12Z INFO sqlalchemy.engine.Engine: ROLLBACK\n"
+        )
+        with mock.patch('blueprints.logs_bp.APP_LOG_FILE', tempfile.mktemp()):
+            with mock.patch('blueprints.logs_bp._read_tail', return_value=sample_content):
+                # Login as admin
+                with self.client.session_transaction() as sess:
+                    sess['_user_id'] = '1'
+
+                resp = self.client.get('/api/app_logs')
+                self.assertEqual(resp.status_code, 200)
+                data = resp.get_json()
+                self.assertIn('logs', data)
+                self.assertEqual(len(data['logs']), 3)
+
+                for item in data['logs']:
+                    self.assertIsNotNone(item.get('ts'))
+                    self.assertIsNotNone(item.get('time_display'))
+                    self.assertIn(item['level'], ['INFO', 'WARN', 'ERROR', 'DEBUG'])
+
 
 if __name__ == '__main__':
     unittest.main()
+

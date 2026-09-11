@@ -3,6 +3,7 @@ OxWg Panel - Logging Blueprint (logs_bp)
 =======================================
 Log viewers, settings, retention control, and log archive backups.
 """
+import re
 import os
 import json
 import zipfile
@@ -51,21 +52,131 @@ from core.logging_setup import _applymute_log
 
 logs_bp = Blueprint('logs_bp', __name__)
 
+RE_APP_ISO = re.compile(
+    r'^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?)\s+'
+    r'(?:\[([A-Za-z]+)\]|([A-Za-z]+))\s*'
+    r'(?:(?:in\s+)?([a-zA-Z0-9_.-]+):\s*|:\s*)?'
+    r'(.*)$'
+)
 
-def _app_log_line(line: str):
-    line = line.strip()
-    if not line:
+RE_APP_BRACKET = re.compile(
+    r'^\[(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:\s*[+-]\d{4})?)\]\s*'
+    r'(?:\[\d+\]\s*)?'
+    r'(?:\[([A-Za-z]+)\]\s*|([A-Za-z]+)\s*(?:in\s+[\w_.-]+)?:\s*)?'
+    r'(.*)$'
+)
+
+RE_APP_ACCESS = re.compile(
+    r'^(\S+)\s+-\s+-\s+\[(\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2}(?:\s*[+-]\d{4})?)\]\s+'
+    r'"([A-Z]+)\s+([^"]+)\s+HTTP/[^"]+"\s+(\d{3})\s*(.*)$'
+)
+
+RE_APP_DATE_ONLY = re.compile(
+    r'^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?)\s*(.*)$'
+)
+
+
+def _app_log_line(
+    line: str,
+    default_ts: str | None = None,
+    default_level: str = "INFO",
+    default_logger: str = "",
+):
+    line_clean = (line or "").strip()
+    if not line_clean:
         return None
-    try:
-        if line.startswith('{') and line.endswith('}'):
-            return json.loads(line)
-    except Exception:
-        pass
+
+    # 1. JSON line support
+    if line_clean.startswith("{") and line_clean.endswith("}"):
+        try:
+            rec = json.loads(line_clean)
+            if isinstance(rec, dict):
+                ts = (
+                    rec.get("ts")
+                    or rec.get("time")
+                    or rec.get("timestamp")
+                    or rec.get("when")
+                    or default_ts
+                )
+                lvl = (rec.get("level") or rec.get("kind") or default_level).upper()
+                msg = rec.get("msg") or rec.get("message") or rec.get("text") or line_clean
+                return {
+                    "ts": ts,
+                    "level": lvl,
+                    "logger": rec.get("logger", default_logger),
+                    "msg": str(msg).strip(),
+                    "raw": line_clean,
+                }
+        except Exception:
+            pass
+
+    # 2. ISO timestamp: 2026-09-11T22:51:12Z INFO sqlalchemy.engine.Engine: ...
+    m = RE_APP_ISO.match(line_clean)
+    if m:
+        ts_raw, lvl_bracket, lvl_plain, logger, msg = m.groups()
+        lvl = (lvl_bracket or lvl_plain or default_level).upper()
+        clean_msg = (msg or "").strip()
+        return {
+            "ts": ts_raw,
+            "level": lvl,
+            "logger": logger or "",
+            "msg": clean_msg if clean_msg else line_clean,
+            "raw": line_clean,
+        }
+
+    # 3. Bracketed timestamp (Gunicorn): [2026-09-11 22:38:42 +0000] [INFO] ...
+    m = RE_APP_BRACKET.match(line_clean)
+    if m:
+        ts_raw, lvl_bracket, lvl_plain, msg = m.groups()
+        lvl = (lvl_bracket or lvl_plain or default_level).upper()
+        clean_msg = (msg or "").strip()
+        return {
+            "ts": ts_raw,
+            "level": lvl,
+            "logger": "",
+            "msg": clean_msg if clean_msg else line_clean,
+            "raw": line_clean,
+        }
+
+    # 4. Common Log Format (Access log)
+    m = RE_APP_ACCESS.match(line_clean)
+    if m:
+        ip, ts_raw, method, path, status, _ = m.groups()
+        try:
+            dt = datetime.strptime(ts_raw.split()[0], "%d/%b/%Y:%H:%M:%S")
+            iso_ts = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        except Exception:
+            iso_ts = ts_raw
+        code = int(status)
+        lvl = "ERROR" if code >= 500 else ("WARN" if code >= 400 else "INFO")
+        return {
+            "ts": iso_ts,
+            "level": lvl,
+            "logger": "access",
+            "msg": f"HTTP {method} {path} {status} (from {ip})",
+            "raw": line_clean,
+        }
+
+    # 5. Date-only at start
+    m = RE_APP_DATE_ONLY.match(line_clean)
+    if m:
+        ts_raw, msg = m.groups()
+        clean_msg = (msg or "").strip()
+        return {
+            "ts": ts_raw,
+            "level": default_level,
+            "logger": default_logger,
+            "msg": clean_msg if clean_msg else line_clean,
+            "raw": line_clean,
+        }
+
+    # 6. Continuation line (inherits previous line's timestamp and context)
     return {
-        "ts": None,
-        "level": "INFO",
-        "msg": line,
-        "raw": line,
+        "ts": default_ts,
+        "level": default_level,
+        "logger": default_logger,
+        "msg": line_clean,
+        "raw": line_clean,
     }
 
 
@@ -187,22 +298,73 @@ def app_logs():
 
     q = (request.args.get('q') or '').lower().strip()
     level = (request.args.get('level') or '').lower().strip()
+    from_s = request.args.get('from') or ''
+    to_s = request.args.get('to') or ''
     limit = max(10, min(int(request.args.get('limit') or 500), 2000))
     text = _read_tail(APP_LOG_FILE, 200_000)
+
+    from_dt = _panel_filter_datetime_utc_naive(from_s)
+    to_dt = _panel_filter_datetime_utc_naive(to_s)
+
+    def in_range(ts_val) -> bool:
+        if not from_dt and not to_dt:
+            return True
+        t = _panel_filter_datetime_utc_naive(ts_val)
+        if t is None:
+            return True
+        if from_dt and t < from_dt:
+            return False
+        if to_dt and t > to_dt:
+            return False
+        return True
+
     out = []
+    last_ts = None
+    last_level = "INFO"
+    last_logger = ""
+
     for line in text.splitlines():
-        rec = _app_log_line(line)
+        line = line.strip()
+        if not line:
+            continue
+        rec = _app_log_line(
+            line,
+            default_ts=last_ts,
+            default_level=last_level,
+            default_logger=last_logger,
+        )
         if not rec:
             continue
-        if level and rec.get('level', '').lower() != level:
-            continue
-        if q and q not in (rec.get('msg') or '').lower():
-            continue
         if rec.get('ts'):
-            rec['time_display'] = _panel_display_datetime(
+            last_ts = rec['ts']
+        if rec.get('level'):
+            last_level = rec['level']
+        if rec.get('logger'):
+            last_logger = rec['logger']
+
+        rec_lvl = (rec.get('level') or 'INFO').lower()
+        if level:
+            lvl_norm = 'warning' if rec_lvl in ('warn', 'warning') else rec_lvl
+            req_norm = 'warning' if level in ('warn', 'warning') else level
+            if lvl_norm != req_norm:
+                continue
+
+        if q:
+            msg_str = (rec.get('msg') or '').lower()
+            raw_str = (rec.get('raw') or '').lower()
+            logger_str = (rec.get('logger') or '').lower()
+            if q not in msg_str and q not in raw_str and q not in logger_str:
+                continue
+
+        if rec.get('ts') and not in_range(rec['ts']):
+            continue
+
+        if rec.get('ts'):
+            disp = _panel_display_datetime(
                 rec['ts'],
                 seconds=True,
             )
+            rec['time_display'] = disp or str(rec['ts'])
         out.append(rec)
 
     return jsonify(

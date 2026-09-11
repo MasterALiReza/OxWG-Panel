@@ -555,9 +555,8 @@ function renderizeRows(rows){
   const srcCfg = SOURCES[state.source] || SOURCES.app;
 
   const html = arr.map(x => {
-    const tsRaw  = x.ts || x.time || x.timestamp || x.when || '';
-    const tsShow = x.time_display || fmtTsDisplay(tsRaw);
-    const tsHuman = state.friendly ? relativeTime(tsRaw) : '';
+    let tsRaw  = x.ts || x.time || x.timestamp || x.when || '';
+    let tsShow = x.time_display || (tsRaw ? fmtTsDisplay(tsRaw) : '');
 
     const rawMsg = String(
       x.msg || x.message || x.text ||
@@ -565,11 +564,21 @@ function renderizeRows(rows){
       x.details || x.raw || ''
     ).trim();
 
+    if (!tsShow) {
+      const lineStr = String(x.raw || rawMsg || '');
+      const mTs = lineStr.match(/(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2}|\s*[+-]\d{4})?)/);
+      if (mTs) {
+        tsRaw = mTs[1];
+        tsShow = fmtTsDisplay(tsRaw);
+      }
+    }
+
+    const tsHuman = state.friendly && tsRaw ? relativeTime(tsRaw) : '';
     const lvl = x.kind || x.level || parseLevel(rawMsg) || (x.action ? 'action' : 'info');
     const summary = state.friendly ? humanSummary(x, state.source, rawMsg) : {main: rawMsg || '—', sub:''};
     const main = panelTimeText(summary.main || '—');
-    const sub = panelTimeText(summary.sub || '');
-    const rawTitle = escapeHtml(redactSecrets(rawMsg).replace(/\s+/g,' ').trim());
+    const sub = panelTimeText(summary.sub || (x.logger ? x.logger : ''));
+    const rawTitle = escapeHtml(redactSecrets(x.raw || rawMsg).replace(/\s+/g,' ').trim());
 
     return `<tr>
       <td class="mono"><div class="log-time-main">${escapeHtml(tsShow)}</div>${tsHuman ? `<div class="log-time-sub">${escapeHtml(tsHuman)}</div>` : ''}</td>
