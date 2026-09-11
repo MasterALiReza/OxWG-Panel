@@ -1643,10 +1643,10 @@
 .bk-auto-item {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
   border: 1px solid var(--bk-line);
-  border-radius: 13px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 10px 12px;
   background: var(--bk-surface);
   transition: all .15s ease;
   overflow: hidden;
@@ -1661,7 +1661,7 @@
 .bk-auto-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
   width: 100%;
 }
@@ -1674,8 +1674,8 @@
 }
 
 .bk-auto-date {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12.5px;
+  font-weight: 750;
   color: var(--bk-text);
   display: flex;
   align-items: center;
@@ -1687,15 +1687,15 @@
 
 .bk-auto-date i {
   color: var(--bk-primary);
-  font-size: 12px;
+  font-size: 11.5px;
   flex-shrink: 0;
 }
 
 .bk-auto-size-badge {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 6px;
+  padding: 1.5px 6.5px;
+  border-radius: 5px;
   background: var(--bk-card);
   border: 1px solid var(--bk-line);
   color: var(--bk-muted);
@@ -1704,7 +1704,7 @@
 }
 
 .bk-auto-filename {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--bk-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   white-space: nowrap;
@@ -1716,23 +1716,23 @@
 .bk-auto-actions {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 5px;
   width: 100%;
 }
 
 .bk-auto-action {
-  height: 32px;
+  height: 27px;
   padding: 0 4px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--bk-line);
   background: #ffffff;
   color: var(--bk-text);
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   cursor: pointer;
   transition: all .14s ease;
   white-space: nowrap;
@@ -1744,33 +1744,61 @@
   transform: translateY(-1px);
 }
 
+.bk-auto-action:active {
+  transform: translateY(0);
+}
+
 .bk-auto-action i {
-  font-size: 11.5px;
+  font-size: 10.5px;
   flex-shrink: 0;
 }
 
 .bk-auto-action.inspect {
-  background: var(--bk-blue-bg);
-  border-color: var(--bk-blue-border);
-  color: var(--bk-blue-text);
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0284c7;
+}
+
+.bk-auto-action.inspect:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
 }
 
 .bk-auto-action.download {
-  background: var(--bk-ok-bg);
-  border-color: var(--bk-ok-border);
-  color: var(--bk-ok-text);
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.bk-auto-action.download:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #047857;
 }
 
 .bk-auto-action.restore {
-  background: var(--bk-warn-bg);
-  border-color: var(--bk-warn-border);
-  color: var(--bk-warn-text);
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+.bk-auto-action.restore:hover {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #b45309;
 }
 
 .bk-auto-action.delete {
-  background: var(--bk-bad-bg);
-  border-color: var(--bk-bad-border);
-  color: var(--bk-bad-text);
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.bk-auto-action.delete:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
 }
 
 /* --------------------------------------------------------------------------
@@ -2072,12 +2100,12 @@
 @media (max-width: 480px) {
   .bk-auto-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
+    gap: 6px;
   }
   .bk-auto-action {
     justify-content: center;
-    height: 36px;
-    font-size: 12px;
+    height: 29px;
+    font-size: 11px;
   }
   .bk-option-strip {
     grid-template-columns: 1fr;
