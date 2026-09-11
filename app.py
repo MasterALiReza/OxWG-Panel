@@ -74,6 +74,7 @@ from core.paths import (
     ENDPOINT_PRESETS_FILE,
     GEO_CACHE_FILE,
     LOGS_SETTINGS_FILE,
+    ensure_dirs,
 )
 from core.constants import (
     ACTIVE_WITHIN_SECONDS,
@@ -339,9 +340,11 @@ if __name__ == "__main__":
         except Exception:
             return dflt
 
-    cpu_based_default_workers = multiprocessing.cpu_count() * 2 + 1
-    workers = _env_int("WORKERS", cpu_based_default_workers)
-    threads = _env_int("THREADS", 4)
+    # For SQLite embedded database, single worker with multi-threading avoids
+    # database lock contention and POSIX cross-fork deadlocks.
+    default_workers = 1
+    workers = _env_int("WORKERS", default_workers)
+    threads = _env_int("THREADS", 8)
     timeout = _env_int("TIMEOUT", 60)
     graceful_timeout = _env_int("GRACEFUL_TIMEOUT", 30)
     loglevel = (os.getenv("LOGLEVEL") or "info").lower()
@@ -361,6 +364,25 @@ if __name__ == "__main__":
     APP_START_TS = int(time.time())
     app.logger.info("Panel started (TLS=%s, bind=%s)", "on" if tls_enabled else "off", bind)
 
+    def _post_fork(server, worker):
+        """Gunicorn post-fork hook running inside the worker process."""
+        try:
+            db.session.remove()
+            db.engine.dispose()
+        except Exception:
+            pass
+
+        try:
+            from core.logging_setup import reopen_logging_streams
+            reopen_logging_streams()
+        except Exception:
+            pass
+
+        try:
+            bootstrap(server.app.callable)
+        except Exception as exc:
+            server.log.exception("Worker bootstrap failed: %s", exc)
+
     options = {
         "bind": bind,
         "workers": workers,
@@ -373,6 +395,7 @@ if __name__ == "__main__":
         "loglevel": loglevel,
         "preload_app": False,
         "capture_output": True,
+        "post_fork": _post_fork,
     }
 
     if tls_enabled:
@@ -389,14 +412,25 @@ if __name__ == "__main__":
             SESSION_COOKIE_SAMESITE="Lax",
         )
 
+    # In arbiter (master process), ONLY run migrations and setup directories.
+    # Background worker threads and runtime peer syncing MUST run inside the worker (post_fork).
     try:
-        bootstrap(app)
+        with app.app_context():
+            ensure_dirs()
+            instance_p = getattr(app, "instance_path", None)
+            _migrate_schema(instance_p)
     except SchemaMigrationError as e:
         app.logger.critical(
             "Refusing to start: the database schema could not be migrated: %s", e
         )
         raise SystemExit(1)
     except Exception as e:
-        app.logger.exception("bootstrap failed: %s", e)
+        app.logger.exception("Initial schema migration check failed: %s", e)
+    finally:
+        try:
+            db.session.remove()
+            db.engine.dispose()
+        except Exception:
+            pass
 
     _Guni(app, options).run()

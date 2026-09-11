@@ -331,6 +331,9 @@ def _expiry_tick_on_requests():
     """Request-triggered expiry fallback tick if background daemon thread is delayed."""
     global _EXPIRY_LAST_TS
     try:
+        from services.peer_lifecycle import _EXPIRY_THREAD_STARTED
+        if _EXPIRY_THREAD_STARTED:
+            return
         if (request.path or '').startswith('/static/'):
             return
         now = time.time()

@@ -25,24 +25,7 @@ def configure_logging(app, log_file: str | None = None, log_level: str | None = 
 
     numeric_level = getattr(logging, log_level, logging.INFO)
 
-    # 1. Flask app logger
-    if not app.logger.handlers:
-        handler = RotatingFileHandler(
-            target_file,
-            maxBytes=1_000_000,
-            backupCount=3,
-            encoding='utf-8',
-        )
-        handler.setLevel(numeric_level)
-        fmt = _utc_log_formatter("%(asctime)s [%(levelname)s] %(message)s")
-        handler.setFormatter(fmt)
-        app.logger.addHandler(handler)
-        app.logger.setLevel(numeric_level)
-
-    if hasattr(app, 'config'):
-        app.config["PROPAGATE_EXCEPTIONS"] = True
-
-    # 2. Root logger file handler & stream handler
+    # 1. Root logger file handler & stream handler (single RotatingFileHandler on target_file)
     root_fmt = _utc_log_formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
     root = logging.getLogger()
     root.setLevel(numeric_level)
@@ -58,19 +41,45 @@ def configure_logging(app, log_file: str | None = None, log_level: str | None = 
         rfh.setFormatter(root_fmt)
         root.addHandler(rfh)
 
-    if not any(isinstance(h, logging.StreamHandler) for h in root.handlers):
+    if not any(isinstance(h, logging.StreamHandler) for h in root.handlers if not isinstance(h, RotatingFileHandler)):
         sh = logging.StreamHandler(sys.stderr)
         sh.setFormatter(root_fmt)
         sh.setLevel(numeric_level)
         root.addHandler(sh)
 
+    # 2. Flask app logger delegates to root logger via propagation (avoids duplicate handlers on same file)
+    app.logger.handlers[:] = []
+    app.logger.propagate = True
+    app.logger.setLevel(numeric_level)
+
+    if hasattr(app, 'config'):
+        app.config["PROPAGATE_EXCEPTIONS"] = True
+
     # 3. Third-party library loggers
-    for name in ('werkzeug', 'gunicorn.error', 'gunicorn.access', 'urllib3', 'requests', 'sqlalchemy.engine'):
+    for name in ('werkzeug', 'gunicorn.error', 'gunicorn.access', 'urllib3', 'requests'):
         lg = logging.getLogger(name)
         lg.setLevel(numeric_level)
         lg.propagate = True
 
+    # Prevent sqlalchemy.engine from flooding log files and locking on every query
+    sqla_logger = logging.getLogger('sqlalchemy.engine')
+    sqla_logger.setLevel(logging.DEBUG if numeric_level <= logging.DEBUG else logging.WARNING)
+    sqla_logger.propagate = True
+
     _applymute_log()
+
+
+def reopen_logging_streams():
+    """Close and reset any open file handler streams in the current process (safe after fork)."""
+    root = logging.getLogger()
+    for h in list(root.handlers):
+        if isinstance(h, RotatingFileHandler) or hasattr(h, 'stream'):
+            try:
+                if getattr(h, 'stream', None):
+                    h.stream.close()
+            except Exception:
+                pass
+            h.stream = None
 
 
 def _applymute_log():

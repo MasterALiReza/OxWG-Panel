@@ -189,3 +189,8 @@ def bootstrap(app: Flask | None = None) -> None:
             _clear_retention()
         except Exception:
             pass
+
+        try:
+            db.session.remove()
+        except Exception:
+            pass
