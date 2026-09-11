@@ -3,6 +3,10 @@
    Clean design system, emerald brand accents, symmetrical layouts, and responsive flow.
    ========================================================================== */
 
+[hidden] {
+  display: none !important;
+}
+
 :root {
   --bk-card: var(--card-bg, #ffffff);
   --bk-surface: #f8fafc;

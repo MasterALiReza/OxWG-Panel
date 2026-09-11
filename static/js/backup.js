@@ -151,7 +151,10 @@
     ["save", "build", "telegram", "refresh"].forEach((name) => setRunStep(name, ""));
     if (autoRunLoaderTitle) autoRunLoaderTitle.textContent = title || "Creating complete backup";
     if (autoRunLoaderText) autoRunLoaderText.textContent = text || "Please keep this page open.";
-    if (autoRunLoader) autoRunLoader.hidden = false;
+    if (autoRunLoader) {
+      autoRunLoader.hidden = false;
+      autoRunLoader.style.display = "";
+    }
   }
 
   function updateRunLoader(title, text) {
@@ -160,7 +163,10 @@
   }
 
   function hideRunLoader() {
-    if (autoRunLoader) autoRunLoader.hidden = true;
+    if (autoRunLoader) {
+      autoRunLoader.hidden = true;
+      autoRunLoader.style.display = "none";
+    }
   }
 
   function schedTZ() {
@@ -727,6 +733,7 @@
   function closeAutoInspectModal() {
     if (autoInspectModal) {
       autoInspectModal.hidden = true;
+      autoInspectModal.style.display = "none";
     }
     activeAutoInspectFilename = "";
   }
@@ -855,6 +862,7 @@
     }
 
     autoInspectModal.hidden = false;
+    autoInspectModal.style.display = "";
     activeAutoInspectFilename = filename;
 
     if (autoInspectModalSubtitle) {
@@ -1370,6 +1378,7 @@
         if (finished) return;
         finished = true;
         modal.hidden = true;
+        modal.style.display = "none";
         cleanup();
         resolve(value);
       };
@@ -1403,6 +1412,7 @@
         : "bk-btn primary";
 
       modal.hidden = false;
+      modal.style.display = "";
       modal.addEventListener("click", onModalClick);
       okBtn.addEventListener("click", onConfirm);
       document.addEventListener("keydown", onKeyDown);
@@ -1420,6 +1430,7 @@
         if (done) return;
         done = true;
         modal.hidden = true;
+        modal.style.display = "none";
         cleanup();
         resolve(val);
       };
@@ -1433,6 +1444,7 @@
       };
       body.innerHTML = htmlMessage;
       modal.hidden = false;
+      modal.style.display = "";
       modal.addEventListener("click", onClick);
       okBtn.addEventListener("click", onOk);
       document.addEventListener("keydown", onKey);
@@ -1787,6 +1799,7 @@
     // Toggle Popover
     function openPopover() {
       popover.hidden = false;
+      popover.style.display = "";
       triggerBtn.setAttribute("aria-expanded", "true");
       setTimeout(() => {
         const activeH = hourList?.querySelector(".bk-hour-pill.active");
@@ -1798,6 +1811,7 @@
 
     function closePopover() {
       popover.hidden = true;
+      popover.style.display = "none";
       triggerBtn.setAttribute("aria-expanded", "false");
     }
 

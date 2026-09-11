@@ -593,6 +593,13 @@ html[data-theme="dark"] .backup-shell .bk-auto-action.delete {
 }
 
 /* Modals & Loaders */
+html[data-theme="dark"] .bk-modal[hidden],
+html[data-theme="dark"] .bk-run-loader[hidden],
+html[data-theme="dark"] .bk-time-popover[hidden],
+html[data-theme="dark"] [hidden] {
+  display: none !important;
+}
+
 html[data-theme="dark"] .bk-modal-backdrop,
 html[data-theme="dark"] .bk-run-loader-backdrop {
   background: rgba(0, 5, 10, 0.75);
