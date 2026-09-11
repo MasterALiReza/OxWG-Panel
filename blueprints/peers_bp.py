@@ -16,7 +16,8 @@ import subprocess
 import base64
 from io import BytesIO
 from datetime import datetime, timezone
-from typing import Any
+from urllib.parse import unquote
+from sqlalchemy import or_
 
 from flask import (
     Blueprint,
@@ -323,7 +324,8 @@ def _peer_by_public_key_or_404(public_key: str | int) -> Peer:
     if key.isdigit():
         peer = db.session.get(Peer, int(key))
     else:
-        peer = Peer.query.filter_by(public_key=key).first()
+        unquoted = unquote(key)
+        peer = Peer.query.filter(or_(Peer.public_key == key, Peer.public_key == unquoted)).first()
     if not peer:
         abort(404)
     return peer

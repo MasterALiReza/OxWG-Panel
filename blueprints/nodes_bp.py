@@ -10,7 +10,7 @@ import socket
 import ipaddress
 from io import BytesIO
 from datetime import datetime, timezone
-from urllib.parse import urlparse, urlencode
+from urllib.parse import urlparse, urlencode, unquote
 import requests
 import qrcode
 
@@ -55,7 +55,11 @@ from services.wg_parser import (
     _assign_iface_public_key,
     _persist_iface_public_key,
 )
-from services.shortlink_service import _delete_shortlinks_for_peer_ids
+from services.shortlink_service import (
+    _delete_shortlinks_for_peer_ids,
+    _shortlink_from_peer_id,
+    _shortlink_for_peer,
+)
 from blueprints.interfaces_bp import (
     _endpoint_default_payload,
     _apply_endpoint_default,
@@ -280,6 +284,8 @@ def _node_peer_by_publickey(nid: int, pub: str):
     if not pub:
         abort(404)
 
+    unquoted = unquote(pub)
+
     q = (
         db.session.query(Peer)
         .join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
@@ -291,8 +297,16 @@ def _node_peer_by_publickey(nid: int, pub: str):
 
     if pub.isdigit():
         peer = q.filter(Peer.id == int(pub)).first()
+        if not peer:
+            p_obj = db.session.get(Peer, int(pub))
+            if p_obj and p_obj.iface and (p_obj.iface.node_id == nid or (p_obj.iface.name and p_obj.iface.name.startswith(f"n{nid}:"))):
+                peer = p_obj
     else:
-        peer = q.filter(Peer.public_key == pub).first()
+        peer = q.filter(or_(Peer.public_key == pub, Peer.public_key == unquoted)).first()
+        if not peer:
+            p_obj = Peer.query.filter(or_(Peer.public_key == pub, Peer.public_key == unquoted)).first()
+            if p_obj and p_obj.iface and (p_obj.iface.node_id == nid or (p_obj.iface.name and p_obj.iface.name.startswith(f"n{nid}:"))):
+                peer = p_obj
 
     if not peer:
         abort(404)
@@ -1410,8 +1424,19 @@ def node_peers(nid):
             else:
                 status = rs or (p.status or 'offline')
 
+            shortlink_token = ''
+            shortlink_url = ''
+            try:
+                shortlink_token, shortlink_url = _shortlink_from_peer_id(p.id)
+                if not shortlink_token or not shortlink_url:
+                    shortlink_token, shortlink_url = _shortlink_for_peer(p)
+            except Exception:
+                pass
+
             out.append({
                 'id': p.id,
+                'shortlink': shortlink_url or '',
+                'shortlink_token': shortlink_token or '',
                 'node_id': nid,
                 'panel_status': p.status,
                 'conn_status': rs if rs in ('online', 'offline') else 'offline',
@@ -1420,6 +1445,7 @@ def node_peers(nid):
                 'latest_handshake_age': (r or {}).get('latest_handshake_age'),
                 'conn_reason': (r or {}).get('conn_reason') or 'none',
                 'iface': iface_disp,
+                'iface_name': iface_disp,
                 'iface_raw': iface_raw,
                 'name': p.name,
                 'listen_port': (p_iface.listen_port if p_iface else None) or port_by_name.get(iface_disp),
@@ -1434,7 +1460,9 @@ def node_peers(nid):
                 'dns': p.dns,
                 'status': status,
                 'data_limit': getattr(p, 'data_limit_value', None),
+                'data_limit_value': getattr(p, 'data_limit_value', None),
                 'limit_unit': getattr(p, 'data_limit_unit', None),
+                'data_limit_unit': getattr(p, 'data_limit_unit', None),
                 'unlimited': getattr(p, 'unlimited', False),
                 'time_limit_days': getattr(p, 'time_limit_days', None),
                 'display_timezone': _panel_timezone_name(),
@@ -1573,10 +1601,23 @@ def node_peers(nid):
             cleanup_failures=cleanup_failures,
         ), 502 if cleanup_failures else 500
 
+    shortlink_token = ''
+    shortlink_url = ''
+    try:
+        shortlink_token, shortlink_url = _shortlink_for_peer(peer)
+    except Exception:
+        pass
+
     return jsonify(
-        ok=True, id=peer.id, address=peer.address,
+        success=True,
+        ok=True,
+        id=peer.id,
+        public_key=peer.public_key,
+        address=peer.address,
         endpoint=_effective_client_endpoint(peer),
         peer_endpoint=peer.peer_endpoint or '',
+        shortlink=shortlink_url or '',
+        shortlink_token=shortlink_token or '',
     )
 
 
@@ -1585,28 +1626,9 @@ def node_peers(nid):
 @require_api_key_or_login
 def api_edit_node_peer(nid, pub):
     Node.query.get_or_404(nid)
-    pub = (pub or '').strip()
-
-    if not pub:
-        return jsonify(
-            success=False,
-            ok=False,
-            error='peer_not_found',
-            detail='Peer public key is required.',
-        ), 404
-
-    p = (
-        db.session.query(Peer)
-        .join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
-        .filter(Peer.public_key == pub)
-        .filter(or_(
-            InterfaceConfig.name.like(f'n{nid}:%'),
-            InterfaceConfig.node_id == nid,
-        ))
-        .first()
-    )
-
-    if p is None:
+    try:
+        p = _node_peer_by_publickey(nid, pub)
+    except Exception:
         return jsonify(
             success=False,
             ok=False,
@@ -1622,16 +1644,10 @@ def api_edit_node_peer(nid, pub):
 def node_peer_delete(nid, pub):
     n = Node.query.get_or_404(nid)
 
-    p = (
-        db.session.query(Peer)
-        .join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
-        .filter(Peer.public_key == pub)
-        .filter(or_(
-            InterfaceConfig.name.like(f"n{nid}:%"),
-            InterfaceConfig.node_id == nid
-        ))
-        .first()
-    )
+    try:
+        p = _node_peer_by_publickey(nid, pub)
+    except Exception:
+        p = None
 
     if p is None:
         try:
@@ -1686,10 +1702,11 @@ def node_peer_config_qr(nid, pub):
     img.save(bio, format="PNG")
     bio.seek(0)
 
+    as_attachment = bool(request.args.get("download"))
     return send_file(
         bio,
         mimetype="image/png",
-        as_attachment=False,
+        as_attachment=as_attachment,
         download_name=f"{peer.name or 'peer'}-{peer.id}.png",
     )
 
@@ -1698,12 +1715,10 @@ def node_peer_config_qr(nid, pub):
 @admin_required
 def node_disable_peer(nid, pub):
     n = Node.query.get_or_404(nid)
-    p = (db.session.query(Peer)
-         .join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
-         .filter(Peer.public_key == pub)
-         .filter(or_(InterfaceConfig.name.like(f"n{nid}:%"),
-                     InterfaceConfig.node_id == nid))
-         .first())
+    try:
+        p = _node_peer_by_publickey(nid, pub)
+    except Exception:
+        p = None
 
     payload = {}
     if p:
@@ -1712,7 +1727,8 @@ def node_disable_peer(nid, pub):
         except Exception:
             pass
 
-    node_post(n, f'/api/peer/{pub}/disable', payload)
+    target_pub = p.public_key if p else pub
+    node_post(n, f'/api/peer/{target_pub}/disable', payload)
 
     if p:
         p.status = 'offline'
@@ -1725,18 +1741,9 @@ def node_disable_peer(nid, pub):
 @admin_required
 def node_enable_peer(nid, pub):
     n = Node.query.get_or_404(nid)
-    p = (
-        db.session.query(Peer)
-        .join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
-        .filter(Peer.public_key == pub)
-        .filter(or_(
-            InterfaceConfig.name.like(f"n{nid}:%"),
-            InterfaceConfig.node_id == nid
-        ))
-        .first()
-    )
-
-    if not p:
+    try:
+        p = _node_peer_by_publickey(nid, pub)
+    except Exception:
         return jsonify(success=False, error='peer_not_found'), 404
 
     payload = {}
@@ -1746,7 +1753,7 @@ def node_enable_peer(nid, pub):
         pass
 
     try:
-        node_post(n, f'/api/peer/{pub}/enable', payload, timeout=15)
+        node_post(n, f'/api/peer/{p.public_key}/enable', payload, timeout=15)
         current_live_total = int(_node_peer_live_total_bytes(n, p) or 0)
         current_live_total = max(0, current_live_total)
 
@@ -1827,23 +1834,7 @@ def node_enable_peer(nid, pub):
 @nodes_bp.route('/api/nodes/<int:nid>/peer/<path:pub>/logs', methods=['GET', 'DELETE'])
 @require_api_key_or_login
 def node_peer_logs(nid, pub):
-    pub = (pub or '').strip()
-    if not pub:
-        abort(404)
-
-    peer = (
-        db.session.query(Peer)
-        .join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
-        .filter(Peer.public_key == pub)
-        .filter(or_(
-            InterfaceConfig.name.like(f"n{nid}:%"),
-            InterfaceConfig.node_id == nid
-        ))
-        .first()
-    )
-
-    if not peer:
-        abort(404)
+    peer = _node_peer_by_publickey(nid, pub)
 
     if request.method == 'DELETE':
         try:
@@ -1941,7 +1932,7 @@ def node_reset_peer_timer_only(nid, pub):
         pass
 
     try:
-        node_post(n, f'/api/peer/{pub}/enable', payload)
+        node_post(n, f'/api/peer/{p.public_key}/enable', payload)
         p.status = 'online'
     except Exception as e:
         db.session.commit()
@@ -1962,22 +1953,5 @@ def node_reset_peer_timer_only(nid, pub):
 @nodes_bp.route('/api/nodes/<int:nid>/peer/<path:pub>/shortlink', methods=['GET', 'POST'])
 @require_api_key_or_login
 def node_peer_shortlink(nid, pub):
-    pub = (pub or '').strip()
-    if not pub:
-        abort(404)
-
-    peer = (
-        db.session.query(Peer)
-        .join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
-        .filter(Peer.public_key == pub)
-        .filter(or_(
-            InterfaceConfig.name.like(f"n{nid}:%"),
-            InterfaceConfig.node_id == nid
-        ))
-        .first()
-    )
-
-    if not peer:
-        abort(404)
-
+    peer = _node_peer_by_publickey(nid, pub)
     return _shortlink_response_for_peer(peer)
