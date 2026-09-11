@@ -796,6 +796,14 @@ document.getElementById('rt-restart')
       el.dataset.scope = scope;
       el.dataset.target = hasTarget ? String(target) : '';
     });
+
+    ['i-table', 'i-pre-up', 'i-pre-down', 'i-post-up', 'i-post-down'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.disabled = !save;
+        el.title = save ? '' : 'Editing interface settings on nodes is disabled';
+      }
+    });
   }
 
   function ifaceView(meta) {
@@ -806,6 +814,11 @@ document.getElementById('rt-restart')
     set('i-listen',  meta?.listen_port ?? '');
     set('i-dns',     meta?.dns ?? '');
     set('i-mtu',     meta?.mtu ?? '');
+    set('i-table',     meta?.table ?? '');
+    set('i-pre-up',    meta?.pre_up ?? '');
+    set('i-pre-down',  meta?.pre_down ?? '');
+    set('i-post-up',   meta?.post_up ?? '');
+    set('i-post-down', meta?.post_down ?? '');
     // The endpoint inputs are the only editable fields on node scope, and the
     // node status poll re-renders this view every 10s. Never overwrite what an
     // operator is part-way through typing; a deliberate (re)load clears the flag.
@@ -1142,13 +1155,27 @@ document.getElementById('rt-restart')
     statusPollNode();
   });
 
+  $('#iface-optional-toggle')?.addEventListener('click', () => {
+    const btn = $('#iface-optional-toggle');
+    const content = $('#iface-optional-content');
+    if (!btn || !content) return;
+    const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!isExpanded));
+    content.hidden = isExpanded;
+  });
+
   $('#iface-save')?.addEventListener('click', async () => {
     if (IFACE_SCOPE !== 'local') return; 
     const iid = $('#iface-select')?.value; if (!iid) return;
     const payload = {
       listen_port: Number($('#i-listen')?.value || 0) || null,
       dns:   ($('#i-dns')?.value || '').trim() || null,
-      mtu:   Number($('#i-mtu')?.value || 0) || null
+      mtu:   Number($('#i-mtu')?.value || 0) || null,
+      table: ($('#i-table')?.value || '').trim() || null,
+      pre_up: ($('#i-pre-up')?.value || '').trim() || null,
+      pre_down: ($('#i-pre-down')?.value || '').trim() || null,
+      post_up: ($('#i-post-up')?.value || '').trim() || null,
+      post_down: ($('#i-post-down')?.value || '').trim() || null,
     };
     try {
       await jfetch(`/api/iface/${iid}`, { method:'POST', body: payload });

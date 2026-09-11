@@ -119,7 +119,8 @@ def find_iface(path: str) -> InterfaceConfig | None:
         return None
 
     post_up, post_down = [], []
-    address = listen_port = private_key = mtu = dns = None
+    pre_up, pre_down = [], []
+    address = listen_port = private_key = mtu = dns = table = None
     in_iface = False
 
     try:
@@ -152,6 +153,12 @@ def find_iface(path: str) -> InterfaceConfig | None:
                         pass
                 elif lk == 'dns':
                     dns = val
+                elif lk == 'table':
+                    table = val
+                elif lk == 'preup':
+                    pre_up.append(val)
+                elif lk == 'predown':
+                    pre_down.append(val)
                 elif lk == 'postup':
                     post_up.append(val)
                 elif lk == 'postdown':
@@ -170,8 +177,11 @@ def find_iface(path: str) -> InterfaceConfig | None:
         private_key=private_key,
         mtu=mtu,
         dns=dns,
-        post_up='\n'.join(post_up),
-        post_down='\n'.join(post_down),
+        table=table or None,
+        pre_up='\n'.join(pre_up) if pre_up else None,
+        pre_down='\n'.join(pre_down) if pre_down else None,
+        post_up='\n'.join(post_up) if post_up else None,
+        post_down='\n'.join(post_down) if post_down else None,
     )
 
 
@@ -186,6 +196,9 @@ def _copy_local_iface_from_parsed(existing: Any, parsed: Any) -> Any:
     existing.private_key = new_priv
     existing.mtu = parsed.mtu
     existing.dns = parsed.dns
+    existing.table = getattr(parsed, 'table', None)
+    existing.pre_up = getattr(parsed, 'pre_up', None)
+    existing.pre_down = getattr(parsed, 'pre_down', None)
     existing.post_up = parsed.post_up
     existing.post_down = parsed.post_down
 

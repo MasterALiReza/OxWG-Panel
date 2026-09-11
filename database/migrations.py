@@ -290,6 +290,18 @@ def _interface_schema(db_session=None):
         statements.append(
             'ALTER TABLE interface_config ADD COLUMN public_key VARCHAR(128)'
         )
+    if 'table' not in cols:
+        statements.append(
+            'ALTER TABLE interface_config ADD COLUMN "table" VARCHAR(64)'
+        )
+    if 'pre_up' not in cols:
+        statements.append(
+            'ALTER TABLE interface_config ADD COLUMN pre_up TEXT'
+        )
+    if 'pre_down' not in cols:
+        statements.append(
+            'ALTER TABLE interface_config ADD COLUMN pre_down TEXT'
+        )
 
     if statements:
         with db.engine.begin() as conn:

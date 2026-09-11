@@ -4911,6 +4911,11 @@ if (scopeEl) {
       dns: (fd.get('dns') || '').trim(),
       mtu: (fd.get('mtu') || '').trim() ? Number(fd.get('mtu')) : null,
       auto_up: !!fd.get('auto_up'),
+      table: String(fd.get('table') || '').trim() || null,
+      pre_up: String(fd.get('pre_up') || '').trim() || null,
+      pre_down: String(fd.get('pre_down') || '').trim() || null,
+      post_up: String(fd.get('post_up') || '').trim() || null,
+      post_down: String(fd.get('post_down') || '').trim() || null,
     };
 
     if (!payload.name || !payload.address || !payload.listen_port) {

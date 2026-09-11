@@ -575,10 +575,136 @@ def _inject_firewall_rules(
         "changed": True,
         "reason": "managed_rules_added",
         "post_up": post_up,
-        "post_down": post_down,
         "runtime_applied": runtime_applied,
         "runtime_error": runtime_error,
     }
+
+
+def _append_managed_iface_keys(new_lines: list[str], updates: dict[str, Any], keys_to_replace: set[str], seen_keys: set[str]):
+    for key in ('listen_port', 'dns', 'mtu', 'table'):
+        if key in keys_to_replace and key not in seen_keys:
+            val = updates.get(key)
+            if val not in (None, ''):
+                directive = {'listen_port': 'ListenPort', 'dns': 'DNS', 'mtu': 'MTU', 'table': 'Table'}[key]
+                new_lines.append(f"{directive} = {val}")
+    for key in ('pre_up', 'pre_down', 'post_up', 'post_down'):
+        if key in keys_to_replace and key not in seen_keys:
+            val = updates.get(key)
+            if val:
+                directive = {'pre_up': 'PreUp', 'pre_down': 'PreDown', 'post_up': 'PostUp', 'post_down': 'PostDown'}[key]
+                for line_cmd in str(val).splitlines():
+                    if line_cmd.strip():
+                        new_lines.append(f"{directive} = {line_cmd.strip()}")
+
+
+def _update_iface_conf_file(iface, updates: dict[str, Any]) -> bool:
+    """Safely update [Interface] section of the WireGuard configuration file."""
+    conf_path = getattr(iface, 'path', None) or ''
+    if not conf_path or not os.path.isfile(conf_path):
+        wg_dir = current_app.config.get('WG_CONF_PATH', '/etc/wireguard')
+        if os.path.isdir(wg_dir):
+            candidate = os.path.join(wg_dir, f"{iface.name}.conf")
+            if os.path.isfile(candidate):
+                conf_path = candidate
+    if not conf_path or not os.path.isfile(conf_path):
+        return False
+
+    try:
+        with open(conf_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+    except OSError:
+        return False
+
+    lines = content.splitlines()
+    new_lines = []
+    in_interface = False
+    seen_keys = set()
+    seen_multi_keys = set()
+
+    keys_to_replace = {k for k in ('listen_port', 'dns', 'mtu', 'table', 'pre_up', 'pre_down', 'post_up', 'post_down') if k in updates}
+
+    i = 0
+    while i < len(lines):
+        raw = lines[i]
+        stripped = raw.strip()
+
+        if stripped.startswith('[') and stripped.endswith(']'):
+            sec = stripped[1:-1].strip().lower()
+            if sec == 'interface':
+                in_interface = True
+                new_lines.append(raw)
+                i += 1
+                continue
+            else:
+                if in_interface:
+                    _append_managed_iface_keys(new_lines, updates, keys_to_replace, seen_keys)
+                    in_interface = False
+                new_lines.append(raw)
+                i += 1
+                continue
+
+        if in_interface and '=' in stripped and not stripped.startswith('#'):
+            k, _ = [s.strip() for s in stripped.split('=', 1)]
+            lk = k.lower()
+            mapped = {
+                'listenport': 'listen_port',
+                'dns': 'dns',
+                'mtu': 'mtu',
+                'table': 'table',
+                'preup': 'pre_up',
+                'predown': 'pre_down',
+                'postup': 'post_up',
+                'postdown': 'post_down',
+            }.get(lk)
+
+            if mapped and mapped in keys_to_replace:
+                seen_keys.add(mapped)
+                if mapped in ('pre_up', 'pre_down', 'post_up', 'post_down'):
+                    if mapped not in seen_multi_keys:
+                        seen_multi_keys.add(mapped)
+                        val = updates.get(mapped)
+                        if val:
+                            directive = {'pre_up': 'PreUp', 'pre_down': 'PreDown', 'post_up': 'PostUp', 'post_down': 'PostDown'}[mapped]
+                            for line_cmd in str(val).splitlines():
+                                if line_cmd.strip():
+                                    new_lines.append(f"{directive} = {line_cmd.strip()}")
+                else:
+                    val = updates.get(mapped)
+                    if val not in (None, ''):
+                        directive = {'listen_port': 'ListenPort', 'dns': 'DNS', 'mtu': 'MTU', 'table': 'Table'}[mapped]
+                        new_lines.append(f"{directive} = {val}")
+                i += 1
+                continue
+
+        new_lines.append(raw)
+        i += 1
+
+    if in_interface:
+        _append_managed_iface_keys(new_lines, updates, keys_to_replace, seen_keys)
+
+    updated_content = '\n'.join(new_lines).rstrip() + '\n'
+    directory = os.path.dirname(conf_path) or '.'
+    fd, tmp_path = tempfile.mkstemp(prefix='.wg-conf.', dir=directory)
+    try:
+        try:
+            orig_mode = os.stat(conf_path).st_mode & 0o777
+        except OSError:
+            orig_mode = 0o600
+        with os.fdopen(fd, 'w', encoding='utf-8') as h:
+            h.write(updated_content)
+            h.flush()
+            os.fsync(h.fileno())
+        os.chmod(tmp_path, orig_mode)
+        os.replace(tmp_path, conf_path)
+        tmp_path = ''
+        return True
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+    return False
 
 
 def local_firewall_rules(app=None) -> dict:
@@ -693,6 +819,11 @@ def get_interfaces():
             'listen_port': iface.listen_port,
             'mtu': iface.mtu,
             'dns': iface.dns,
+            'table': getattr(iface, 'table', None) or '',
+            'pre_up': getattr(iface, 'pre_up', None) or '',
+            'pre_down': getattr(iface, 'pre_down', None) or '',
+            'post_up': getattr(iface, 'post_up', None) or '',
+            'post_down': getattr(iface, 'post_down', None) or '',
             'available_ips': _available_ips(iface),
             'is_up': _iface_up(dev),
             'endpoint_host': (getattr(iface, 'endpoint_host', None) or '').strip() or None,
@@ -766,9 +897,15 @@ def create_local_interface():
     if _iface_up(name):
         return jsonify(ok=False, error="interface_exists_system", detail=f"Interface {name} already exists on the OS."), 409
 
-    post_up = ""
-    post_down = ""
-    if auto_firewall:
+    table = str(data.get("table") or "").strip() or None
+    pre_up = str(data.get("pre_up") or "").strip() or None
+    pre_down = str(data.get("pre_down") or "").strip() or None
+    custom_post_up = str(data.get("post_up") or "").strip() or None
+    custom_post_down = str(data.get("post_down") or "").strip() or None
+
+    post_up = custom_post_up or ""
+    post_down = custom_post_down or ""
+    if not post_up and not post_down and auto_firewall:
         try:
             post_up, post_down = _wg_firewall_rules(name, address)
         except Exception as exc:
@@ -791,6 +928,16 @@ def create_local_interface():
     ]
     if mtu is not None:
         lines.append(f"MTU = {mtu}")
+    if dns:
+        lines.append(f"DNS = {dns}")
+    if table:
+        lines.append(f"Table = {table}")
+    for cmd in str(pre_up or "").splitlines():
+        if cmd.strip():
+            lines.append(f"PreUp = {cmd.strip()}")
+    for cmd in str(pre_down or "").splitlines():
+        if cmd.strip():
+            lines.append(f"PreDown = {cmd.strip()}")
     for cmd in str(post_up or "").splitlines():
         if cmd.strip():
             lines.append(f"PostUp = {cmd.strip()}")
@@ -813,6 +960,9 @@ def create_local_interface():
         private_key=private_key,
         mtu=mtu,
         dns=dns,
+        table=table,
+        pre_up=pre_up or None,
+        pre_down=pre_down or None,
         post_up=post_up or None,
         post_down=post_down or None,
     )
@@ -839,6 +989,11 @@ def create_local_interface():
         name=name,
         address=address,
         listen_port=listen_port,
+        table=table or "",
+        pre_up=pre_up or "",
+        pre_down=pre_down or "",
+        post_up=post_up or "",
+        post_down=post_down or "",
         is_up=_iface_up(name),
     ), 201
 
@@ -954,6 +1109,11 @@ def iface_settings(iid):
             listen_port=iface.listen_port,
             dns=iface.dns,
             mtu=iface.mtu,
+            table=getattr(iface, 'table', None) or '',
+            pre_up=getattr(iface, 'pre_up', None) or '',
+            pre_down=getattr(iface, 'pre_down', None) or '',
+            post_up=getattr(iface, 'post_up', None) or '',
+            post_down=getattr(iface, 'post_down', None) or '',
             is_up=_iface_up(dev),
             **{
                 k: v for k, v in _endpoint_default_payload(iface).items()
@@ -978,10 +1138,23 @@ def iface_settings(iid):
             updates['listen_port'] = int(data['listen_port'])
         except (TypeError, ValueError):
             return jsonify(ok=False, error='invalid_listen_port', detail='Port must be integer.'), 400
+    if 'table' in data:
+        updates['table'] = str(data['table']).strip() if data['table'] not in (None, '') else None
+    if 'pre_up' in data:
+        updates['pre_up'] = str(data['pre_up']).strip() if data['pre_up'] not in (None, '') else None
+    if 'pre_down' in data:
+        updates['pre_down'] = str(data['pre_down']).strip() if data['pre_down'] not in (None, '') else None
+    if 'post_up' in data:
+        updates['post_up'] = str(data['post_up']).strip() if data['post_up'] not in (None, '') else None
+    if 'post_down' in data:
+        updates['post_down'] = str(data['post_down']).strip() if data['post_down'] not in (None, '') else None
 
     for k, v in updates.items():
         setattr(iface, k, v)
     db.session.commit()
+
+    # Atomically update WireGuard .conf file
+    _update_iface_conf_file(iface, updates)
 
     return jsonify(
         ok=True,
@@ -992,6 +1165,11 @@ def iface_settings(iid):
             'listen_port': iface.listen_port,
             'dns': iface.dns,
             'mtu': iface.mtu,
+            'table': getattr(iface, 'table', None) or '',
+            'pre_up': getattr(iface, 'pre_up', None) or '',
+            'pre_down': getattr(iface, 'pre_down', None) or '',
+            'post_up': getattr(iface, 'post_up', None) or '',
+            'post_down': getattr(iface, 'post_down', None) or '',
             'is_up': _iface_up(dev),
         },
     )

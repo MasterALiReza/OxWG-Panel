@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 from app import app
 from core.extensions import db
-from models import AdminAccount
+from models import AdminAccount, InterfaceConfig
 from core.paths import (
     RUNTIME_FILE,
     PANEL_SETTINGS_FILE,
@@ -333,6 +333,73 @@ class TestSettingsSubsystem(unittest.TestCase):
         r_del = self.client.delete('/api/telegram/admins/999888777')
         self.assertEqual(r_del.status_code, 200)
         self.assertTrue(r_del.get_json().get('ok'))
+
+    def test_interface_optional_settings(self):
+        """Verify GET /api/iface/<id> and POST /api/iface/<id> handle optional routing settings (table, pre_up, pre_down, post_up, post_down)."""
+        self._login(self.client)
+        with self.app.app_context():
+            iface = InterfaceConfig.query.filter_by(name='wg_opt_test').first()
+            if not iface:
+                iface = InterfaceConfig(
+                    name='wg_opt_test',
+                    path='instance/wg_opt_test.conf',
+                    address='10.77.0.1/24',
+                    listen_port=51829,
+                    private_key='dGVzdF9wcml2YXRlX2tleV8xMjM0NTY3ODkwMTI=',
+                    public_key='dGVzdF9wdWJsaWNfa2V5XzEyMzQ1Njc4OTAxMjM=',
+                    table='auto',
+                    pre_up='echo pre_up_orig',
+                    pre_down='echo pre_down_orig',
+                    post_up='iptables -A FORWARD -i wg_opt_test -j ACCEPT',
+                    post_down='iptables -D FORWARD -i wg_opt_test -j ACCEPT',
+                )
+                db.session.add(iface)
+                db.session.commit()
+            iface_id = iface.id
+
+        try:
+            # 1. GET /api/iface/<id>
+            resp = self.client.get(f'/api/iface/{iface_id}')
+            self.assertEqual(resp.status_code, 200)
+            data = resp.get_json()
+            self.assertTrue(data.get('ok'))
+            self.assertEqual(data.get('table'), 'auto')
+            self.assertEqual(data.get('pre_up'), 'echo pre_up_orig')
+            self.assertEqual(data.get('pre_down'), 'echo pre_down_orig')
+            self.assertEqual(data.get('post_up'), 'iptables -A FORWARD -i wg_opt_test -j ACCEPT')
+            self.assertEqual(data.get('post_down'), 'iptables -D FORWARD -i wg_opt_test -j ACCEPT')
+
+            # 2. POST /api/iface/<id> with updated optional settings
+            new_payload = {
+                'dns': '1.1.1.1, 8.8.8.8',
+                'mtu': 1420,
+                'listen_port': 51829,
+                'table': 'off',
+                'pre_up': 'ip rule add from 10.77.0.0/24 table 200',
+                'pre_down': 'ip rule del from 10.77.0.0/24 table 200',
+                'post_up': 'iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE',
+                'post_down': 'iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE',
+            }
+            post_resp = self.client.post(f'/api/iface/{iface_id}', json=new_payload)
+            self.assertEqual(post_resp.status_code, 200)
+            post_data = post_resp.get_json()
+            self.assertTrue(post_data.get('ok'))
+            self.assertEqual(post_data['interface']['table'], 'off')
+            self.assertEqual(post_data['interface']['pre_up'], 'ip rule add from 10.77.0.0/24 table 200')
+            self.assertEqual(post_data['interface']['pre_down'], 'ip rule del from 10.77.0.0/24 table 200')
+            self.assertEqual(post_data['interface']['post_up'], 'iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE')
+            self.assertEqual(post_data['interface']['post_down'], 'iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE')
+        finally:
+            with self.app.app_context():
+                obj = db.session.get(InterfaceConfig, iface_id)
+                if obj:
+                    db.session.delete(obj)
+                    db.session.commit()
+            if os.path.exists('instance/wg_opt_test.conf'):
+                try:
+                    os.remove('instance/wg_opt_test.conf')
+                except OSError:
+                    pass
 
 
 if __name__ == '__main__':

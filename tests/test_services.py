@@ -384,6 +384,9 @@ ListenPort = 51820
 PrivateKey = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=
 MTU = 1420
 DNS = 1.1.1.1
+Table = auto
+PreUp = echo pre_up
+PreDown = echo pre_down
 PostUp = iptables -A FORWARD -i %i -j ACCEPT
 PostDown = iptables -D FORWARD -i %i -j ACCEPT
 
@@ -401,6 +404,9 @@ AllowedIPs = 10.10.0.2/32
         self.assertEqual(parsed.listen_port, 51820)
         self.assertEqual(parsed.mtu, 1420)
         self.assertEqual(parsed.dns, "1.1.1.1")
+        self.assertEqual(parsed.table, "auto")
+        self.assertEqual(parsed.pre_up, "echo pre_up")
+        self.assertEqual(parsed.pre_down, "echo pre_down")
         self.assertIn("iptables -A", parsed.post_up)
 
 

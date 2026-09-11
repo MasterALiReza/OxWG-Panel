@@ -6273,6 +6273,10 @@
       m.classList.remove("open");
       m.setAttribute("aria-hidden", "true");
       document.body.classList.remove("modal-open");
+      const optToggle = document.getElementById("iface-create-optional-toggle");
+      const optContent = document.getElementById("iface-create-optional-content");
+      if (optToggle) optToggle.setAttribute("aria-expanded", "false");
+      if (optContent) optContent.hidden = true;
     }
 
     function openIfaceCreateModal() {
@@ -6341,6 +6345,11 @@
         mtu: String(fd.get("mtu") || "").trim() ? Number(fd.get("mtu")) : null,
 
         auto_up: !!fd.get("auto_up"),
+        table: String(fd.get("table") || "").trim() || null,
+        pre_up: String(fd.get("pre_up") || "").trim() || null,
+        pre_down: String(fd.get("pre_down") || "").trim() || null,
+        post_up: String(fd.get("post_up") || "").trim() || null,
+        post_down: String(fd.get("post_down") || "").trim() || null,
 
         /*
          * Honor the checkbox when present.
@@ -6659,6 +6668,18 @@
       ifaceCreateForm.addEventListener("submit", submitIfaceCreate);
 
       ifaceCreateForm.dataset.ifaceCreateWired = "1";
+    }
+
+    const ifaceCreateOptToggle = document.getElementById("iface-create-optional-toggle");
+    if (ifaceCreateOptToggle && ifaceCreateOptToggle.dataset.optWired !== "1") {
+      ifaceCreateOptToggle.addEventListener("click", () => {
+        const content = document.getElementById("iface-create-optional-content");
+        if (!content) return;
+        const open = ifaceCreateOptToggle.getAttribute("aria-expanded") === "true";
+        ifaceCreateOptToggle.setAttribute("aria-expanded", String(!open));
+        content.hidden = open;
+      });
+      ifaceCreateOptToggle.dataset.optWired = "1";
     }
 
     const ifaceCreateClose = document.getElementById("iface-create-close");
