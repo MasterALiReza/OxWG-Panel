@@ -61,11 +61,22 @@ from services.telegram_notifier import (
     _tg_event_escape,
 )
 from services.backup_service import (
+    _db_path,
+    _jsonl_bundle,
+    _env_bundle,
     _load_backup_settings,
     _save_backup_settings,
+    _load_backup_last,
+    _record_backup,
+    _tg_chatid,
+    _send_zip_telegram,
+    _node_backup_wg_zip,
+    _bundle_node_wg_backups,
+    build_full_backup_archive,
     _load_backup_schedule,
     _save_backup_schedule,
     _save_autobackup,
+    execute_auto_backup,
 )
 from blueprints.logs_bp import _norm_adminlog
 
@@ -76,25 +87,6 @@ backup_bp = Blueprint('backup_bp', __name__)
 # Helper Functions
 # ---------------------------------------------------------------------------
 
-def _db_path() -> str | None:
-    return DB_PATH if os.path.isfile(DB_PATH) else None
-
-
-def _jsonl_bundle(z: zipfile.ZipFile):
-    inst = Path(current_app.instance_path)
-    keep_suffix = {'.json', '.jsonl'}
-    for p in inst.glob('*'):
-        if p.is_file() and p.suffix.lower() in keep_suffix:
-            z.write(p, arcname=f'instance/{p.name}')
-
-
-def _env_bundle(z: zipfile.ZipFile):
-    """Include panel .env in full backups for migration."""
-    env_path = Path(BASE_DIR) / '.env'
-    if env_path.is_file():
-        z.write(env_path, arcname='env/.env')
-
-
 def _backup_prefs_load():
     return _load_backup_settings()
 
@@ -102,203 +94,6 @@ def _backup_prefs_load():
 def _backup_prefs_save(p):
     return _save_backup_settings(p)
 
-
-def _load_backup_last():
-    return _json_load(BACKUP_LAST_FILE, {})
-
-
-def _record_backup(kind: str, when_ts: int | None = None):
-    last = _load_backup_last()
-    if when_ts is None:
-        iso = datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
-    else:
-        iso = datetime.fromtimestamp(int(when_ts), tz=timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
-    last[f"{kind}_last"] = iso
-    _json_save(BACKUP_LAST_FILE, last)
-
-
-def _tg_chatid():
-    admins = _load_tg_admins() or []
-    for a in admins:
-        if not a.get('muted') and str(a.get('id') or '').strip():
-            return str(a['id'])
-    return None
-
-
-def _send_zip_telegram(
-    data_bytes: bytes,
-    filename: str,
-    chat_id: str | None = None,
-    caption: str | None = None,
-) -> tuple[bool, str]:
-    settings = _load_tg_settings()
-    if not settings.get("enabled"):
-        return False, "Telegram disabled."
-
-    token = (settings.get("bot_token") or "").strip()
-    if not token:
-        return False, "Telegram token missing."
-
-    selected_chat_id = str(chat_id or _tg_chatid() or "").strip()
-    if not selected_chat_id:
-        return False, "No active Telegram administrator selected."
-
-    active_admin_ids = {
-        str(admin.get("id") or "").strip()
-        for admin in (_load_tg_admins() or [])
-        if not admin.get("muted") and str(admin.get("id") or "").strip()
-    }
-    if selected_chat_id not in active_admin_ids:
-        return False, "Selected Telegram recipient is not an active panel administrator."
-
-    size_bytes = len(data_bytes or b"")
-    if not caption:
-        try:
-            size_text = _tg_human_bytes(size_bytes)
-        except Exception:
-            size_text = f"{size_bytes} bytes"
-
-        created_at = _tg_now_text()
-        caption = "\n".join([
-            "<b>WG Panel backup</b>",
-            "",
-            "<b>Status</b> · Completed",
-            f"<b>File</b> · <code>{_tg_event_escape(filename)}</code>",
-            f"<b>Size</b> · {_tg_event_escape(size_text)}",
-            f"<b>Created</b> · {_tg_event_escape(created_at)}",
-        ])
-
-    if len(caption) > 1000:
-        caption = caption[:997] + "..."
-
-    try:
-        response = requests.post(
-            f"https://api.telegram.org/bot{token}/sendDocument",
-            data={
-                "chat_id": selected_chat_id,
-                "disable_notification": "true",
-                "caption": caption,
-                "parse_mode": "HTML",
-            },
-            files={"document": (filename, data_bytes, "application/zip")},
-            timeout=60,
-        )
-        try:
-            payload = response.json() or {}
-        except Exception:
-            payload = {}
-
-        if response.ok and payload.get("ok"):
-            return True, "Backup document sent to Telegram."
-
-        description = str(payload.get("description") or response.text or "")[:300]
-        return False, f"Telegram error {response.status_code}: {description}"
-    except Exception as exc:
-        return False, f"Telegram exception: {exc}"
-
-
-def _node_backup_wg_zip(node: Node, timeout: int = 25) -> bytes:
-    url = f"{node.base_url.rstrip('/')}/api/backup/wg"
-    r = requests.get(
-        url,
-        headers={'Authorization': f'Bearer {_read_api_key(node)}'},
-        timeout=timeout,
-    )
-    r.raise_for_status()
-    return r.content or b''
-
-
-def _bundle_node_wg_backups(z: zipfile.ZipFile) -> list[dict]:
-    results = []
-    nodes = Node.query.order_by(Node.id.asc()).all()
-
-    for node in nodes:
-        rec = {
-            "node_id": node.id,
-            "name": node.name,
-            "base_url": node.base_url,
-            "ok": False,
-            "files": [],
-            "env_file": False,
-            "error": "",
-        }
-
-        try:
-            z.writestr(
-                f"nodes/{node.id}/meta.json",
-                json.dumps(
-                    {
-                        "node_id": node.id,
-                        "name": node.name,
-                        "base_url": node.base_url,
-                        "enabled": bool(node.enabled),
-                        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace('+00:00', 'Z'),
-                    },
-                    indent=2,
-                ),
-            )
-
-            if not node.enabled:
-                rec["error"] = "node_disabled"
-                results.append(rec)
-                continue
-
-            raw = _node_backup_wg_zip(node)
-            if not raw:
-                rec["error"] = "empty_node_backup"
-                results.append(rec)
-                continue
-
-            try:
-                with zipfile.ZipFile(BytesIO(raw), "r") as nz:
-                    members = nz.namelist()
-                    for member in members:
-                        if member.startswith("wg/") and member.endswith(".conf"):
-                            filename = os.path.basename(member)
-                            if not filename:
-                                continue
-                            data = nz.read(member)
-                            z.writestr(f"nodes/{node.id}/wg/{filename}", data)
-                            rec["files"].append(filename)
-                            continue
-
-                        if member == "env/.env":
-                            try:
-                                data = nz.read(member)
-                                if data:
-                                    z.writestr(f"nodes/{node.id}/env/.env", data)
-                                    rec["env_file"] = True
-                            except Exception as e:
-                                current_app.logger.warning(
-                                    "Node env backup skipped node=%s url=%s error=%s",
-                                    getattr(node, "id", "?"),
-                                    getattr(node, "base_url", ""),
-                                    e,
-                                )
-                            continue
-
-                rec["files"] = sorted(set(rec["files"]))
-                rec["ok"] = bool(rec["files"] or rec["env_file"])
-                if not rec["ok"]:
-                    rec["error"] = "node_backup_had_no_wg_or_env"
-
-            except zipfile.BadZipFile:
-                rec["error"] = "node_backup_not_zip"
-            except Exception as e:
-                rec["error"] = f"node_backup_read_failed: {e}"
-
-        except Exception as e:
-            rec["error"] = str(e)
-            current_app.logger.warning(
-                "Node backup failed node=%s url=%s error=%s",
-                getattr(node, "id", "?"),
-                getattr(node, "base_url", ""),
-                e,
-            )
-
-        results.append(rec)
-
-    return results
 
 
 def _node_wg_payloads_zip(z: zipfile.ZipFile, names: list[str]) -> dict[int, dict]:
@@ -604,9 +399,25 @@ def _backup_restore_impl():
                 if db_files:
                     src = db_files[0]
                     try:
+                        db.session.remove()
+                        db.engine.dispose()
                         db_path = Path(DB_PATH)
                         db_path.parent.mkdir(parents=True, exist_ok=True)
                         _backup_existing(db_path, kind_name="db", rel_tail=db_path.name)
+                        wal_path = db_path.parent / (db_path.name + "-wal")
+                        shm_path = db_path.parent / (db_path.name + "-shm")
+                        if wal_path.exists():
+                            _backup_existing(wal_path, kind_name="db", rel_tail=wal_path.name)
+                            try:
+                                wal_path.unlink()
+                            except Exception:
+                                pass
+                        if shm_path.exists():
+                            _backup_existing(shm_path, kind_name="db", rel_tail=shm_path.name)
+                            try:
+                                shm_path.unlink()
+                            except Exception:
+                                pass
                         src.replace(db_path)
                         restored["db"] = True
                     except Exception as e:
@@ -751,6 +562,11 @@ def _backup_restore_impl():
                 pass
 
     finally:
+        import shutil
+        try:
+            shutil.rmtree(db_dir, ignore_errors=True)
+        except Exception:
+            pass
         try:
             Path(tmp.name).unlink(missing_ok=True)
         except Exception:
@@ -1304,113 +1120,7 @@ def backup_full():
     auto_flag = (request.args.get('auto') or '0') == '1'
     selected_chat_id = (request.args.get("chat_id") or "").strip()
 
-    node_wg_results = []
-    saved_auto_backup = None
-    mem = BytesIO()
-
-    with zipfile.ZipFile(mem, 'w', zipfile.ZIP_DEFLATED) as z:
-        dbp = _db_path()
-        if dbp and os.path.isfile(dbp):
-            z.write(dbp, arcname=f'db/{os.path.basename(dbp)}')
-
-        _jsonl_bundle(z)
-        _env_bundle(z)
-
-        if include_wg:
-            wgdir = current_app.config.get('WG_CONF_PATH') or '/etc/wireguard/'
-            try:
-                for p in Path(wgdir).glob('*.conf'):
-                    if p.is_file():
-                        z.write(p, arcname=f'wg/{p.name}')
-            except Exception as e:
-                current_app.logger.debug("Local WG bundle skipped: %s", e)
-
-            try:
-                node_wg_results = _bundle_node_wg_backups(z)
-            except Exception as e:
-                current_app.logger.warning("Node backup bundle skipped: %s", e)
-                node_wg_results = [{
-                    'ok': False,
-                    'files': [],
-                    'env_file': False,
-                    'error': str(e),
-                }]
-
-        created_at = datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
-        z.writestr('meta/created.txt', created_at)
-        z.writestr('meta/host.txt', socket.gethostname())
-        z.writestr(
-            'meta/app.json',
-            json.dumps({
-                'db_uri': current_app.config.get('SQLALCHEMY_DATABASE_URI', ''),
-                'wg_conf_path': current_app.config.get('WG_CONF_PATH') or '/etc/wireguard/',
-            }, indent=2)
-        )
-        z.writestr('meta/node_wg_backup.json', json.dumps(node_wg_results, indent=2))
-
-        try:
-            manifest_counts = {
-                'nodes': Node.query.count(),
-                'interfaces': InterfaceConfig.query.count(),
-                'peers': Peer.query.count(),
-                'subscriptions': Subscription.query.count(),
-                'subscription_peers': SubscriptionPeer.query.count(),
-                'short_links': ShortLink.query.count(),
-            }
-        except Exception:
-            manifest_counts = {}
-
-        try:
-            local_wg_count = 0
-            if include_wg:
-                wgdir = current_app.config.get('WG_CONF_PATH') or '/etc/wireguard/'
-                local_wg_count = len([p for p in Path(wgdir).glob('*.conf') if p.is_file()])
-        except Exception:
-            local_wg_count = 0
-
-        node_wg_count = 0
-        node_env_count = 0
-        try:
-            for rec in node_wg_results or []:
-                node_wg_count += len(rec.get('files') or [])
-                if rec.get('env_file'):
-                    node_env_count += 1
-        except Exception:
-            node_wg_count = 0
-            node_env_count = 0
-
-        panel_env_exists = bool((Path(BASE_DIR) / '.env').is_file())
-        z.writestr(
-            'meta/manifest.json',
-            json.dumps({
-                'created_at': created_at,
-                'kind': 'full',
-                'panel_version': PANEL_VERSION,
-                'contains': {
-                    'database': bool(dbp and os.path.isfile(dbp)),
-                    'instance_json': True,
-                    'env_file': bool(panel_env_exists),
-                    'remote_node_env': bool(node_env_count > 0),
-                    'short_links': True,
-                    'subscriptions': True,
-                    'nodes_metadata': True,
-                    'local_wireguard_conf': bool(include_wg and local_wg_count > 0),
-                    'remote_node_wireguard_conf': bool(include_wg and node_wg_count > 0),
-                },
-                'counts': {
-                    **manifest_counts,
-                    'local_wg_files': int(local_wg_count or 0),
-                    'node_wg_files': int(node_wg_count or 0),
-                    'node_env_files': int(node_env_count or 0),
-                },
-                'node_wg_backup': node_wg_results,
-            }, indent=2)
-        )
-
-    mem.seek(0)
-    ts = _panel_filename_stamp()
-    fname = f'wgpanel_full_backup_{ts}.zip'
-    data = mem.getvalue()
+    data, fname, node_wg_results = build_full_backup_archive(include_wg=include_wg)
 
     if auto_flag:
         try:
@@ -1419,9 +1129,8 @@ def backup_full():
         except Exception:
             keep = 7
         try:
-            saved_auto_backup = _save_autobackup(data, keep=keep)
+            _save_autobackup(data, keep=keep)
         except Exception as exc:
-            saved_auto_backup = None
             current_app.logger.exception("Automatic backup storage failed: %s", exc)
 
     telegram_ok = None
@@ -1432,12 +1141,8 @@ def backup_full():
             current_app.logger.warning("Backup Telegram send failed: %s", telegram_message)
 
     try:
-        node_wg_count = 0
-        node_env_count = 0
-        for rec in node_wg_results or []:
-            node_wg_count += len(rec.get('files') or [])
-            if rec.get('env_file'):
-                node_env_count += 1
+        node_wg_count = sum(len(rec.get('files') or []) for rec in (node_wg_results or []))
+        node_env_count = sum(1 for rec in (node_wg_results or []) if rec.get('env_file'))
 
         _norm_adminlog({
             "action": "backup_full",
@@ -1458,6 +1163,7 @@ def backup_full():
     except Exception as e:
         current_app.logger.debug("record_backup(full) failed: %s", e)
 
+    ts = _panel_filename_stamp()
     out = BytesIO(data)
     out.seek(0)
     resp = send_file(
@@ -1468,6 +1174,9 @@ def backup_full():
     )
     resp.headers['X-Backup-Kind'] = 'full'
     resp.headers['X-Backup-Timestamp'] = ts
+    if send_tg:
+        resp.headers['X-Backup-Telegram-Sent'] = '1' if telegram_ok else '0'
+        resp.headers['X-Backup-Telegram-Message'] = str(telegram_message or '')
     return resp
 
 
