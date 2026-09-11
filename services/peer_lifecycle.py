@@ -8,6 +8,7 @@ import time
 import threading
 import subprocess
 import logging
+import ipaddress
 from typing import Any
 from datetime import datetime, timezone
 
@@ -222,6 +223,225 @@ def _accumulate_peer_usage(peer: Any, live_total: int | None = None) -> tuple[in
             changed = True
 
     return int(persisted), int(delta), bool(changed)
+
+
+def _wg_runtime_snapshot(iface_names: Any) -> tuple[dict[tuple[str, str], tuple[int, int]], dict[tuple[str, str], int]]:
+    """
+    Query WireGuard runtime dump for given interface names.
+    Returns (transfers_map, handshakes_map) keyed by (iface_name, public_key).
+    """
+    transfers: dict[tuple[str, str], tuple[int, int]] = {}
+    handshakes: dict[tuple[str, str], int] = {}
+    names = {str(name or '').strip() for name in (iface_names or []) if str(name or '').strip()}
+
+    for iface_name in sorted(names):
+        try:
+            dev = iface_name.split(':')[-1]
+            lines = subprocess.check_output(
+                ['wg', 'show', dev, 'dump'],
+                stderr=subprocess.DEVNULL,
+                timeout=2.0,
+            ).decode(errors='replace').splitlines()
+
+            for line in lines[1:]:
+                columns = line.split('\t')
+                if len(columns) < 8:
+                    columns = line.split()
+                if len(columns) < 8:
+                    continue
+                public_key = columns[0].strip()
+                if not public_key:
+                    continue
+                try:
+                    latest_handshake = int(columns[4] or 0)
+                except (TypeError, ValueError):
+                    latest_handshake = 0
+                try:
+                    rx_bytes = int(columns[5] or 0)
+                    tx_bytes = int(columns[6] or 0)
+                except (TypeError, ValueError):
+                    rx_bytes = 0
+                    tx_bytes = 0
+                key = (iface_name, public_key)
+                transfers[key] = (rx_bytes, tx_bytes)
+                handshakes[key] = latest_handshake
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError, OSError):
+            continue
+
+    return transfers, handshakes
+
+
+def _peer_ip_plain(peer: Any) -> str:
+    """Extract plain IP from peer address string."""
+    addr = getattr(peer, 'address', '') or ''
+    if not addr:
+        return ''
+    return addr.split('/')[0].split(',')[0].strip()
+
+
+def _peer_ping_ok(peer: Any, timeout_sec: float = 0.8) -> bool:
+    """Ping peer IP via interface device name."""
+    ip = _peer_ip_plain(peer)
+    if not ip:
+        return False
+
+    try:
+        from services.wg_parser import iface_devname
+        dev = iface_devname(getattr(peer, 'iface', None))
+    except Exception:
+        dev = getattr(getattr(peer, 'iface', None), 'name', '') or ''
+
+    if not dev:
+        return False
+
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+        if ip_obj.version == 6:
+            cmd = ['ping', '-6', '-I', dev, '-c', '1', '-W', '1', ip]
+        else:
+            cmd = ['ping', '-I', dev, '-c', '1', '-W', '1', ip]
+
+        return subprocess.run(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=max(1.0, float(timeout_sec) + 0.5)
+        ).returncode == 0
+    except Exception:
+        return False
+
+
+def _peer_conn_status(
+    peer: Any,
+    *,
+    live_total: int | None = None,
+    latest_handshake: int | None = None,
+    handshake_window: int | None = None,
+    allow_probe: bool = True,
+) -> dict[str, Any]:
+    """Determine the peer's live WireGuard connection state."""
+    now = now_ts()
+
+    try:
+        if handshake_window is None:
+            handshake_window = int(os.environ.get('WG_ONLINE_HANDSHAKE_WINDOW', '45'))
+        else:
+            handshake_window = int(handshake_window)
+    except (TypeError, ValueError):
+        handshake_window = 45
+
+    handshake_window = max(5, handshake_window)
+
+    probe_first = str(
+        os.environ.get('WG_ONLINE_PROBE_FIRST', '1')
+    ).strip().lower() not in ('0', 'false', 'no', 'off')
+
+    handshake_fallback = str(
+        os.environ.get('WG_ONLINE_HANDSHAKE_FALLBACK', '1')
+    ).strip().lower() in ('1', 'true', 'yes', 'on')
+
+    try:
+        if latest_handshake is None:
+            handshake = int(_latest_handshake(peer) or 0)
+        else:
+            handshake = int(latest_handshake or 0)
+    except (TypeError, ValueError):
+        handshake = 0
+    except Exception:
+        handshake = 0
+
+    handshake = max(0, handshake)
+
+    handshake_age = (
+        max(0, now - handshake)
+        if handshake > 0
+        else None
+    )
+
+    handshake_fresh = bool(
+        handshake > 0
+        and handshake_age is not None
+        and handshake_age <= handshake_window
+    )
+
+    try:
+        if live_total is None:
+            live = int(_wg_transfer(peer) or 0)
+        else:
+            live = int(live_total or 0)
+    except (TypeError, ValueError):
+        live = 0
+    except Exception:
+        live = 0
+
+    live = max(0, live)
+
+    try:
+        offset = int(getattr(peer, 'bytes_offset', 0) or 0)
+    except (TypeError, ValueError):
+        offset = 0
+
+    offset = max(0, offset)
+    traffic_now = live > offset
+
+    panel_status = str(getattr(peer, 'status', '') or '').strip().lower()
+    panel_enabled = panel_status == 'online'
+    panel_blocked = panel_status == 'blocked'
+
+    ping_ok = False
+    probed = False
+
+    if allow_probe and panel_enabled and probe_first:
+        probed = True
+        try:
+            ping_ok = bool(_peer_ping_ok(peer))
+        except Exception:
+            ping_ok = False
+
+        if ping_ok:
+            online = True
+            reason = 'probe'
+        elif handshake_fallback and handshake_fresh:
+            online = True
+            reason = 'handshake'
+        elif traffic_now:
+            online = True
+            reason = 'traffic'
+        else:
+            online = False
+            reason = 'probe_failed'
+    else:
+        if panel_blocked:
+            online = False
+            reason = 'blocked'
+        elif handshake_fresh:
+            online = True
+            reason = 'handshake'
+        elif traffic_now:
+            online = True
+            reason = 'traffic'
+        elif not panel_enabled:
+            online = False
+            reason = 'disabled'
+        else:
+            online = False
+            reason = 'no_recent_activity'
+
+    connection_status = 'online' if online else 'offline'
+
+    return {
+        'conn_status': connection_status,
+        'connection_status': connection_status,
+        'latest_handshake': handshake,
+        'latest_handshake_age': handshake_age,
+        'conn_reason': reason,
+        'conn_probe': bool(probed),
+        'probe_ok': bool(ping_ok),
+        'traffic_now': bool(traffic_now),
+        'live_total': int(live),
+        'handshake_fresh': bool(handshake_fresh),
+        'handshake_window': int(handshake_window),
+    }
 
 
 def _wg_disable_peer_quiet(peer: Any) -> None:

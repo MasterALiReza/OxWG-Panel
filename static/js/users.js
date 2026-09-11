@@ -1814,14 +1814,14 @@
        data-name="${(p.name || "").toLowerCase()}"
        data-phone="${(p.phone_number || "").toLowerCase()}"
        data-tg="${(p.telegram_id || "").toLowerCase()}"
-       data-iface="${p.iface || ""}">
+       data-iface="${p.iface || p.iface_name || ""}">
 
     <div class="peer-main peer-main-nowrap">
       <span class="peer-index">${i + 1})</span>
 
       <div class="peer-identity-block">
         <span class="peer-name" title="${peerEsc(p.name || "")}">${p.name || ""}</span>
-        <span class="peer-iface-line"><i class="fas fa-network-wired"></i>${p.iface || "—"}</span>
+        <span class="peer-iface-line"><i class="fas fa-network-wired"></i>${p.iface || p.iface_name || "—"}</span>
       </div>
 
       <div class="peer-live-block">
@@ -1891,7 +1891,7 @@
         ${peerDetailItem("mi-total", "exchange-alt", "Total usage", totalStr)}
         ${peerDetailItem("mi-phone", "phone", "Phone", p.phone_number || "–")}
         ${peerDetailItem("mi-tg", "paper-plane", "Telegram", p.telegram_id || "–")}
-        ${peerDetailItem("mi-iface", "network-wired", "Interface", `<span class="mi-iface-name">${p.iface || "–"}</span>`)}
+        ${peerDetailItem("mi-iface", "network-wired", "Interface", `<span class="mi-iface-name">${p.iface || p.iface_name || "–"}</span>`)}
       </div>
     </div>
 
@@ -2360,7 +2360,7 @@
     card.dataset.name = (p.name || "").toLowerCase();
     card.dataset.phone = (p.phone_number || "").toLowerCase();
     card.dataset.tg = (p.telegram_id || "").toLowerCase();
-    card.dataset.iface = p.iface || "";
+    card.dataset.iface = p.iface || p.iface_name || "";
 
     const set = (sel, txt) => {
       const el = card.querySelector(sel);
@@ -2483,7 +2483,7 @@
       peerDetailInner(
         "network-wired",
         "Interface",
-        `<span class="mi-iface-name">${p.iface || "–"}</span>`,
+        `<span class="mi-iface-name">${p.iface || p.iface_name || "–"}</span>`,
       ),
     );
 
@@ -2767,10 +2767,10 @@
   function matchPeer(card) {
     if (SELECTED_IFACE_NAME) {
       const name =
-        card.querySelector(".mi-iface-name")?.textContent ||
         card.dataset.iface ||
+        card.querySelector(".mi-iface-name")?.textContent?.trim() ||
         "";
-      if (name !== SELECTED_IFACE_NAME) return false;
+      if (name && name !== SELECTED_IFACE_NAME) return false;
     }
 
     const st = filters.status;

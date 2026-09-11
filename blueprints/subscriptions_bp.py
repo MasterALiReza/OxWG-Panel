@@ -87,6 +87,7 @@ from services.peer_lifecycle import (
     _start_timer_cycle,
     _sync_effective_expiry,
     _wg_transfer,
+    _wg_runtime_snapshot,
 )
 from services.wg_parser import iface_devname
 
@@ -1004,48 +1005,6 @@ def _subscription_peer_runtime(peer):
         'tx_bytes': int(tx_bytes or 0),
     })
     return result
-
-
-def _wg_runtime_snapshot(iface_names):
-    transfers = {}
-    handshakes = {}
-    names = {str(name or '').strip() for name in iface_names if str(name or '').strip()}
-
-    for iface_name in sorted(names):
-        try:
-            dev = iface_name.split(':')[-1]
-            lines = subprocess.check_output(
-                ['wg', 'show', dev, 'dump'],
-                stderr=subprocess.DEVNULL,
-                timeout=2.0,
-            ).decode(errors='replace').splitlines()
-
-            for line in lines[1:]:
-                columns = line.split('\t')
-                if len(columns) < 8:
-                    columns = line.split()
-                if len(columns) < 8:
-                    continue
-                public_key = columns[0].strip()
-                if not public_key:
-                    continue
-                try:
-                    latest_handshake = int(columns[4] or 0)
-                except (TypeError, ValueError):
-                    latest_handshake = 0
-                try:
-                    rx_bytes = int(columns[5] or 0)
-                    tx_bytes = int(columns[6] or 0)
-                except (TypeError, ValueError):
-                    rx_bytes = 0
-                    tx_bytes = 0
-                key = (iface_name, public_key)
-                transfers[key] = (rx_bytes, tx_bytes)
-                handshakes[key] = latest_handshake
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError, OSError):
-            continue
-
-    return transfers, handshakes
 
 
 def _subscription_row(sub):

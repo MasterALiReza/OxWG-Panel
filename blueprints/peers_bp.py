@@ -45,7 +45,7 @@ from models import (
 from forms import PeerForm
 from core.extensions import csrf
 from auth import require_api_key, require_api_key_or_login
-from core.time_utils import now_ts, from_ts, to_ts, add_days_ts
+from core.time_utils import now_ts, from_ts, to_ts, add_days_ts, isoz
 from core.ip_utils import _public_ipv4, _first_cidr, _safe_ip
 from services.wg_parser import iface_devname, _iface_is_node
 from services.config_generator import (
@@ -60,8 +60,12 @@ from services.peer_lifecycle import (
     _conv_time_limit,
     _effective_expiry_ts,
     _disable_peer,
+    _accumulate_peer_usage,
+    _peer_conn_status,
+    _wg_runtime_snapshot,
 )
-from services.shortlink_service import _shortlink_for_peer
+from services.shortlink_service import _shortlink_for_peer, _shortlink_from_peer_id
+from services.panel_settings import _panel_timezone_name, _panel_display_datetime
 from services.node_client import node_post, node_delete
 from blueprints.logs_bp import logpanel_action
 from blueprints.interfaces_bp import (
@@ -438,37 +442,153 @@ def panel_peers():
     try:
         _expire()
     except Exception:
-        pass
+        logger.exception("Peer expiration processing failed during refresh")
 
-    query = Peer.query
+    try:
+        server_public_ip = _public_ipv4()
+    except Exception:
+        server_public_ip = ''
+
+    output = []
     iface_id = request.args.get('iface_id', type=int)
     iface_nm = (request.args.get('iface') or '').strip()
-    if iface_id is not None:
-        query = query.filter(Peer.iface_id == iface_id)
-    elif iface_nm:
-        query = query.join(InterfaceConfig).filter(InterfaceConfig.name == iface_nm)
 
-    peers = query.all()
-    output = []
-    for p in peers:
-        output.append({
-            'id': p.id,
-            'name': p.name,
-            'public_key': p.public_key,
-            'address': p.address,
-            'status': p.status,
-            'iface_id': p.iface_id,
-            'iface_name': getattr(p.iface, 'name', '') if p.iface else '',
-            'unlimited': p.unlimited,
-            'data_limit_value': p.data_limit_value,
-            'data_limit_unit': p.data_limit_unit,
-            'time_limit_days': p.time_limit_days,
-            'expires_at': p.expires_at.isoformat() if p.expires_at else None,
-            'endpoint': _effective_client_endpoint(p),
-            'peer_endpoint': p.peer_endpoint or '',
-            'phone_number': p.phone_number or '',
-            'telegram_id': p.telegram_id or '',
-        })
+    try:
+        query = Peer.query
+        if iface_id is not None:
+            query = query.filter(Peer.iface_id == iface_id)
+        elif iface_nm:
+            query = query.join(InterfaceConfig).filter(InterfaceConfig.name == iface_nm)
+        peers = query.all()
+    except Exception:
+        logger.exception("Failed to query peers")
+        return jsonify(peers=[], error='peer_query_failed'), 200
+
+    transfer_map, handshake_map = _wg_runtime_snapshot(
+        [
+            getattr(getattr(peer, 'iface', None), 'name', '')
+            for peer in peers
+        ]
+    )
+
+    usage_dirty = False
+    current_timestamp = now_ts()
+
+    for peer in peers:
+        try:
+            interface = getattr(peer, 'iface', None)
+            database_interface_name = (getattr(interface, 'name', '') or '').strip()
+            runtime_key = (database_interface_name, peer.public_key)
+
+            rx_bytes, tx_bytes = transfer_map.get(runtime_key, (0, 0))
+            try:
+                rx_bytes = max(0, int(rx_bytes or 0))
+            except (TypeError, ValueError):
+                rx_bytes = 0
+            try:
+                tx_bytes = max(0, int(tx_bytes or 0))
+            except (TypeError, ValueError):
+                tx_bytes = 0
+
+            live_total = rx_bytes + tx_bytes
+
+            used_bytes, _new_usage, usage_changed = _accumulate_peer_usage(
+                peer,
+                live_total=live_total,
+            )
+            if usage_changed:
+                usage_dirty = True
+
+            connection = _peer_conn_status(
+                peer,
+                live_total=live_total,
+                latest_handshake=handshake_map.get(runtime_key, 0),
+                allow_probe=False,
+            )
+
+            rx_mib = str(round(rx_bytes / 1024 / 1024, 2))
+            tx_mib = str(round(tx_bytes / 1024 / 1024, 2))
+
+            expires_timestamp = _effective_expiry_ts(peer)
+            expires_at = from_ts(expires_timestamp) if expires_timestamp else None
+
+            ttl_seconds = (
+                max(0, expires_timestamp - current_timestamp)
+                if expires_timestamp
+                else None
+            )
+
+            shortlink_token = ''
+            shortlink_url = ''
+            try:
+                shortlink_token, shortlink_url = _shortlink_from_peer_id(peer.id)
+                if not shortlink_token or not shortlink_url:
+                    shortlink_token, shortlink_url = _shortlink_for_peer(peer)
+            except Exception:
+                pass
+
+            output.append({
+                'id': peer.id,
+                'shortlink': shortlink_url or '',
+                'shortlink_token': shortlink_token or '',
+                'name': peer.name,
+                'iface': database_interface_name,
+                'iface_name': database_interface_name,
+                'iface_id': peer.iface_id,
+                'listen_port': getattr(interface, 'listen_port', None),
+                'server_public_ip': server_public_ip,
+                'address': peer.address,
+                'public_key': peer.public_key,
+                'endpoint': _effective_client_endpoint(peer),
+                'endpoint_saved': peer.endpoint or '',
+                'peer_endpoint': getattr(peer, 'peer_endpoint', None) or '',
+                'allowed_ips': peer.allowed_ips or '',
+                'persistent_keepalive': peer.persistent_keepalive,
+                'mtu': peer.mtu,
+                'dns': peer.dns,
+                'status': peer.status,
+                'panel_status': peer.status,
+                'conn_status': connection['conn_status'],
+                'connection_status': connection['connection_status'],
+                'latest_handshake': connection['latest_handshake'],
+                'latest_handshake_age': connection['latest_handshake_age'],
+                'conn_reason': connection['conn_reason'],
+                'conn_probe': connection.get('conn_probe', False),
+                'data_limit': getattr(peer, 'data_limit_value', None),
+                'data_limit_value': getattr(peer, 'data_limit_value', None),
+                'limit_unit': getattr(peer, 'data_limit_unit', None),
+                'data_limit_unit': getattr(peer, 'data_limit_unit', None),
+                'unlimited': bool(getattr(peer, 'unlimited', False)),
+                'time_limit_days': getattr(peer, 'time_limit_days', None),
+                'start_on_first_use': bool(getattr(peer, 'start_on_first_use', False)),
+                'created_at': isoz(getattr(peer, 'created_at', None)),
+                'display_timezone': _panel_timezone_name(),
+                'created_at_display': _panel_display_datetime(getattr(peer, 'created_at', None)),
+                'created_at_ts': to_ts(getattr(peer, 'created_at', None)),
+                'first_used_at': isoz(getattr(peer, 'first_used_at', None)),
+                'first_used_at_display': _panel_display_datetime(getattr(peer, 'first_used_at', None)),
+                'first_used_at_ts': to_ts(getattr(peer, 'first_used_at', None)),
+                'expires_at': isoz(expires_at),
+                'expires_at_display': _panel_display_datetime(expires_at),
+                'expires_at_ts': expires_timestamp,
+                'ttl_seconds': ttl_seconds,
+                'used_bytes': used_bytes,
+                'used_bytes_db': used_bytes,
+                'used_effective_bytes': used_bytes,
+                'phone_number': getattr(peer, 'phone_number', '') or '',
+                'telegram_id': getattr(peer, 'telegram_id', '') or '',
+                'rx': rx_mib,
+                'tx': tx_mib,
+            })
+        except Exception:
+            logger.exception("Failed to serialize peer %s", getattr(peer, 'id', '?'))
+
+    if usage_dirty:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     return jsonify(peers=output), 200
 
 

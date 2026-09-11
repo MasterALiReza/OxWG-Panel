@@ -196,6 +196,8 @@ from services.peer_lifecycle import (
     _conv_time_limit,
     _disable_peer,
     _wg_disable_peer_quiet,
+    _peer_conn_status,
+    _wg_runtime_snapshot,
     set_app as set_peer_lifecycle_app,
 )
 
@@ -386,6 +388,8 @@ __all__ = [
     "_conv_time_limit",
     "_disable_peer",
     "_wg_disable_peer_quiet",
+    "_peer_conn_status",
+    "_wg_runtime_snapshot",
     "set_peer_lifecycle_app",
     # Config generator
     "_effective_dns",
