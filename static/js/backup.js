@@ -164,7 +164,7 @@
   }
 
   function schedTZ() {
-    return selTz && selTz.value ? selTz.value : "UTC";
+    return window.WG_PANEL_TIMEZONE || (selTz && selTz.value) || "UTC";
   }
 
   function autoTelegramEnabled() {
@@ -1167,9 +1167,9 @@
         pillAuto.textContent = sched.enabled ? "Enabled" : "Disabled";
         pillAuto.className = "bk-pill " + (sched.enabled ? "ok" : "warn");
       }
-      if (selFreq) selFreq.value = sched.freq || "daily";
-      if (selTz) selTz.value = sched.timezone || "UTC";
-      if (tzDisplay) tzDisplay.textContent = sched.timezone || "UTC";
+      const effTz = sched.timezone || window.WG_PANEL_TIMEZONE || "UTC";
+      if (selTz) selTz.value = effTz;
+      if (tzDisplay) tzDisplay.textContent = effTz;
       if (inpTime) inpTime.value = sched.time || "03:00";
       if (inpKeep) inpKeep.value = sched.keep || 7;
       if (autoWG) autoWG.checked = !!sched.include_wg;

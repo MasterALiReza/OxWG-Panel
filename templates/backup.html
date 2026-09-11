@@ -13,64 +13,182 @@
 {% block responsive_extras %}
 {% endblock %}
 
-
 {% block content %}
 <div class="backup-shell">
+  <!-- Top Bar -->
   <div class="bk-top">
     <div class="bk-title">
-      <h1><i class="fas fa-box-archive"></i> Backup & restore</h1>
+      <h1><i class="fas fa-box-archive"></i> Backup &amp; restore</h1>
       <p>Portable backups for database, subscriptions, short links, local WG configs, and reachable node configs.</p>
     </div>
-    <div class="bk-pills"><span id="status-pill" class="bk-pill muted">Status: Loading</span><span id="next-run-pill" class="bk-pill muted">Next: —</span></div>
+    <div class="bk-pills">
+      <span id="status-pill" class="bk-pill muted">Status: Loading</span>
+      <span id="next-run-pill" class="bk-pill muted">Next: —</span>
+    </div>
   </div>
 
+  <!-- Navigation Tabs -->
   <nav class="bk-tabs" aria-label="Backup tabs">
-    <button class="bk-tab active" type="button" data-bk-tab="backup"><i class="fas fa-download"></i> Backup</button>
-    <button class="bk-tab" type="button" data-bk-tab="restore"><i class="fas fa-rotate-left"></i> Restore</button>
-    <button class="bk-tab" type="button" data-bk-tab="auto"><i class="fas fa-clock-rotate-left"></i> Auto-backup</button>
+    <button class="bk-tab active" type="button" data-bk-tab="backup">
+      <i class="fas fa-cloud-arrow-down"></i> Backup
+    </button>
+    <button class="bk-tab" type="button" data-bk-tab="restore">
+      <i class="fas fa-rotate-left"></i> Restore
+    </button>
+    <button class="bk-tab" type="button" data-bk-tab="auto">
+      <i class="fas fa-clock-rotate-left"></i> Auto-backup
+    </button>
   </nav>
 
+  <!-- ========================================== -->
+  <!-- TAB 1: BACKUP                              -->
+  <!-- ========================================== -->
   <section class="bk-tab-panel active" data-bk-panel="backup">
     <div class="bk-grid">
+      <!-- Left Column: Backup Controls -->
       <div class="bk-card">
-        <div class="bk-head"><div class="ttl"><i class="fas fa-download"></i> Create backup</div><span id="full-last" class="bk-pill muted">Last: —</span></div>
+        <div class="bk-head">
+          <div class="ttl"><i class="fas fa-download"></i> Create backup</div>
+          <span id="full-last" class="bk-pill muted">Last: —</span>
+        </div>
         <div class="bk-body">
+          <!-- Full Backup Hero -->
           <div class="bk-hero">
-            <div><div class="name">Full backup</div><div class="desc">DB + subscriptions + settings + optional local/node WireGuard configs</div></div>
-            <button id="btn-full" class="bk-primary-btn" type="button"><i class="fas fa-cloud-arrow-down"></i> Download</button>
+            <div class="bk-hero-content">
+              <div class="bk-hero-badge"><i class="fas fa-shield-check"></i> Complete Archive</div>
+              <div class="name">Full backup</div>
+              <div class="desc">Database, subscriptions, clients, settings, and optional local/node WireGuard configurations.</div>
+            </div>
+            <button id="btn-full" class="bk-primary-btn" type="button">
+              <i class="fas fa-cloud-arrow-down"></i> <span>Download Full Backup</span>
+            </button>
           </div>
+
+          <!-- Component Backups (DB & Settings) -->
           <div class="bk-mini-row">
-            <div class="bk-mini"><div><div class="name">Database</div><div id="db-last" class="bk-subline">Last: —</div></div><button id="btn-db" class="bk-icon" type="button" title="Download database"><i class="fas fa-database"></i></button></div>
-            <div class="bk-mini"><div><div class="name">Settings</div><div id="settings-last" class="bk-subline">Last: —</div></div><button id="btn-settings" class="bk-icon" type="button" title="Download settings"><i class="fas fa-sliders"></i></button></div>
+            <div class="bk-mini">
+              <div class="bk-mini-info">
+                <div class="bk-mini-icon"><i class="fas fa-database"></i></div>
+                <div>
+                  <div class="name">Database</div>
+                  <div id="db-last" class="bk-subline">Last: —</div>
+                </div>
+              </div>
+              <button id="btn-db" class="bk-btn" type="button" title="Download database">
+                <i class="fas fa-download"></i> <span>Download</span>
+              </button>
+            </div>
+
+            <div class="bk-mini">
+              <div class="bk-mini-info">
+                <div class="bk-mini-icon"><i class="fas fa-sliders"></i></div>
+                <div>
+                  <div class="name">Settings</div>
+                  <div id="settings-last" class="bk-subline">Last: —</div>
+                </div>
+              </div>
+              <button id="btn-settings" class="bk-btn" type="button" title="Download settings">
+                <i class="fas fa-download"></i> <span>Download</span>
+              </button>
+            </div>
           </div>
-          <div class="bk-switch-row">
-            <label class="bk-switch"><input id="include-wg" type="checkbox"><span class="track"></span><span>Include WireGuard configs</span></label>
-            <label class="bk-switch"><input id="send-telegram" type="checkbox"><span class="track"></span><span>Send copy to Telegram</span></label>
+
+          <!-- Options Toggles -->
+          <div class="bk-options-panel">
+            <label class="bk-toggle-card">
+              <div class="bk-toggle-info">
+                <span class="bk-toggle-icon"><i class="fas fa-network-wired"></i></span>
+                <div>
+                  <strong>Include WireGuard configs</strong>
+                  <span>Export local and reachable remote node interface configurations.</span>
+                </div>
+              </div>
+              <span class="bk-switch">
+                <input id="include-wg" type="checkbox">
+                <span class="track"></span>
+              </span>
+            </label>
+
+            <label class="bk-toggle-card">
+              <div class="bk-toggle-info">
+                <span class="bk-toggle-icon"><i class="fab fa-telegram-plane"></i></span>
+                <div>
+                  <strong>Send copy to Telegram</strong>
+                  <span>Forward a backup copy to configured Telegram administrators.</span>
+                </div>
+              </div>
+              <span class="bk-switch">
+                <input id="send-telegram" type="checkbox">
+                <span class="track"></span>
+              </span>
+            </label>
           </div>
-          <div class="bk-compact-note warn bk-small"><strong>Safe restore:</strong> runtime/domain/port/TLS files are backed up for reference, but restore should use Keep current, Use saved, or Customize.</div>
+
+          <!-- Security Note -->
+          <div class="bk-compact-note warn bk-small">
+            <i class="fas fa-circle-info"></i>
+            <div>
+              <strong>Safe restore:</strong> Host domain, port, and TLS certificates are backed up for reference. When restoring, choose <em>Keep current</em>, <em>Use saved</em>, or <em>Custom</em>.
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- Right Column: Backup Preview / Structure -->
       <aside class="bk-card">
-        <div class="bk-head"><div class="ttl"><i class="fas fa-list-check"></i> Backup contents</div></div>
+        <div class="bk-head">
+          <div class="ttl"><i class="fas fa-list-check"></i> Backup contents</div>
+        </div>
         <div class="bk-body">
           <div id="live-backup-preview" class="bk-preview">
-            <div class="bk-preview-title"><i class="fas fa-magnifying-glass-chart"></i> Downloaded backup contents</div>
-            <div id="live-preview-subtitle" class="bk-small bk-muted">Download a backup and its contents will appear here automatically.</div>
-            <div id="live-preview-grid" class="bk-preview-grid empty"></div>
+            <div class="bk-preview-title">
+              <i class="fas fa-magnifying-glass-chart"></i> Downloaded backup contents
+            </div>
+            <div id="live-preview-subtitle" class="bk-small bk-muted">
+              Download a backup and its verified structure will appear here automatically.
+            </div>
+            <div id="live-preview-grid" class="bk-preview-grid empty">
+              <!-- Initial Informational Empty State -->
+              <div class="bk-content-card ok">
+                <div class="label">Database</div>
+                <div class="value"><i class="fas fa-database"></i><span>SQLite DB</span></div>
+                <div class="sub">Peers, nodes, accounts &amp; traffic</div>
+              </div>
+              <div class="bk-content-card ok">
+                <div class="label">Settings</div>
+                <div class="value"><i class="fas fa-sliders"></i><span>Panel config</span></div>
+                <div class="sub">Runtime &amp; preferences</div>
+              </div>
+              <div class="bk-content-card ok">
+                <div class="label">Subscriptions</div>
+                <div class="value"><i class="fas fa-link"></i><span>Short links</span></div>
+                <div class="sub">User tokens &amp; templates</div>
+              </div>
+              <div class="bk-content-card ok">
+                <div class="label">WireGuard</div>
+                <div class="value"><i class="fas fa-network-wired"></i><span>Interfaces</span></div>
+                <div class="sub">Local &amp; remote node configs</div>
+              </div>
+            </div>
           </div>
         </div>
       </aside>
     </div>
   </section>
 
+  <!-- ========================================== -->
+  <!-- TAB 2: RESTORE                             -->
+  <!-- ========================================== -->
   <section class="bk-tab-panel" data-bk-panel="restore">
     <div class="bk-restore-shell">
+      <!-- Left Column: 3-Step Restore Flow -->
       <div class="bk-card bk-restore-main">
         <div class="bk-head">
           <div class="ttl"><i class="fas fa-rotate-left"></i> Restore backup</div>
           <span class="bk-pill warn">Review before restore</span>
         </div>
         <div class="bk-body bk-restore-flow">
+          <!-- Step 1: Upload -->
           <div class="bk-step-card bk-step-upload">
             <div class="bk-step-mark">1</div>
             <div class="bk-step-content">
@@ -78,15 +196,18 @@
               <label class="bk-upload compact" for="restore-file">
                 <input id="restore-file" type="file" accept=".zip,application/zip">
                 <span class="bk-upload-ico"><i class="fas fa-file-zipper"></i></span>
-                <span>
+                <span class="bk-upload-text">
                   <span id="restore-file-name" class="bk-upload-name">No file chosen</span>
-                  <span id="restore-file-hint" class="bk-upload-hint">The panel will inspect the ZIP before restore.</span>
+                  <span id="restore-file-hint" class="bk-upload-hint">The panel will inspect the ZIP archive before restoring.</span>
                 </span>
-                <button id="restore-file-trigger" class="bk-btn" type="button"><i class="fas fa-folder-open"></i> Choose</button>
+                <button id="restore-file-trigger" class="bk-btn" type="button">
+                  <i class="fas fa-folder-open"></i> <span>Browse file</span>
+                </button>
               </label>
             </div>
           </div>
 
+          <!-- Step 2: Options -->
           <div class="bk-step-card">
             <div class="bk-step-mark">2</div>
             <div class="bk-step-content">
@@ -98,60 +219,110 @@
                 <span id="server-settings-pill" class="bk-pill ok">Protected</span>
               </div>
 
+              <!-- Kind Selector -->
               <div class="bk-option-strip" aria-label="Restore type">
-                <label class="bk-choice"><input type="radio" name="restore-kind" value="auto" checked><span><strong>Auto</strong><small>Detect</small></span></label>
-                <label class="bk-choice"><input type="radio" name="restore-kind" value="full"><span><strong>Full</strong><small>DB + settings</small></span></label>
-                <label class="bk-choice"><input type="radio" name="restore-kind" value="db"><span><strong>DB</strong><small>Data only</small></span></label>
-                <label class="bk-choice"><input type="radio" name="restore-kind" value="settings"><span><strong>Settings</strong><small>Panel files</small></span></label>
+                <label class="bk-choice">
+                  <input type="radio" name="restore-kind" value="auto" checked>
+                  <span><strong>Auto</strong><small>Detect content</small></span>
+                </label>
+                <label class="bk-choice">
+                  <input type="radio" name="restore-kind" value="full">
+                  <span><strong>Full</strong><small>DB + Settings</small></span>
+                </label>
+                <label class="bk-choice">
+                  <input type="radio" name="restore-kind" value="db">
+                  <span><strong>DB</strong><small>Data only</small></span>
+                </label>
+                <label class="bk-choice">
+                  <input type="radio" name="restore-kind" value="settings">
+                  <span><strong>Settings</strong><small>Panel files</small></span>
+                </label>
               </div>
 
+              <!-- WireGuard Configs Checkbox -->
               <div class="bk-restore-inline">
-                <label class="bk-switch"><input id="restore-wg" type="checkbox"><span class="track"></span><span>Restore WireGuard configs</span></label>
+                <label class="bk-switch">
+                  <input id="restore-wg" type="checkbox">
+                  <span class="track"></span>
+                  <span>Restore WireGuard configs</span>
+                </label>
               </div>
 
+              <!-- Server Settings Flattened Box -->
               <div class="bk-server-compact">
-                <div class="bk-server-title"><i class="fas fa-server"></i> Server settings</div>
+                <div class="bk-server-title"><i class="fas fa-server"></i> Server network settings</div>
                 <div class="bk-mode-grid compact">
-                  <label class="bk-mode"><input type="radio" name="server-settings-mode" value="keep" checked><div><strong>Keep current</strong><span>Recommended for this panel.</span></div></label>
-                  <label class="bk-mode"><input type="radio" name="server-settings-mode" value="saved"><div><strong>Use saved</strong><span>Only for same-server restore.</span></div></label>
-                  <label class="bk-mode"><input type="radio" name="server-settings-mode" value="custom"><div><strong>Custom</strong><span>Migration or new server.</span></div></label>
+                  <label class="bk-mode">
+                    <input type="radio" name="server-settings-mode" value="keep" checked>
+                    <div>
+                      <strong>Keep current</strong>
+                      <span>Recommended for this server.</span>
+                    </div>
+                  </label>
+                  <label class="bk-mode">
+                    <input type="radio" name="server-settings-mode" value="saved">
+                    <div>
+                      <strong>Use saved</strong>
+                      <span>Only for exact same-server restore.</span>
+                    </div>
+                  </label>
+                  <label class="bk-mode">
+                    <input type="radio" name="server-settings-mode" value="custom">
+                    <div>
+                      <strong>Custom</strong>
+                      <span>Migration to a new host or IP.</span>
+                    </div>
+                  </label>
                 </div>
 
+                <!-- Saved Server Settings Drawer -->
                 <div id="saved-server-settings" class="bk-inline-panel" hidden>
                   <div class="bk-inline-panel-head"><i class="fas fa-circle-info"></i> Saved settings inside selected backup</div>
-                  <div id="saved-server-settings-grid" class="bk-kv-grid"><div class="bk-small bk-muted">Select a backup to preview saved server settings.</div></div>
+                  <div id="saved-server-settings-grid" class="bk-kv-grid">
+                    <div class="bk-small bk-muted">Select a backup to preview saved server settings.</div>
+                  </div>
                 </div>
 
+                <!-- Custom Server Settings Drawer -->
                 <div id="custom-server-settings" class="bk-inline-panel" hidden>
                   <div class="bk-inline-panel-head"><i class="fas fa-wand-magic-sparkles"></i> Custom settings for this restore</div>
                   <div class="bk-custom-grid slim">
-                    <div class="bk-field"><label>Panel port</label><input id="custom-panel-port" type="number" min="1" max="65535" placeholder="Tip: panel port, for example 443 or 5081"></div>
-                    <div class="bk-field"><label>Bind</label><input id="custom-panel-bind" placeholder="Tip: bind host, usually 0.0.0.0"></div>
-                    <div class="bk-field"><label>Domain / public IP</label><input id="custom-panel-domain" placeholder="Tip: domain or public IP for this server"></div>
+                    <div class="bk-field"><label>Panel port</label><input id="custom-panel-port" type="number" min="1" max="65535" placeholder="e.g. 5000 or 8000"></div>
+                    <div class="bk-field"><label>Bind</label><input id="custom-panel-bind" placeholder="e.g. 0.0.0.0"></div>
+                    <div class="bk-field"><label>Domain / Public IP</label><input id="custom-panel-domain" placeholder="e.g. vpn.example.com"></div>
                     <div class="bk-field"><label>Scheme</label><select id="custom-panel-scheme"><option value="http">HTTP</option><option value="https">HTTPS</option></select></div>
-                    <div class="bk-field"><label>HTTP port</label><input id="custom-http-port" type="number" min="1" max="65535" placeholder="Tip: panel port, for example 443 or 5081"></div>
-                    <div class="bk-field"><label>HTTPS port</label><input id="custom-https-port" type="number" min="1" max="65535" placeholder="Tip: HTTPS port, usually 443"></div>
-                    <div class="bk-field" style="grid-column:1/-1"><label>WireGuard path</label><input id="custom-wg-path" placeholder="Tip: WireGuard config folder"></div>
+                    <div class="bk-field"><label>HTTP port</label><input id="custom-http-port" type="number" min="1" max="65535" placeholder="8000"></div>
+                    <div class="bk-field"><label>HTTPS port</label><input id="custom-https-port" type="number" min="1" max="65535" placeholder="443"></div>
+                    <div class="bk-field" style="grid-column:1/-1"><label>WireGuard path</label><input id="custom-wg-path" placeholder="/etc/wireguard"></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
+          <!-- Step 3: Execute -->
           <div class="bk-step-card bk-step-action">
             <div class="bk-step-mark">3</div>
             <div class="bk-step-content">
-              <div class="bk-step-title">Restore</div>
-              <div class="bk-small bk-muted">After inspection, confirm the restore. Restart the panel only if the result asks for it.</div>
-              <div class="bk-action-row"><button id="btn-restore" class="bk-btn danger" type="button"><i class="fas fa-rotate-left"></i> Restore backup</button></div>
+              <div class="bk-step-title">Confirm &amp; Restore</div>
+              <div class="bk-small bk-muted">After inspection, confirm the restore. The panel will apply the database and configuration files.</div>
+              <div class="bk-action-row">
+                <button id="btn-restore" class="bk-btn danger" type="button">
+                  <i class="fas fa-rotate-left"></i> <span>Restore backup</span>
+                </button>
+              </div>
               <div id="restore-result" class="bk-result"></div>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- Right Column: Inspection Details -->
       <aside class="bk-card bk-restore-preview-card">
-        <div class="bk-head"><div class="ttl"><i class="fas fa-list-check"></i> Backup contents</div><span id="node-restore-state" class="bk-pill muted">Idle</span></div>
+        <div class="bk-head">
+          <div class="ttl"><i class="fas fa-list-check"></i> Backup contents</div>
+          <span id="node-restore-state" class="bk-pill muted">Idle</span>
+        </div>
         <div class="bk-body">
           <div class="bk-preview clean">
             <div class="bk-preview-title"><i class="fas fa-magnifying-glass-chart"></i> Inspection summary</div>
@@ -161,69 +332,158 @@
           </div>
 
           <details class="bk-node-details">
-            <summary><i class="fas fa-server"></i> Node restore details</summary>
+            <summary><i class="fas fa-server"></i> <span>Node restore details</span></summary>
             <div id="restore-node-list" class="bk-file-list"></div>
-            <div id="node-status-lines"><div class="bk-node-line warn"><i class="fas fa-circle-info"></i><span>Select a backup to see node status.</span></div></div>
-            <button id="node-guide-toggle" class="bk-btn" type="button"><i class="fas fa-terminal"></i> Show install command</button>
-            <div id="node-command-box" class="bk-command"><pre id="node-install-command"></pre><div class="bk-command-actions"><button id="copy-node-command" class="bk-btn" type="button"><i class="fas fa-copy"></i> Copy command</button></div></div>
+            <div id="node-status-lines">
+              <div class="bk-node-line warn"><i class="fas fa-circle-info"></i><span>Select a backup to see node status.</span></div>
+            </div>
+            <button id="node-guide-toggle" class="bk-btn" type="button">
+              <i class="fas fa-terminal"></i> <span>Show install command</span>
+            </button>
+            <div id="node-command-box" class="bk-command">
+              <pre id="node-install-command"></pre>
+              <div class="bk-command-actions">
+                <button id="copy-node-command" class="bk-btn" type="button"><i class="fas fa-copy"></i> Copy command</button>
+              </div>
+            </div>
           </details>
         </div>
       </aside>
     </div>
   </section>
 
+  <!-- ========================================== -->
+  <!-- TAB 3: AUTO-BACKUP                         -->
+  <!-- ========================================== -->
   <section class="bk-tab-panel" data-bk-panel="auto">
     <div class="bk-grid">
+      <!-- Left Column: Auto-Backup Schedule Form -->
       <div class="bk-card">
-        <div class="bk-head"><div class="ttl"><i class="fas fa-clock-rotate-left"></i> Auto-backup</div><span id="schedule-state" class="bk-pill muted">—</span></div>
+        <div class="bk-head">
+          <div class="ttl"><i class="fas fa-clock-rotate-left"></i> Automatic backup</div>
+          <span id="schedule-state" class="bk-pill muted">—</span>
+        </div>
         <div class="bk-body">
-          <label class="bk-switch"><input id="schedule-enabled" type="checkbox"><span class="track"></span><span>Enable schedule</span></label>
+          <!-- Schedule Switch Banner -->
+          <div class="bk-schedule-banner">
+            <div class="bk-schedule-info">
+              <span class="bk-schedule-icon"><i class="fas fa-calendar-check"></i></span>
+              <div>
+                <strong>Automatic backup schedule</strong>
+                <span>Run automated backups on schedule and maintain clean retention.</span>
+              </div>
+            </div>
+            <label class="bk-switch">
+              <input id="schedule-enabled" type="checkbox">
+              <span class="track"></span>
+              <span>Enable schedule</span>
+            </label>
+          </div>
+
+          <!-- Symmetrical Form Grid -->
           <div class="bk-form-grid">
-            <div class="bk-field"><label>Frequency</label><select id="freq"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div>
-            <div class="bk-field"><label>Run time <span class="bk-field-note">panel local time</span></label><input id="time" type="time" value="03:00"></div>
+            <div class="bk-field">
+              <label>Frequency</label>
+              <select id="freq">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+
+            <div class="bk-field">
+              <label>Run time <span class="bk-field-note">panel local time</span></label>
+              <input id="time" type="time" value="03:00">
+            </div>
+
+            <div class="bk-field">
+              <label>Keep last (retention count)</label>
+              <input id="keep" type="number" min="1" max="99" value="7">
+            </div>
+
             <div class="bk-field bk-timezone-field">
               <label>Timezone</label>
-              <input id="tz" type="hidden" value="UTC">
+              <input id="tz" type="hidden" value="{{ PANEL_TIMEZONE|default('UTC') }}">
               <div class="bk-inherited-zone" aria-live="polite">
                 <span class="bk-inherited-zone__icon"><i class="fas fa-globe"></i></span>
                 <span class="bk-inherited-zone__copy">
-                  <strong id="tz-display">Loading…</strong>
-                  <small>Inherited from Settings → Panel → Regional</small>
+                  <strong id="tz-display">{{ PANEL_TIMEZONE|default('UTC') }}</strong>
+                  <small>Inherited from Settings → Regional</small>
                 </span>
                 <span class="bk-inherited-zone__state"><i class="fas fa-link"></i> Global</span>
               </div>
             </div>
-            <div class="bk-field"><label>Keep last</label><input id="keep" type="number" min="1" value="7"></div>
           </div>
-          <div class="bk-switch-row">
-            <label class="bk-switch">
-              <input id="schedule-include-wg" type="checkbox">
-              <span class="track"></span>
-              <span>Include WG</span>
+
+          <!-- Extra Options Toggles -->
+          <div class="bk-options-panel">
+            <label class="bk-toggle-card">
+              <div class="bk-toggle-info">
+                <span class="bk-toggle-icon"><i class="fas fa-network-wired"></i></span>
+                <div>
+                  <strong>Include WireGuard configs</strong>
+                  <span>Archive WireGuard configuration files with each scheduled run.</span>
+                </div>
+              </div>
+              <span class="bk-switch">
+                <input id="schedule-include-wg" type="checkbox">
+                <span class="track"></span>
+              </span>
             </label>
 
-            <label class="bk-switch">
-              <input id="schedule-send-telegram" type="checkbox">
-              <span class="track"></span>
-              <span>Send auto backups to Telegram</span>
+            <label class="bk-toggle-card">
+              <div class="bk-toggle-info">
+                <span class="bk-toggle-icon"><i class="fab fa-telegram-plane"></i></span>
+                <div>
+                  <strong>Send auto backups to Telegram</strong>
+                  <span>Send newly created archive directly to a designated Telegram admin.</span>
+                </div>
+              </div>
+              <span class="bk-switch">
+                <input id="schedule-send-telegram" type="checkbox">
+                <span class="track"></span>
+              </span>
             </label>
           </div>
-<div id="auto-telegram-target-wrap" class="bk-auto-target" hidden>
+
+          <!-- Telegram Target Selector -->
+          <div id="auto-telegram-target-wrap" class="bk-auto-target" hidden>
             <label for="auto-telegram-admin">Telegram recipient</label>
-            <select id="auto-telegram-admin"><option value="">Loading active Telegram admins…</option></select>
-            <div id="auto-telegram-help" class="bk-small bk-muted">Choose one active, non-muted Telegram admin configured in Settings.</div>
+            <select id="auto-telegram-admin">
+              <option value="">Loading active Telegram admins…</option>
+            </select>
+            <div id="auto-telegram-help" class="bk-small bk-muted">Choose an active, non-muted Telegram admin configured in Settings.</div>
           </div>
+
+          <!-- Actions -->
           <div class="bk-action-row">
-            <button id="save-schedule" class="bk-btn" type="button"><i class="fas fa-floppy-disk"></i> Save</button>
-            <button id="save-run-schedule" class="bk-btn primary" type="button"><i class="fas fa-bolt"></i> Save &amp; run now</button>
+            <button id="save-schedule" class="bk-btn" type="button">
+              <i class="fas fa-floppy-disk"></i> <span>Save schedule</span>
+            </button>
+            <button id="save-run-schedule" class="bk-btn primary" type="button">
+              <i class="fas fa-bolt"></i> <span>Save &amp; run now</span>
+            </button>
           </div>
-          <div class="bk-small bk-muted"><strong>Save</strong> stores the schedule only. <strong>Save &amp; run now</strong> stores the same schedule, creates a complete backup immediately, saves it under <code>instance/backups</code>, and sends it to the selected Telegram recipient when Telegram is enabled.</div>
+
+          <div class="bk-compact-note bk-small">
+            <i class="fas fa-circle-info"></i>
+            <div>
+              <strong>Save</strong> updates the background scheduler. <strong>Save &amp; run now</strong> saves the schedule and creates a full backup immediately under <code>instance/backups</code>.
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- Right Column: Saved Backups List -->
       <aside class="bk-card">
-        <div class="bk-head"><div class="ttl"><i class="fas fa-folder"></i> Saved auto backups</div></div>
+        <div class="bk-head">
+          <div class="ttl"><i class="fas fa-folder"></i> Saved auto backups</div>
+          <span id="auto-files-count" class="bk-pill muted">0 files</span>
+        </div>
         <div class="bk-body">
-          <div id="auto-files-list" class="bk-auto-list"><div class="bk-small bk-muted">Loading…</div></div>
+          <div id="auto-files-list" class="bk-auto-list">
+            <div class="bk-small bk-muted">Loading…</div>
+          </div>
           <div id="auto-inspect-box" class="bk-preview bk-auto-inspect" hidden>
             <div class="bk-preview-title"><i class="fas fa-magnifying-glass-chart"></i> Auto-backup inspection</div>
             <div id="auto-inspect-subtitle" class="bk-small bk-muted">Click a saved backup to inspect its contents.</div>
@@ -236,8 +496,11 @@
   </section>
 </div>
 
+<!-- ========================================== -->
+<!-- MODALS & LOADERS                           -->
+<!-- ========================================== -->
 
-
+<!-- Auto Inspect Modal -->
 <div id="auto-inspect-modal" class="bk-modal" hidden>
   <div class="bk-modal-backdrop" data-auto-inspect-close="1"></div>
   <div class="bk-modal-card bk-inspect-modal-card" role="dialog" aria-modal="true" aria-labelledby="auto-inspect-title">
@@ -262,6 +525,7 @@
   </div>
 </div>
 
+<!-- Run Loader Modal -->
 <div id="auto-run-loader" class="bk-run-loader" hidden aria-live="polite" aria-busy="true">
   <div class="bk-run-loader-backdrop"></div>
   <div class="bk-run-loader-card" role="status">
@@ -282,12 +546,19 @@
   </div>
 </div>
 
+<!-- Restore Confirm Modal -->
 <div id="restore-confirm" class="bk-modal" hidden>
   <div class="bk-modal-backdrop" data-close="1"></div>
   <div class="bk-modal-card" role="dialog" aria-modal="true">
-    <div class="bk-modal-head"><strong>Confirm restore</strong><button class="bk-close" type="button" data-close="1" aria-label="Close">&times;</button></div>
+    <div class="bk-modal-head">
+      <strong>Confirm restore</strong>
+      <button class="bk-close" type="button" data-close="1" aria-label="Close">&times;</button>
+    </div>
     <div id="bk-modal-body" class="bk-modal-body"></div>
-    <div class="bk-modal-actions"><button class="bk-btn" type="button" data-close="1">Cancel</button><button id="bk-modal-ok" class="bk-btn danger" type="button">Restore</button></div>
+    <div class="bk-modal-actions">
+      <button class="bk-btn" type="button" data-close="1">Cancel</button>
+      <button id="bk-modal-ok" class="bk-btn danger" type="button">Restore</button>
+    </div>
   </div>
 </div>
 {% endblock %}
