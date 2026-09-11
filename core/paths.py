@@ -52,6 +52,7 @@ TG_LOG_FILE = TELEGRAM_LOG_FILE
 _HTTP_4XX_STATE_FILE = os.path.join(INSTANCE_DIR, "suspicious_4xx_state.json")
 _HTTP_4XX_LOCK_FILE = os.path.join(INSTANCE_DIR, "suspicious_4xx_state.lock")
 _HTTP_SECURITY_SETTINGS_FILE = os.path.join(INSTANCE_DIR, "http_security_settings.json")
+HTTP_SECURITY_SETTINGS_FILE = _HTTP_SECURITY_SETTINGS_FILE
 
 # Traffic Policies & GeoIP
 TRAFFIC_POLICY_FILE = os.path.join(INSTANCE_DIR, "traffic_policies.json")

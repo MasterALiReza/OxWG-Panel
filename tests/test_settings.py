@@ -19,6 +19,14 @@ from datetime import datetime, timezone
 from app import app
 from core.extensions import db
 from models import AdminAccount
+from core.paths import (
+    RUNTIME_FILE,
+    PANEL_SETTINGS_FILE,
+    TEMPLATE_SETTINGS_FILE,
+    TRAFFIC_POLICY_FILE,
+    TELEGRAM_SETTINGS_FILE,
+    HTTP_SECURITY_SETTINGS_FILE,
+)
 from services.panel_settings import _load_panel_settings, _save_panel_settings
 
 
@@ -30,7 +38,37 @@ class TestSettingsSubsystem(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
+        self._files_to_restore = {}
+        for path in [
+            RUNTIME_FILE,
+            PANEL_SETTINGS_FILE,
+            TEMPLATE_SETTINGS_FILE,
+            TRAFFIC_POLICY_FILE,
+            TELEGRAM_SETTINGS_FILE,
+            HTTP_SECURITY_SETTINGS_FILE,
+        ]:
+            if os.path.exists(path):
+                try:
+                    with open(path, 'rb') as f:
+                        self._files_to_restore[path] = f.read()
+                except OSError:
+                    pass
+            else:
+                self._files_to_restore[path] = None
+
     def tearDown(self):
+        for path, content in getattr(self, '_files_to_restore', {}).items():
+            if content is not None:
+                try:
+                    with open(path, 'wb') as f:
+                        f.write(content)
+                except OSError:
+                    pass
+            elif os.path.exists(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
         self.app_context.pop()
 
     def _login(self, client):
