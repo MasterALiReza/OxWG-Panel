@@ -34,18 +34,19 @@ if FERNET_KEY:
 def _get_active_fernet():
     """Dynamically resolve active Fernet instance, picking up late-configured keys."""
     global FERNET_KEY, fernet, _fernet
-    if _fernet is not None:
-        return _fernet
-    if fernet is not None:
-        return fernet
-    key = os.environ.get('FERNET_KEY')
-    if key:
+    current_key = os.environ.get('FERNET_KEY')
+    if current_key:
+        if _fernet is not None and FERNET_KEY == current_key:
+            return _fernet
         try:
-            fernet = Fernet(key.encode() if isinstance(key, str) else key)
+            fernet = Fernet(current_key.encode() if isinstance(current_key, str) else current_key)
             _fernet = fernet
+            FERNET_KEY = current_key
             return fernet
         except Exception:
             return None
+    elif _fernet is not None:
+        return _fernet
     return None
 
 
