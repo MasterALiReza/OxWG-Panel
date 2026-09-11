@@ -160,8 +160,8 @@ def api_settings():
     if (not tls_enabled) and http_port is None:
         http_port = _port(cur.get("http_port"))
 
-    tls_cert_path = (cur.get("tls_cert_path") or "").strip()
-    tls_key_path = (cur.get("tls_key_path") or "").strip()
+    tls_cert_path = (data.get("tls_cert_path") if "tls_cert_path" in data else cur.get("tls_cert_path") or "").strip()
+    tls_key_path = (data.get("tls_key_path") if "tls_key_path" in data else cur.get("tls_key_path") or "").strip()
 
     payload = {
         "tls_enabled": tls_enabled,

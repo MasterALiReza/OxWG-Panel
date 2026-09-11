@@ -426,6 +426,8 @@
 
     const httpP  = document.getElementById('http-port');    if (httpP)  httpP.value  = (j.http_port  ?? '');
     const httpsP = document.getElementById('https-port');   if (httpsP) httpsP.value = (j.https_port ?? '');
+    const certEl = document.getElementById('cert-path');    if (certEl) certEl.value = (j.tls_cert_path || '');
+    const keyEl  = document.getElementById('key-path');     if (keyEl)  keyEl.value  = (j.tls_key_path  || '');
 
     const curEl = document.getElementById('cur-scheme');
     if (curEl) {
@@ -598,12 +600,12 @@
 
     if (!tlsOn) {
       const combo = (document.getElementById('rt2-bind')?.value || '').trim();
-      let host = '0.0.0.0', port = Number(document.getElementById('rt2-port')?.value || 8080);
+      let port = Number(document.getElementById('rt2-port')?.value || 0) || 8000;
+      let host = '0.0.0.0';
       if (combo.includes(':')) {
-        const idx = combo.lastIndexOf(':');
-        host = combo.slice(0, idx).trim() || host;
-        const p = Number(combo.slice(idx + 1).trim());
-        if (!Number.isNaN(p)) port = p;
+        host = combo.slice(0, combo.lastIndexOf(':')).trim() || '0.0.0.0';
+      } else if (combo) {
+        host = combo;
       }
       body.port = port;
       body.bind = `${host}:${port}`;
@@ -711,6 +713,23 @@ document.getElementById('rt-restart')
     setInterval(() => syncPanelClock().catch(() => null), 300000);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) syncPanelClock().catch(() => null);
+    });
+    document.getElementById('rt2-port')?.addEventListener('input', (e) => {
+      const p = e.target.value.trim();
+      const bindEl = document.getElementById('rt2-bind');
+      if (bindEl) {
+        const currentVal = bindEl.value.trim();
+        const host = (currentVal.includes(':') ? currentVal.slice(0, currentVal.lastIndexOf(':')) : currentVal) || '0.0.0.0';
+        bindEl.value = p ? `${host}:${p}` : host;
+      }
+    });
+    document.getElementById('rt2-bind')?.addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      if (val.includes(':')) {
+        const p = val.slice(val.lastIndexOf(':') + 1).trim();
+        const portEl = document.getElementById('rt2-port');
+        if (portEl && p && !isNaN(p)) portEl.value = p;
+      }
     });
     document.getElementById('save-runtime')?.addEventListener('click', () =>
       rtSave().catch(e => toast('Runtime save failed: ' + (e?.message || 'unknown'), 'error'))
@@ -2472,6 +2491,7 @@ document.getElementById('rt-restart')
     }
 
     $('#tg-save')?.addEventListener('click',   saveSettings);
+    $('#tg-enabled')?.addEventListener('change', saveSettings);
     $('#tg-update-token')?.addEventListener('click', updateToken);
     $('#tg-clear-token')?.addEventListener('click',  clearToken);
     $('#tg-test')?.addEventListener('click', sendTest);
@@ -2726,7 +2746,12 @@ document.getElementById('rt-restart')
         if (!otp) throw new Error('Enter the 6-digit code');
         const out = await jfetch('/api/admin/twofa_confirm', { method:'POST', body:{ otp } });
         if (out.recovery_codes?.length) {
-
+          await window.confirmDialog?.({
+            title: 'Two-Factor Recovery Codes',
+            body: 'Save these one-time recovery codes in a safe place:\n\n' + out.recovery_codes.join('\n'),
+            okText: 'I have saved them',
+            cancelText: 'Close'
+          });
         }
         await refreshAdmin();
         toast('Two-factor authentication enabled.', 'success');
@@ -2745,6 +2770,10 @@ document.getElementById('rt-restart')
       } catch (e2) { toast(e2.message || 'Disable failed', 'error'); }
     });
 
+    document.getElementById('set-tabs')?.addEventListener('click', (e) => {
+      const b = e.target.closest('.tab');
+      if (b?.dataset.tab === 'admin') refreshAdmin().catch(() => {});
+    });
     document.addEventListener('DOMContentLoaded', () => { refreshAdmin().catch(()=>{}); });
   })();
 
