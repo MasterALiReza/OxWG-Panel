@@ -34,6 +34,7 @@ class TestSubscriptionsSubsystem(unittest.TestCase):
             priv, pub = generate_wg_keypair()
             ifc = InterfaceConfig(
                 name='wg0',
+                path='/etc/wireguard/wg0.conf',
                 address='10.77.0.1/24',
                 listen_port=51820,
                 private_key=priv,
