@@ -1034,9 +1034,15 @@
       autoFilesList.innerHTML = files.map((file) => `
         <div class="bk-auto-item" data-file="${safe(file.name)}">
           <div class="bk-auto-meta">
-            <div class="bk-auto-date">${safe(fmtEpoch(file.ts))}</div>
-            <div class="bk-small bk-muted">
-              ${safe(file.name)} · ${safe(autoSize(file.size))}
+            <div class="bk-auto-top-row">
+              <span class="bk-auto-date">
+                <i class="fas fa-calendar-check"></i>
+                <span>${safe(fmtEpoch(file.ts))}</span>
+              </span>
+              <span class="bk-auto-size-badge">${safe(autoSize(file.size))}</span>
+            </div>
+            <div class="bk-auto-filename" title="${safe(file.name)}">
+              ${safe(file.name)}
             </div>
           </div>
 

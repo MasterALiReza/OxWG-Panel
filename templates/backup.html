@@ -97,10 +97,10 @@
           <div class="bk-options-panel">
             <label class="bk-toggle-card">
               <div class="bk-toggle-info">
-                <span class="bk-toggle-icon"><i class="fas fa-network-wired"></i></span>
+                <div class="bk-toggle-icon"><i class="fas fa-network-wired"></i></div>
                 <div>
                   <strong>Include WireGuard configs</strong>
-                  <span>Export local and reachable remote node interface configurations.</span>
+                  <span class="bk-toggle-desc">Export local and reachable remote node interface configurations.</span>
                 </div>
               </div>
               <span class="bk-switch">
@@ -111,10 +111,10 @@
 
             <label class="bk-toggle-card">
               <div class="bk-toggle-info">
-                <span class="bk-toggle-icon"><i class="fab fa-telegram-plane"></i></span>
+                <div class="bk-toggle-icon"><i class="fab fa-telegram-plane"></i></div>
                 <div>
                   <strong>Send copy to Telegram</strong>
-                  <span>Forward a backup copy to configured Telegram administrators.</span>
+                  <span class="bk-toggle-desc">Forward a backup copy to configured Telegram administrators.</span>
                 </div>
               </div>
               <span class="bk-switch">
@@ -367,10 +367,10 @@
           <!-- Schedule Switch Banner -->
           <div class="bk-schedule-banner">
             <div class="bk-schedule-info">
-              <span class="bk-schedule-icon"><i class="fas fa-calendar-check"></i></span>
+              <div class="bk-schedule-icon"><i class="fas fa-calendar-check"></i></div>
               <div>
                 <strong>Automatic backup schedule</strong>
-                <span>Run automated backups on schedule and maintain clean retention.</span>
+                <span class="bk-schedule-desc">Run automated backups on schedule and maintain clean retention.</span>
               </div>
             </div>
             <label class="bk-switch">
@@ -419,10 +419,10 @@
           <div class="bk-options-panel">
             <label class="bk-toggle-card">
               <div class="bk-toggle-info">
-                <span class="bk-toggle-icon"><i class="fas fa-network-wired"></i></span>
+                <div class="bk-toggle-icon"><i class="fas fa-network-wired"></i></div>
                 <div>
                   <strong>Include WireGuard configs</strong>
-                  <span>Archive WireGuard configuration files with each scheduled run.</span>
+                  <span class="bk-toggle-desc">Archive WireGuard configuration files with each scheduled run.</span>
                 </div>
               </div>
               <span class="bk-switch">
@@ -433,10 +433,10 @@
 
             <label class="bk-toggle-card">
               <div class="bk-toggle-info">
-                <span class="bk-toggle-icon"><i class="fab fa-telegram-plane"></i></span>
+                <div class="bk-toggle-icon"><i class="fab fa-telegram-plane"></i></div>
                 <div>
                   <strong>Send auto backups to Telegram</strong>
-                  <span>Send newly created archive directly to a designated Telegram admin.</span>
+                  <span class="bk-toggle-desc">Send newly created archive directly to a designated Telegram admin.</span>
                 </div>
               </div>
               <span class="bk-switch">
@@ -483,12 +483,6 @@
         <div class="bk-body">
           <div id="auto-files-list" class="bk-auto-list">
             <div class="bk-small bk-muted">Loading…</div>
-          </div>
-          <div id="auto-inspect-box" class="bk-preview bk-auto-inspect" hidden>
-            <div class="bk-preview-title"><i class="fas fa-magnifying-glass-chart"></i> Auto-backup inspection</div>
-            <div id="auto-inspect-subtitle" class="bk-small bk-muted">Click a saved backup to inspect its contents.</div>
-            <div id="auto-inspect-grid" class="bk-preview-grid"></div>
-            <div id="auto-inspect-files" class="bk-file-list"></div>
           </div>
         </div>
       </aside>

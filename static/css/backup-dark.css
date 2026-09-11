@@ -196,9 +196,15 @@ html[data-theme="dark"] .backup-shell .bk-toggle-card:hover {
 }
 
 html[data-theme="dark"] .backup-shell .bk-toggle-icon {
-  background: #101b24;
-  border-color: #1f3240;
-  color: #6ee7b7;
+  background: #122822;
+  border-color: #24594b;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-schedule-icon {
+  background: #122822;
+  border-color: #24594b;
+  color: #6ee7b7 !important;
 }
 
 html[data-theme="dark"] .backup-shell .bk-switch .track {
@@ -400,6 +406,16 @@ html[data-theme="dark"] .backup-shell .bk-auto-item {
 html[data-theme="dark"] .backup-shell .bk-auto-item:hover {
   background: #13222e;
   border-color: #294254;
+}
+
+html[data-theme="dark"] .backup-shell .bk-auto-size-badge {
+  background: #101b24;
+  border-color: #1f3240;
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .backup-shell .bk-auto-filename {
+  color: #64748b;
 }
 
 html[data-theme="dark"] .backup-shell .bk-auto-action.inspect {
