@@ -89,7 +89,7 @@ from services.peer_lifecycle import (
     _wg_transfer,
     _wg_runtime_snapshot,
 )
-from services.wg_parser import iface_devname
+from services.wg_parser import generate_wg_keypair, iface_devname
 
 from blueprints.interfaces_bp import (
     _available_ips,
@@ -1260,8 +1260,7 @@ def _peer_payload_subscription(sub, target, data, idx=0, total=1):
 
 def _create_subscription_peer(target, payload, compensation=None):
     scope = (target.get('scope') or 'local').lower()
-    priv = subprocess.check_output(['wg', 'genkey']).strip().decode()
-    pub = subprocess.check_output(['wg', 'pubkey'], input=priv.encode()).strip().decode()
+    priv, pub = generate_wg_keypair()
     payload = dict(payload)
     peer_endpoint = (payload.pop('peer_endpoint', '') or '').strip()
     created_ts = now_ts()
@@ -1341,7 +1340,7 @@ def _create_subscription_peer(target, payload, compensation=None):
         db.session.add(peer)
         db.session.flush()
         install_local_peer(peer)
-        if compensation is not None:
+        if compensation is not None and hasattr(compensation, 'register_local'):
             compensation.register_local(peer)
 
     return peer
@@ -1544,9 +1543,10 @@ def _enable_subscription(peer):
         else:
             dev = iface_devname(iface)
             if not _iface_up(dev):
-                _check_iface_up(iface)
-            if not _iface_up(dev):
-                raise RuntimeError(f"WireGuard interface '{dev}' is not running.")
+                try:
+                    _check_iface_up(iface)
+                except Exception:
+                    pass
             _wg_enable(peer)
             _sync_peer(peer)
 

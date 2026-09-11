@@ -83,7 +83,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta id="browser-theme-color" name="theme-color" content="#07111f">
-    <title>{{ portal_title or sub.name }} — WireGuard</title>
+    <title>{{ portal_title or (sub.name if sub else 'Subscription') }} — OxWg Panel</title>
     <script>
       (() => { const root = document.documentElement; const configured = root.dataset.defaultTheme || 'auto'; const preview = root.dataset.preview === 'true'; let theme; if (preview) { theme = configured === 'light' ? 'light' : configured === 'dark' ? 'dark' : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); } else { try { const saved = localStorage.getItem('sub-theme'); theme = saved === 'light' || saved === 'dark' ? saved : (configured === 'light' || configured === 'dark' ? configured : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')); } catch (_) { theme = configured === 'light' ? 'light' : 'dark'; } } root.dataset.theme = theme; root.style.colorScheme = theme; const meta = document.getElementById('browser-theme-color'); if (meta) meta.content = theme === 'light' ? '#eef5fb' : '#07111f'; })();
     </script>
@@ -95,125 +95,21 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/subscription_public.css') }}">
     <style>
       :root {
-        --custom-accent: {
-            {
-            ps.get('primary_color', ps.get('custom_primary', '#3addaa'))
-          }
-        }
-
-        ;
-
-        --custom-accent2: {
-            {
-            ps.get('secondary_color', ps.get('custom_secondary', '#63a5ff'))
-          }
-        }
-
-        ;
-
-        --background-intensity: {
-            {
-            (ps.get('background_intensity', 86)|int) / 100
-          }
-        }
-
-        ;
-
-        --card-opacity: {
-            {
-            (ps.get('card_opacity', 82)|int) / 100
-          }
-        }
-
-        ;
-
-        --motion-speed: {
-            {
-            100 / (ps.get('motion_speed', 125)|int if (ps.get('motion_speed', 125)|int) else 100)
-          }
-        }
-
-        ;
-
-        --motion-power: {
-            {
-            (ps.get('motion_intensity', 150)|int) / 100
-          }
-        }
-
-        ;
-
-        --particle-density: {
-            {
-            (ps.get('particle_density', 90)|int) / 100
-          }
-        }
-
-        ;
-
-        --engine-speed: {
-            {
-            (ps.get('motion_speed', 125)|int) / 100
-          }
-        }
-
-        ;
-
-        --engine-density: {
-            {
-            (ps.get('particle_density', 90)|int) / 100
-          }
-        }
-
-        ;
-
-        --status-online: {
-            {
-            ps.get('online_color', '#22c55e')
-          }
-        }
-
-        ;
-
-        --status-offline: {
-            {
-            ps.get('offline_color', '#94a3b8')
-          }
-        }
-
-        ;
-
-        --status-warning: {
-            {
-            ps.get('warning_color', '#f59e0b')
-          }
-        }
-
-        ;
-
-        --status-danger: {
-            {
-            ps.get('danger_color', '#ef4444')
-          }
-        }
-
-        ;
-
-        --pill-color: {
-            {
-            ps.get('pill_color', '#64748b')
-          }
-        }
-
-        ;
-
-        --action-color: {
-            {
-            ps.get('action_color', ps.get('primary_color', '#3addaa'))
-          }
-        }
-
-        ;
+        --custom-accent: {{ ps.get('primary_color', ps.get('custom_primary', '#3addaa')) }};
+        --custom-accent2: {{ ps.get('secondary_color', ps.get('custom_secondary', '#63a5ff')) }};
+        --background-intensity: {{ (ps.get('background_intensity', 86)|int) / 100 }};
+        --card-opacity: {{ (ps.get('card_opacity', 82)|int) / 100 }};
+        --motion-speed: {{ 100 / (ps.get('motion_speed', 125)|int if (ps.get('motion_speed', 125)|int) else 100) }};
+        --motion-power: {{ (ps.get('motion_intensity', 150)|int) / 100 }};
+        --particle-density: {{ (ps.get('particle_density', 90)|int) / 100 }};
+        --engine-speed: {{ (ps.get('motion_speed', 125)|int) / 100 }};
+        --engine-density: {{ (ps.get('particle_density', 90)|int) / 100 }};
+        --status-online: {{ ps.get('online_color', '#22c55e') }};
+        --status-offline: {{ ps.get('offline_color', '#94a3b8') }};
+        --status-warning: {{ ps.get('warning_color', '#f59e0b') }};
+        --status-danger: {{ ps.get('danger_color', '#ef4444') }};
+        --pill-color: {{ ps.get('pill_color', '#64748b') }};
+        --action-color: {{ ps.get('action_color', ps.get('primary_color', '#3addaa')) }};
       }
     </style>
   </head>
@@ -241,7 +137,7 @@
             </div>
           </div>
           <div class="portal-actions" aria-label="Public subscription actions"><a class="icon-action primary"
-              id="download-all" href="{{ url_for('subscription_public_config', token=sub.token) }}" download
+              id="download-all" href="{{ url_for('subscriptions_bp.subscription_public_config', token=sub.token) if sub and sub.token else '#' }}" download
               title="Download all configs"><i class="fas fa-download"></i></a><button class="icon-action copy-action"
               id="copy-sub" title="Copy subscription config link"><i class="fas fa-link"></i></button><button
               class="icon-action theme-action" id="theme-toggle" title="Light / dark mode"><i
@@ -363,7 +259,14 @@
       </section>
     </div>
     <div class="toast" id="toast">Copied</div>
-    <script>let DATA = {{ data| tojson }}; const PREVIEW_MODE = {{ 'true' if preview_mode|default (false) else 'false' }}; const TOKEN = {{ sub.token| tojson }}; const CONFIG_URL = {{ url_for('subscription_public_config', token = sub.token, _external = True) | tojson }}; const API_URL = {{ url_for('subscription_public_api', token = sub.token, _external = True) | tojson }}; const PUBLIC_SETTINGS = {{ ps| tojson }};</script>
+    <script>
+      let DATA = {{ data|tojson }};
+      const PREVIEW_MODE = {{ 'true' if preview_mode|default(false) else 'false' }};
+      const TOKEN = {{ (sub.token if sub and sub.token else '')|tojson }};
+      const CONFIG_URL = {{ (url_for('subscriptions_bp.subscription_public_config', token=sub.token, _external=True) if sub and sub.token else '')|tojson }};
+      const API_URL = {{ (url_for('subscriptions_bp.subscription_public_api', token=sub.token, _external=True) if sub and sub.token else '')|tojson }};
+      const PUBLIC_SETTINGS = {{ ps|tojson }};
+    </script>
     <script defer src="{{ url_for('static', filename='js/subscription_public.js', v='20260903-time-v7') }}"></script>
   </body>
 

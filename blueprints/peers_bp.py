@@ -125,9 +125,13 @@ class NodePeerInstallError(Exception):
 class PeerCreateCompensation:
     def __init__(self):
         self.node_rollbacks = []
+        self.local_rollbacks = []
 
     def register_node(self, node, pub):
         self.node_rollbacks.append((node, pub))
+
+    def register_local(self, peer):
+        self.local_rollbacks.append(peer)
 
     def rollback(self):
         failures = []
@@ -136,6 +140,11 @@ class PeerCreateCompensation:
                 _rollback_node_created_peer(node, pub)
             except Exception as e:
                 failures.append({'node_id': getattr(node, 'id', None), 'pub': pub, 'error': str(e)})
+        for peer in self.local_rollbacks:
+            try:
+                remove_peer_everywhere(peer)
+            except Exception as e:
+                failures.append({'peer_id': getattr(peer, 'id', None), 'pub': getattr(peer, 'public_key', ''), 'error': str(e)})
         return failures
 
 

@@ -53,6 +53,17 @@ def _derive_wg_public_key(priv: str) -> str:
     except Exception:
         pk = ''
 
+    if not pk:
+        try:
+            import base64
+            from cryptography.hazmat.primitives.asymmetric import x25519
+            raw = base64.b64decode(priv)
+            if len(raw) == 32:
+                k = x25519.X25519PrivateKey.from_private_bytes(raw)
+                pk = _valid_wg_key(base64.b64encode(k.public_key().public_bytes_raw()).decode('ascii'))
+        except Exception:
+            pk = ''
+
     if pk:
         _PUBKEY_CACHE[priv] = pk
         try:
@@ -64,6 +75,31 @@ def _derive_wg_public_key(priv: str) -> str:
             pass
 
     return pk
+
+
+def generate_wg_keypair() -> tuple[str, str]:
+    """
+    Generate a new WireGuard (Curve25519) private and public keypair.
+    Uses 'wg genkey' / 'wg pubkey' if available, otherwise pure Python X25519.
+    """
+    try:
+        priv = subprocess.check_output(
+            ['wg', 'genkey'],
+            stderr=subprocess.DEVNULL,
+            timeout=3.0,
+        ).strip().decode()
+        pub = _derive_wg_public_key(priv)
+        if priv and pub:
+            return priv, pub
+    except Exception:
+        pass
+
+    import base64
+    from cryptography.hazmat.primitives.asymmetric import x25519
+    key = x25519.X25519PrivateKey.generate()
+    priv = base64.b64encode(key.private_bytes_raw()).decode('ascii')
+    pub = base64.b64encode(key.public_key().public_bytes_raw()).decode('ascii')
+    return priv, pub
 
 
 def _assign_iface_public_key(iface: Any, value: str) -> str:
