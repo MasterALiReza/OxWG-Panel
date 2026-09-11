@@ -1209,20 +1209,23 @@ html[data-theme="dark"] .ox-select-check {
 
 /* ==========================================================================
    WireGuard Interface: Optional Settings (Table, PreUp, PreDown, PostUp, PostDown)
+   Single Source of Truth, Clean Flat Form UX, Dark & Light Responsive
    ========================================================================== */
 .iface-optional-card {
   margin-top: 14px;
   margin-bottom: 14px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 12px;
-  background: var(--card-bg, #ffffff);
+  border: 1px solid #dce5eb;
+  border-radius: 14px;
+  background: #ffffff;
   overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 html[data-theme="dark"] .iface-optional-card {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.6);
+  border-color: #1f3240;
+  background: #0c1822;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 .iface-optional-toggle {
@@ -1230,78 +1233,283 @@ html[data-theme="dark"] .iface-optional-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 14px 18px;
+  min-height: 52px;
   background: transparent;
   border: none;
   cursor: pointer;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-color, #0f172a);
   text-align: left;
-  transition: background-color 0.15s ease;
-}
-
-html[data-theme="dark"] .iface-optional-toggle {
-  color: #f1f5f9;
+  transition: background-color 0.16s ease;
+  user-select: none;
 }
 
 .iface-optional-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: rgba(15, 23, 42, 0.025);
 }
 
 html[data-theme="dark"] .iface-optional-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: rgba(255, 255, 255, 0.03);
 }
 
 .iface-optional-toggle__title {
   display: inline-flex;
   align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.iface-optional-toggle__icon-wrap {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  font-size: 13.5px;
+}
+
+html[data-theme="dark"] .iface-optional-toggle__icon-wrap {
+  background: rgba(59, 130, 246, 0.16);
+  color: #60a5fa;
+}
+
+.iface-optional-toggle__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.iface-optional-toggle__text strong {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+html[data-theme="dark"] .iface-optional-toggle__text strong {
+  color: #f1f5f9;
+}
+
+.iface-optional-toggle__text small {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.25;
+}
+
+html[data-theme="dark"] .iface-optional-toggle__text small {
+  color: #8298a6;
+}
+
+.iface-optional-toggle__meta {
+  display: inline-flex;
+  align-items: center;
   gap: 10px;
-  color: inherit;
 }
 
-.iface-optional-toggle__title i {
-  color: #3b82f6;
+.iface-optional-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.18);
 }
 
-.iface-optional-toggle__icon {
+html[data-theme="dark"] .iface-optional-badge {
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.iface-optional-chevron {
   font-size: 12px;
-  color: var(--text-muted, #64748b);
-  transition: transform 0.2s ease;
+  color: #94a3b8;
+  transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.iface-optional-toggle[aria-expanded="true"] .iface-optional-toggle__icon {
+.iface-optional-toggle[aria-expanded="true"] .iface-optional-chevron {
   transform: rotate(180deg);
 }
 
 .iface-optional-content {
-  padding: 16px;
-  border-top: 1px solid var(--border-color, #e2e8f0);
-  background: rgba(248, 250, 252, 0.5);
+  padding: 16px 18px 18px 18px;
+  border-top: 1px solid #e2e8f0;
+  background: #fbfcfe;
 }
 
 html[data-theme="dark"] .iface-optional-content {
-  border-top-color: rgba(255, 255, 255, 0.06);
-  background: rgba(15, 23, 42, 0.35);
+  border-top-color: #1e2f3d;
+  background: #09131b;
 }
 
-.iface-optional-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+.iface-opt-list {
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
-.iface-optional-grid .iface-field-card--full,
-.iface-optional-grid .form-group.wide {
-  grid-column: 1 / -1;
+.iface-opt-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.iface-opt-label-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.iface-opt-label-bar label {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iface-opt-label-bar label i {
+  font-size: 11.5px;
+  color: #64748b;
+  width: 15px;
+  text-align: center;
+}
+
+html[data-theme="dark"] .iface-opt-label-bar label {
+  color: #d1dce5;
+}
+
+html[data-theme="dark"] .iface-opt-label-bar label i {
+  color: #8ba0b0;
+}
+
+.iface-opt-hint {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+html[data-theme="dark"] .iface-opt-hint {
+  color: #798f9f;
+}
+
+.iface-opt-hint code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
+html[data-theme="dark"] .iface-opt-hint code {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.iface-opt-input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-height: 42px !important;
+  padding: 9px 13px !important;
+  border-radius: 9px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease !important;
+}
+
+html[data-theme="dark"] .iface-opt-input {
+  background: #060e14 !important;
+  border-color: #213544 !important;
+  color: #e6edf2 !important;
+}
+
+.iface-opt-input:focus {
+  border-color: #257d65 !important;
+  box-shadow: 0 0 0 3px rgba(37, 125, 101, 0.14) !important;
+  outline: none !important;
+}
+
+html[data-theme="dark"] .iface-opt-input:focus {
+  border-color: #38a382 !important;
+  box-shadow: 0 0 0 3px rgba(56, 163, 130, 0.18) !important;
+}
+
+.iface-opt-input:disabled {
+  opacity: 0.75 !important;
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  cursor: not-allowed !important;
+}
+
+html[data-theme="dark"] .iface-opt-input:disabled {
+  background: #091218 !important;
+  border-color: #1a2934 !important;
+  color: #6d808f !important;
 }
 
 .iface-code-input {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
   font-size: 12.5px !important;
-  line-height: 1.45 !important;
-  resize: vertical;
+  line-height: 1.5 !important;
+  resize: vertical !important;
+}
+
+/* Mobile & Touch Layout */
+@media (max-width: 768px) {
+  .iface-optional-card {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+  }
+  .iface-optional-toggle {
+    padding: 12px 14px;
+    min-height: 48px;
+  }
+  .iface-optional-content {
+    padding: 12px 14px 14px 14px;
+  }
+  .iface-opt-label-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .iface-opt-hint {
+    font-size: 10.5px;
+  }
+  .iface-opt-input {
+    min-height: 44px !important;
+    font-size: 13.5px !important;
+  }
+  .iface-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  .iface-actions .iface-save-btn {
+    grid-column: 1 / -1 !important;
+    min-height: 42px !important;
+  }
+  .iface-actions #iface-ep-apply {
+    grid-column: 1 / -1 !important;
+  }
 }
 
 

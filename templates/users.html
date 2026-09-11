@@ -159,35 +159,55 @@
                 <div class="form-group wide iface-optional-card" id="iface-create-optional-card">
                     <button type="button" class="iface-optional-toggle" id="iface-create-optional-toggle" aria-expanded="false" aria-controls="iface-create-optional-content">
                         <span class="iface-optional-toggle__title">
-                            <i class="fa-solid fa-sliders"></i>
-                            <span>Optional Settings</span>
+                            <span class="iface-optional-toggle__icon-wrap">
+                                <i class="fa-solid fa-sliders"></i>
+                            </span>
+                            <span class="iface-optional-toggle__text">
+                                <strong>Optional Settings</strong>
+                                <small>Routing table, firewall rules & lifecycle hooks</small>
+                            </span>
                         </span>
-                        <i class="fa-solid fa-chevron-down iface-optional-toggle__icon" aria-hidden="true"></i>
+                        <span class="iface-optional-toggle__meta">
+                            <span class="iface-optional-badge">Advanced</span>
+                            <i class="fa-solid fa-chevron-down iface-optional-chevron" aria-hidden="true"></i>
+                        </span>
                     </button>
                     <div class="iface-optional-content" id="iface-create-optional-content" hidden>
-                        <div class="iface-optional-grid">
-                            <div class="form-group">
-                                <label for="iface-new-table">Table</label>
-                                <input id="iface-new-table" name="table" class="input" placeholder="auto, off, or table number">
-                                <div class="small-text">Routing table (e.g. <code>auto</code>, <code>off</code>, <code>51820</code>).</div>
+                        <div class="iface-opt-list">
+                            <div class="iface-opt-row">
+                                <div class="iface-opt-label-bar">
+                                    <label for="iface-new-table"><i class="fa-solid fa-route"></i> Table</label>
+                                    <span class="iface-opt-hint">Routing table (e.g. <code>auto</code>, <code>off</code>, <code>51820</code>)</span>
+                                </div>
+                                <input id="iface-new-table" name="table" class="input iface-opt-input" placeholder="auto, off, or table number">
                             </div>
-                            <div class="form-group">
-                                <label for="iface-new-pre-up">PreUp</label>
-                                <input id="iface-new-pre-up" name="pre_up" class="input" placeholder="Command before interface comes up">
+                            <div class="iface-opt-row">
+                                <div class="iface-opt-label-bar">
+                                    <label for="iface-new-pre-up"><i class="fa-solid fa-terminal"></i> PreUp</label>
+                                    <span class="iface-opt-hint">Executed before interface comes up</span>
+                                </div>
+                                <textarea id="iface-new-pre-up" name="pre_up" class="input iface-opt-input iface-code-input" rows="1" placeholder="Command before interface comes up"></textarea>
                             </div>
-                            <div class="form-group">
-                                <label for="iface-new-pre-down">PreDown</label>
-                                <input id="iface-new-pre-down" name="pre_down" class="input" placeholder="Command before interface goes down">
+                            <div class="iface-opt-row">
+                                <div class="iface-opt-label-bar">
+                                    <label for="iface-new-pre-down"><i class="fa-solid fa-terminal"></i> PreDown</label>
+                                    <span class="iface-opt-hint">Executed before interface goes down</span>
+                                </div>
+                                <textarea id="iface-new-pre-down" name="pre_down" class="input iface-opt-input iface-code-input" rows="1" placeholder="Command before interface goes down"></textarea>
                             </div>
-                            <div class="form-group wide">
-                                <label for="iface-new-post-up">PostUp</label>
-                                <textarea id="iface-new-post-up" name="post_up" class="input iface-code-input" rows="2" placeholder="iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE"></textarea>
-                                <div class="small-text">Port forwarding, NAT, or firewall rules applied after interface comes up.</div>
+                            <div class="iface-opt-row">
+                                <div class="iface-opt-label-bar">
+                                    <label for="iface-new-post-up"><i class="fa-solid fa-network-wired"></i> PostUp</label>
+                                    <span class="iface-opt-hint">Port forwarding & firewall rules applied after interface comes up</span>
+                                </div>
+                                <textarea id="iface-new-post-up" name="post_up" class="input iface-opt-input iface-code-input" rows="2" placeholder="iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE"></textarea>
                             </div>
-                            <div class="form-group wide">
-                                <label for="iface-new-post-down">PostDown</label>
-                                <textarea id="iface-new-post-down" name="post_down" class="input iface-code-input" rows="2" placeholder="iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE"></textarea>
-                                <div class="small-text">Cleanup rules executed after interface goes down.</div>
+                            <div class="iface-opt-row">
+                                <div class="iface-opt-label-bar">
+                                    <label for="iface-new-post-down"><i class="fa-solid fa-network-wired"></i> PostDown</label>
+                                    <span class="iface-opt-hint">Cleanup rules executed after interface goes down</span>
+                                </div>
+                                <textarea id="iface-new-post-down" name="post_down" class="input iface-opt-input iface-code-input" rows="2" placeholder="iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE"></textarea>
                             </div>
                         </div>
                     </div>

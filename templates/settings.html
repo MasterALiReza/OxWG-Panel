@@ -688,56 +688,59 @@ html[data-theme="dark"] #set-panels .cards {
                         <div class="iface-optional-card" id="iface-optional-card">
                             <button type="button" class="iface-optional-toggle" id="iface-optional-toggle" aria-expanded="false" aria-controls="iface-optional-content">
                                 <span class="iface-optional-toggle__title">
-                                    <i class="fa-solid fa-sliders"></i>
-                                    <span>Optional Settings</span>
+                                    <span class="iface-optional-toggle__icon-wrap">
+                                        <i class="fa-solid fa-sliders"></i>
+                                    </span>
+                                    <span class="iface-optional-toggle__text">
+                                        <strong>Optional Settings</strong>
+                                        <small>Routing table, firewall rules & lifecycle hooks</small>
+                                    </span>
                                 </span>
-                                <i class="fa-solid fa-chevron-down iface-optional-toggle__icon" aria-hidden="true"></i>
+                                <span class="iface-optional-toggle__meta">
+                                    <span class="iface-optional-badge">Advanced</span>
+                                    <i class="fa-solid fa-chevron-down iface-optional-chevron" aria-hidden="true"></i>
+                                </span>
                             </button>
                             <div class="iface-optional-content" id="iface-optional-content" hidden>
-                                <div class="iface-optional-grid">
-                                    <div class="form-group iface-field-card is-editable">
-                                        <div class="iface-field-label">
-                                            <i class="fa-solid fa-table-list"></i>
-                                            <label for="i-table">Table</label>
+                                <div class="iface-opt-list">
+                                    <div class="iface-opt-row">
+                                        <div class="iface-opt-label-bar">
+                                            <label for="i-table"><i class="fa-solid fa-route"></i> Table</label>
+                                            <span class="iface-opt-hint">Routing table (e.g. <code>auto</code>, <code>off</code>, <code>51820</code>)</span>
                                         </div>
-                                        <input class="input" id="i-table" placeholder="auto, off, or table number">
-                                        <small>Routing table for interface routes (e.g. <code>auto</code>, <code>off</code>, <code>51820</code>).</small>
+                                        <input class="input iface-opt-input" id="i-table" placeholder="auto, off, or table number">
                                     </div>
 
-                                    <div class="form-group iface-field-card is-editable">
-                                        <div class="iface-field-label">
-                                            <i class="fa-solid fa-terminal"></i>
-                                            <label for="i-pre-up">PreUp</label>
+                                    <div class="iface-opt-row">
+                                        <div class="iface-opt-label-bar">
+                                            <label for="i-pre-up"><i class="fa-solid fa-terminal"></i> PreUp</label>
+                                            <span class="iface-opt-hint">Executed before bringing interface online</span>
                                         </div>
-                                        <textarea class="input iface-code-input" id="i-pre-up" rows="2" placeholder="Command executed before interface comes up"></textarea>
-                                        <small>Executed before bringing interface online.</small>
+                                        <textarea class="input iface-opt-input iface-code-input" id="i-pre-up" rows="1" placeholder="e.g. sysctl -w net.ipv4.ip_forward=1"></textarea>
                                     </div>
 
-                                    <div class="form-group iface-field-card is-editable">
-                                        <div class="iface-field-label">
-                                            <i class="fa-solid fa-terminal"></i>
-                                            <label for="i-pre-down">PreDown</label>
+                                    <div class="iface-opt-row">
+                                        <div class="iface-opt-label-bar">
+                                            <label for="i-pre-down"><i class="fa-solid fa-terminal"></i> PreDown</label>
+                                            <span class="iface-opt-hint">Executed before interface is taken offline</span>
                                         </div>
-                                        <textarea class="input iface-code-input" id="i-pre-down" rows="2" placeholder="Command executed before interface goes down"></textarea>
-                                        <small>Executed before interface is taken offline.</small>
+                                        <textarea class="input iface-opt-input iface-code-input" id="i-pre-down" rows="1" placeholder="Command executed before interface is taken offline"></textarea>
                                     </div>
 
-                                    <div class="form-group iface-field-card is-editable iface-field-card--full">
-                                        <div class="iface-field-label">
-                                            <i class="fa-solid fa-network-wired"></i>
-                                            <label for="i-post-up">PostUp</label>
+                                    <div class="iface-opt-row">
+                                        <div class="iface-opt-label-bar">
+                                            <label for="i-post-up"><i class="fa-solid fa-network-wired"></i> PostUp</label>
+                                            <span class="iface-opt-hint">Port forwarding & firewall rules applied after interface comes up</span>
                                         </div>
-                                        <textarea class="input iface-code-input" id="i-post-up" rows="3" placeholder="iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE"></textarea>
-                                        <small>Port forwarding, NAT, or custom iptables/nftables rules applied after interface comes up.</small>
+                                        <textarea class="input iface-opt-input iface-code-input" id="i-post-up" rows="2" placeholder="iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE"></textarea>
                                     </div>
 
-                                    <div class="form-group iface-field-card is-editable iface-field-card--full">
-                                        <div class="iface-field-label">
-                                            <i class="fa-solid fa-network-wired"></i>
-                                            <label for="i-post-down">PostDown</label>
+                                    <div class="iface-opt-row">
+                                        <div class="iface-opt-label-bar">
+                                            <label for="i-post-down"><i class="fa-solid fa-network-wired"></i> PostDown</label>
+                                            <span class="iface-opt-hint">Teardown and cleanup firewall rules executed after interface goes down</span>
                                         </div>
-                                        <textarea class="input iface-code-input" id="i-post-down" rows="3" placeholder="iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE"></textarea>
-                                        <small>Teardown and cleanup firewall rules executed after interface goes down.</small>
+                                        <textarea class="input iface-opt-input iface-code-input" id="i-post-down" rows="2" placeholder="iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE"></textarea>
                                     </div>
                                 </div>
                             </div>
