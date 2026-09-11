@@ -73,7 +73,7 @@ def reopen_logging_streams():
     """Close and reset any open file handler streams in the current process (safe after fork)."""
     root = logging.getLogger()
     for h in list(root.handlers):
-        if isinstance(h, RotatingFileHandler) or hasattr(h, 'stream'):
+        if isinstance(h, (RotatingFileHandler, logging.FileHandler)):
             try:
                 if getattr(h, 'stream', None):
                     h.stream.close()
