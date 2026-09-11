@@ -391,14 +391,90 @@
               </select>
             </div>
 
-            <div class="bk-field">
-              <label>Run time <span class="bk-field-note">panel local time</span></label>
-              <input id="time" type="time" value="03:00">
+            <div class="bk-field bk-time-field">
+              <label for="bk-time-trigger-btn">Run time <span class="bk-field-note">panel local time</span></label>
+              <div class="bk-time-picker-wrap">
+                <input id="time" type="hidden" value="03:00">
+                <button id="bk-time-trigger-btn" class="bk-time-trigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="bk-time-popover">
+                  <span class="bk-time-trigger-main">
+                    <i class="fas fa-clock bk-time-icon"></i>
+                    <span id="bk-time-display" class="bk-time-val">03:00</span>
+                    <span id="bk-time-ampm" class="bk-time-ampm">03:00 AM</span>
+                  </span>
+                  <span class="bk-time-badge-pill">24h</span>
+                  <i class="fas fa-chevron-down bk-time-arrow"></i>
+                </button>
+
+                <!-- Custom Themed Popover -->
+                <div id="bk-time-popover" class="bk-time-popover" role="dialog" aria-label="Choose backup time" hidden>
+                  <div class="bk-time-popover-head">
+                    <div class="bk-time-popover-title">
+                      <i class="fas fa-clock-rotate-left"></i>
+                      <span>Select Backup Time</span>
+                    </div>
+                    <div class="bk-time-popover-preview">
+                      <strong id="bk-time-popover-val">03:00</strong>
+                      <span id="bk-time-popover-sub">03:00 AM (Late night)</span>
+                    </div>
+                  </div>
+
+                  <!-- Quick Presets -->
+                  <div class="bk-time-presets-sec">
+                    <div class="bk-time-sec-label">Quick Presets (Off-peak hours)</div>
+                    <div class="bk-time-presets-grid">
+                      <button type="button" class="bk-time-chip" data-time="00:00">00:00 <small>Midnight</small></button>
+                      <button type="button" class="bk-time-chip" data-time="02:00">02:00 <small>Late night</small></button>
+                      <button type="button" class="bk-time-chip active" data-time="03:00">03:00 <small>Default ★</small></button>
+                      <button type="button" class="bk-time-chip" data-time="04:00">04:00 <small>Dawn</small></button>
+                      <button type="button" class="bk-time-chip" data-time="06:00">06:00 <small>Morning</small></button>
+                      <button type="button" class="bk-time-chip" data-time="12:00">12:00 <small>Noon</small></button>
+                    </div>
+                  </div>
+
+                  <!-- Dual Picker: Hour & Minute -->
+                  <div class="bk-time-selector-sec">
+                    <div class="bk-time-col">
+                      <div class="bk-time-col-title">Hour (24h)</div>
+                      <div id="bk-hour-list" class="bk-time-pills-scroll"></div>
+                    </div>
+                    <div class="bk-time-col">
+                      <div class="bk-time-col-title">Minute</div>
+                      <div id="bk-minute-list" class="bk-time-pills-scroll"></div>
+                    </div>
+                  </div>
+
+                  <!-- Popover Footer -->
+                  <div class="bk-time-popover-footer">
+                    <button id="bk-time-now-btn" class="bk-btn sm" type="button" title="Set to current hour">
+                      <i class="fas fa-hourglass-start"></i> <span>Current hour</span>
+                    </button>
+                    <button id="bk-time-done-btn" class="bk-btn sm primary" type="button">
+                      <i class="fas fa-check"></i> <span>Done</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="bk-field">
-              <label>Keep last (retention count)</label>
-              <input id="keep" type="number" min="1" max="99" value="7">
+            <div class="bk-field bk-keep-field">
+              <label for="keep">Keep last (retention count)</label>
+              <div class="bk-keep-stepper-wrap">
+                <div class="bk-stepper">
+                  <button id="keep-dec" class="bk-stepper-btn" type="button" aria-label="Decrease retention count">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <input id="keep" type="number" min="1" max="99" value="7" inputmode="numeric">
+                  <button id="keep-inc" class="bk-stepper-btn" type="button" aria-label="Increase retention count">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+                <div class="bk-keep-presets">
+                  <button type="button" class="bk-keep-chip" data-keep="3">3</button>
+                  <button type="button" class="bk-keep-chip active" data-keep="7">7 (1 Wk)</button>
+                  <button type="button" class="bk-keep-chip" data-keep="14">14 (2 Wks)</button>
+                  <button type="button" class="bk-keep-chip" data-keep="30">30 (1 Mo)</button>
+                </div>
+              </div>
             </div>
 
             <div class="bk-field bk-timezone-field">

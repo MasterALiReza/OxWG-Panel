@@ -1178,6 +1178,8 @@
       if (tzDisplay) tzDisplay.textContent = effTz;
       if (inpTime) inpTime.value = sched.time || "03:00";
       if (inpKeep) inpKeep.value = sched.keep || 7;
+      syncTimePickerUI(sched.time || inpTime?.value || "03:00", false);
+      syncKeepStepperUI();
       if (autoWG) autoWG.checked = !!sched.include_wg;
       setAutoTelegramEnabled(!!sched.send_to_telegram);
       updateTelegramTargetVisibility();
@@ -1651,6 +1653,257 @@
     }
   });
 
+  // --------------------------------------------------------------------------
+  // Custom Time Picker & Keep Count Controllers
+  // --------------------------------------------------------------------------
+  function format12h(timeStr) {
+    if (!timeStr || !timeStr.includes(":")) return "03:00 AM";
+    const [hStr, mStr] = timeStr.split(":");
+    let h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10) || 0;
+    if (isNaN(h)) h = 3;
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ampm}`;
+  }
+
+  function getTimePeriod(h) {
+    if (h >= 0 && h < 5) return "Late night";
+    if (h >= 5 && h < 12) return "Morning";
+    if (h >= 12 && h < 17) return "Afternoon";
+    return "Evening";
+  }
+
+  let timePickerInitialized = false;
+
+  function syncTimePickerUI(timeStr, triggerEvent = false) {
+    if (!timeStr || !timeStr.includes(":")) timeStr = "03:00";
+    const [hRaw, mRaw] = timeStr.split(":");
+    let h = Math.max(0, Math.min(23, parseInt(hRaw, 10) || 0));
+    let m = Math.max(0, Math.min(59, parseInt(mRaw, 10) || 0));
+    const hStr = String(h).padStart(2, "0");
+    const mStr = String(m).padStart(2, "0");
+    const normalized = `${hStr}:${mStr}`;
+
+    if (inpTime) inpTime.value = normalized;
+
+    const displayVal = $("#bk-time-display");
+    const displayAmpm = $("#bk-time-ampm");
+    const popoverVal = $("#bk-time-popover-val");
+    const popoverSub = $("#bk-time-popover-sub");
+
+    const ampmText = format12h(normalized);
+    const period = getTimePeriod(h);
+
+    if (displayVal) displayVal.textContent = normalized;
+    if (displayAmpm) displayAmpm.textContent = ampmText;
+    if (popoverVal) popoverVal.textContent = normalized;
+    if (popoverSub) popoverSub.textContent = `${ampmText} (${period})`;
+
+    // Highlight matching preset chips
+    $$(".bk-time-chip").forEach((chip) => {
+      chip.classList.toggle("active", chip.dataset.time === normalized);
+    });
+
+    // Highlight matching hour & minute pills
+    $$(".bk-hour-pill").forEach((pill) => {
+      pill.classList.toggle("active", pill.dataset.hour === hStr);
+    });
+
+    $$(".bk-minute-pill").forEach((pill) => {
+      pill.classList.toggle("active", pill.dataset.minute === mStr);
+    });
+
+    if (triggerEvent && inpTime) {
+      inpTime.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  function initTimePicker() {
+    if (timePickerInitialized) return;
+    timePickerInitialized = true;
+
+    const triggerBtn = $("#bk-time-trigger-btn");
+    const popover = $("#bk-time-popover");
+    const hourList = $("#bk-hour-list");
+    const minuteList = $("#bk-minute-list");
+    const nowBtn = $("#bk-time-now-btn");
+    const doneBtn = $("#bk-time-done-btn");
+
+    if (!triggerBtn || !popover) return;
+
+    // Build Hour Pills (00 - 23)
+    if (hourList && hourList.children.length === 0) {
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < 24; i++) {
+        const val = String(i).padStart(2, "0");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "bk-time-pill bk-hour-pill";
+        btn.dataset.hour = val;
+        btn.textContent = val;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const curTime = inpTime?.value || "03:00";
+          const curMin = curTime.split(":")[1] || "00";
+          syncTimePickerUI(`${val}:${curMin}`, true);
+        });
+        frag.appendChild(btn);
+      }
+      hourList.appendChild(frag);
+    }
+
+    // Build Minute Pills (00, 05, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+    if (minuteList && minuteList.children.length === 0) {
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < 60; i += 5) {
+        const val = String(i).padStart(2, "0");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "bk-time-pill bk-minute-pill";
+        btn.dataset.minute = val;
+        btn.textContent = val;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const curTime = inpTime?.value || "03:00";
+          const curHour = curTime.split(":")[0] || "03";
+          syncTimePickerUI(`${curHour}:${val}`, true);
+        });
+        frag.appendChild(btn);
+      }
+      minuteList.appendChild(frag);
+    }
+
+    // Wire Preset Chips
+    $$(".bk-time-chip").forEach((chip) => {
+      chip.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (chip.dataset.time) {
+          syncTimePickerUI(chip.dataset.time, true);
+        }
+      });
+    });
+
+    // Toggle Popover
+    function openPopover() {
+      popover.hidden = false;
+      triggerBtn.setAttribute("aria-expanded", "true");
+      setTimeout(() => {
+        const activeH = hourList?.querySelector(".bk-hour-pill.active");
+        const activeM = minuteList?.querySelector(".bk-minute-pill.active");
+        if (activeH) activeH.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        if (activeM) activeM.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }, 30);
+    }
+
+    function closePopover() {
+      popover.hidden = true;
+      triggerBtn.setAttribute("aria-expanded", "false");
+    }
+
+    triggerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (popover.hidden) {
+        openPopover();
+      } else {
+        closePopover();
+      }
+    });
+
+    // Current hour button
+    nowBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, "0");
+      syncTimePickerUI(`${h}:00`, true);
+    });
+
+    // Done button
+    doneBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closePopover();
+      triggerBtn.focus();
+    });
+
+    // Click outside to dismiss
+    document.addEventListener("click", (e) => {
+      if (!popover.hidden && !popover.contains(e.target) && !triggerBtn.contains(e.target)) {
+        closePopover();
+      }
+    });
+
+    // Escape key to dismiss
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !popover.hidden) {
+        closePopover();
+        triggerBtn.focus();
+      }
+    });
+
+    // Initial sync
+    syncTimePickerUI(inpTime?.value || "03:00", false);
+  }
+
+  function syncKeepStepperUI() {
+    if (!inpKeep) return;
+    let val = parseInt(inpKeep.value, 10);
+    if (isNaN(val) || val < 1) val = 1;
+    if (val > 99) val = 99;
+    inpKeep.value = val;
+
+    $$(".bk-keep-chip").forEach((chip) => {
+      chip.classList.toggle("active", parseInt(chip.dataset.keep, 10) === val);
+    });
+  }
+
+  function initKeepStepper() {
+    const decBtn = $("#keep-dec");
+    const incBtn = $("#keep-inc");
+
+    if (!inpKeep) return;
+
+    decBtn?.addEventListener("click", () => {
+      let val = parseInt(inpKeep.value, 10) || 7;
+      if (val > 1) {
+        inpKeep.value = val - 1;
+        syncKeepStepperUI();
+        inpKeep.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+
+    incBtn?.addEventListener("click", () => {
+      let val = parseInt(inpKeep.value, 10) || 7;
+      if (val < 99) {
+        inpKeep.value = val + 1;
+        syncKeepStepperUI();
+        inpKeep.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+
+    inpKeep.addEventListener("input", () => {
+      syncKeepStepperUI();
+    });
+
+    inpKeep.addEventListener("change", () => {
+      syncKeepStepperUI();
+    });
+
+    $$(".bk-keep-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const k = parseInt(chip.dataset.keep, 10);
+        if (!isNaN(k)) {
+          inpKeep.value = k;
+          syncKeepStepperUI();
+          inpKeep.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
+    });
+
+    syncKeepStepperUI();
+  }
+
+  initTimePicker();
+  initKeepStepper();
   updateServerModeUI();
   loadAll();
 

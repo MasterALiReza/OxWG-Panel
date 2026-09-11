@@ -215,21 +215,171 @@ html[data-theme="dark"] .backup-shell .bk-switch input:checked + .track {
   background: #257d65;
 }
 
-/* Form inputs */
+/* Form inputs & Overrides */
 html[data-theme="dark"] .backup-shell .bk-field input,
 html[data-theme="dark"] .backup-shell .bk-field select,
-html[data-theme="dark"] .backup-shell #auto-telegram-admin {
-  background: #0c151d;
-  border-color: #1f3240;
-  color: #e6edf3;
-  color-scheme: dark;
+html[data-theme="dark"] .backup-shell .bk-field input[type="time"],
+html[data-theme="dark"] .backup-shell .bk-field input[type="number"],
+html[data-theme="dark"] .backup-shell .bk-field input[type="text"],
+html[data-theme="dark"] .backup-shell #auto-telegram-admin,
+html[data-theme="dark"] .backup-shell .bk-inherited-zone,
+html[data-theme="dark"] .backup-shell .bk-time-trigger,
+html[data-theme="dark"] .backup-shell .bk-stepper {
+  background: #0c151d !important;
+  border-color: #1f3240 !important;
+  color: #e6edf3 !important;
+  color-scheme: dark !important;
 }
 
 html[data-theme="dark"] .backup-shell .bk-field input:focus,
 html[data-theme="dark"] .backup-shell .bk-field select:focus,
-html[data-theme="dark"] .backup-shell #auto-telegram-admin:focus {
-  border-color: #2f8b70;
-  box-shadow: 0 0 0 3px rgba(47, 139, 112, 0.2);
+html[data-theme="dark"] .backup-shell #auto-telegram-admin:focus,
+html[data-theme="dark"] .backup-shell .bk-time-trigger:focus,
+html[data-theme="dark"] .backup-shell .bk-time-trigger[aria-expanded="true"],
+html[data-theme="dark"] .backup-shell .bk-stepper:focus-within {
+  border-color: #2f8b70 !important;
+  box-shadow: 0 0 0 3px rgba(47, 139, 112, 0.25) !important;
+}
+
+/* WebKit input element indicators */
+html[data-theme="dark"] .backup-shell input::-webkit-calendar-picker-indicator {
+  filter: invert(0.85) !important;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+html[data-theme="dark"] .backup-shell input::-webkit-datetime-edit,
+html[data-theme="dark"] .backup-shell input::-webkit-datetime-edit-fields-wrapper,
+html[data-theme="dark"] .backup-shell input::-webkit-datetime-edit-text,
+html[data-theme="dark"] .backup-shell input::-webkit-datetime-edit-minute,
+html[data-theme="dark"] .backup-shell input::-webkit-datetime-edit-hour-field,
+html[data-theme="dark"] .backup-shell input::-webkit-datetime-edit-ampm-field {
+  color: #e6edf3 !important;
+}
+
+/* Time Picker Dark Mode */
+html[data-theme="dark"] .backup-shell .bk-time-val {
+  color: #e6edf3 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-ampm {
+  color: #8b9ca8 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-badge-pill {
+  background: rgba(37, 125, 101, 0.2) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(37, 125, 101, 0.4) !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-popover {
+  background: #101b24 !important;
+  border-color: #1f3240 !important;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55) !important;
+  color: #e6edf3 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-popover-head,
+html[data-theme="dark"] .backup-shell .bk-time-popover-footer {
+  border-color: #1f3240 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-popover-title {
+  color: #8b9ca8 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-popover-preview strong {
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-popover-preview span {
+  color: #8b9ca8 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-chip {
+  background: #0c151d !important;
+  border-color: #1f3240 !important;
+  color: #e6edf3 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-chip small {
+  color: #8b9ca8 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-chip:hover {
+  background: #152733 !important;
+  border-color: #257d65 !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-chip.active {
+  background: #257d65 !important;
+  border-color: #257d65 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(37, 125, 101, 0.45) !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-chip.active small {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-pills-scroll {
+  background: #0c151d !important;
+  border-color: #1f3240 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-pill {
+  color: #cbd4da !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-pill:hover {
+  background: #152733 !important;
+  border-color: #1f3240 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-time-pill.active {
+  background: #257d65 !important;
+  border-color: #257d65 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(37, 125, 101, 0.35) !important;
+}
+
+/* Keep Stepper Dark Mode */
+html[data-theme="dark"] .backup-shell .bk-stepper-btn {
+  color: #8b9ca8 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-stepper-btn:hover {
+  background: #152733 !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-stepper-btn:active {
+  background: #1a3242 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-stepper input {
+  background: transparent !important;
+  color: #e6edf3 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-keep-chip {
+  background: #0c151d !important;
+  border-color: #1f3240 !important;
+  color: #8b9ca8 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-keep-chip:hover {
+  background: #152733 !important;
+  border-color: #257d65 !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .backup-shell .bk-keep-chip.active {
+  background: #257d65 !important;
+  border-color: #257d65 !important;
+  color: #ffffff !important;
 }
 
 /* Restore Step Cards & Upload */

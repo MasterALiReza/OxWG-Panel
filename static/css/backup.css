@@ -1234,6 +1234,398 @@
   flex-shrink: 0;
 }
 
+/* --------------------------------------------------------------------------
+   Custom Time Picker Component
+   -------------------------------------------------------------------------- */
+.bk-time-picker-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.bk-time-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--bk-line);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--bk-text);
+  padding: 0 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+.bk-time-trigger:hover {
+  border-color: var(--bk-subtle);
+}
+
+.bk-time-trigger:focus,
+.bk-time-trigger[aria-expanded="true"] {
+  border-color: var(--bk-primary);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.14);
+}
+
+.bk-time-trigger-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bk-time-icon {
+  color: var(--bk-primary);
+  font-size: 13.5px;
+}
+
+.bk-time-val {
+  font-size: 13.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--bk-text);
+}
+
+.bk-time-ampm {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bk-muted);
+}
+
+.bk-time-badge-pill {
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+  background: var(--bk-primary-light);
+  color: var(--bk-primary-text);
+  border: 1px solid var(--bk-primary-border);
+  border-radius: 6px;
+  padding: 1.5px 6px;
+  letter-spacing: .3px;
+}
+
+.bk-time-arrow {
+  font-size: 11px;
+  color: var(--bk-subtle);
+  transition: transform .2s ease;
+  margin-left: 6px;
+}
+
+.bk-time-trigger[aria-expanded="true"] .bk-time-arrow {
+  transform: rotate(180deg);
+  color: var(--bk-primary);
+}
+
+/* Time Popover */
+.bk-time-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  min-width: 320px;
+  max-width: 400px;
+  z-index: 1050;
+  border-radius: 14px;
+  border: 1px solid var(--bk-line);
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  animation: bkPopIn .18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes bkPopIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bk-time-popover[hidden] {
+  display: none !important;
+}
+
+.bk-time-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--bk-line);
+}
+
+.bk-time-popover-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--bk-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+.bk-time-popover-title i {
+  color: var(--bk-primary);
+}
+
+.bk-time-popover-preview {
+  text-align: right;
+}
+
+.bk-time-popover-preview strong {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--bk-primary);
+  font-variant-numeric: tabular-nums;
+  display: block;
+  line-height: 1.1;
+}
+
+.bk-time-popover-preview span {
+  font-size: 10.5px;
+  color: var(--bk-muted);
+  font-weight: 600;
+}
+
+/* Quick Presets */
+.bk-time-presets-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bk-time-sec-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bk-muted);
+}
+
+.bk-time-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.bk-time-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--bk-line);
+  background: #f8fafc;
+  color: var(--bk-text);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: inherit;
+}
+
+.bk-time-chip small {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--bk-muted);
+  margin-top: 1px;
+}
+
+.bk-time-chip:hover {
+  border-color: var(--bk-primary);
+  background: var(--bk-primary-light);
+  color: var(--bk-primary-text);
+}
+
+.bk-time-chip.active {
+  background: var(--bk-primary);
+  border-color: var(--bk-primary);
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.32);
+}
+
+.bk-time-chip.active small {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* Dual Column Selector */
+.bk-time-selector-sec {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.bk-time-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bk-time-col-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bk-muted);
+  text-align: center;
+}
+
+.bk-time-pills-scroll {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  max-height: 135px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--bk-line);
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.bk-time-pill {
+  height: 27px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bk-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .12s ease;
+  font-family: inherit;
+}
+
+.bk-time-pill:hover {
+  background: #ffffff;
+  border-color: var(--bk-line);
+}
+
+.bk-time-pill.active {
+  background: var(--bk-primary) !important;
+  border-color: var(--bk-primary) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.28);
+}
+
+.bk-time-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bk-line);
+}
+
+/* --------------------------------------------------------------------------
+   Keep Count Stepper & Presets
+   -------------------------------------------------------------------------- */
+.bk-keep-stepper-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bk-stepper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--bk-line);
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.bk-stepper:focus-within {
+  border-color: var(--bk-primary);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.14);
+}
+
+.bk-stepper-btn {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--bk-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+  flex-shrink: 0;
+}
+
+.bk-stepper-btn:hover {
+  background: var(--bk-surface);
+  color: var(--bk-primary);
+}
+
+.bk-stepper-btn:active {
+  background: var(--bk-sub-surface);
+}
+
+.bk-stepper input {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  border: 0 !important;
+  background: transparent !important;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--bk-text) !important;
+  -moz-appearance: textfield;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0;
+}
+
+.bk-stepper input::-webkit-inner-spin-button,
+.bk-stepper input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bk-keep-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.bk-keep-chip {
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--bk-line);
+  background: #f8fafc;
+  color: var(--bk-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s ease;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+  padding: 0 2px;
+}
+
+.bk-keep-chip:hover {
+  border-color: var(--bk-primary);
+  color: var(--bk-primary);
+  background: var(--bk-primary-light);
+}
+
+.bk-keep-chip.active {
+  border-color: var(--bk-primary);
+  background: var(--bk-primary);
+  color: #ffffff !important;
+}
+
 /* Auto-backup list */
 .bk-auto-list {
   display: grid;
