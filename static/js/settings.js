@@ -3545,10 +3545,80 @@ async function loadAdminLogs() {
   document.querySelectorAll('.traffic-token-suggestions').forEach(box=>box.addEventListener('click',e=>{const b=e.target.closest('[data-traffic-token-suggestion]');if(!b)return;addEditorTag(b.dataset.trafficTokenSuggestion,b.dataset.value||'');byId(tokenInputMap[b.dataset.trafficTokenSuggestion])?.focus();}));
   document.querySelector('.traffic-policy-dialog')?.addEventListener('click',e=>{const b=e.target.closest('[data-traffic-token-remove]');if(!b)return;const kind=b.dataset.trafficTokenRemove,index=Number(b.dataset.index);if(editorTags[kind]&&Number.isInteger(index)){editorTags[kind].splice(index,1);renderEditorTags(kind);}});
 
-  byId('traffic-policy-list')?.addEventListener('click',async e=>{const toggle=e.target.closest('[data-traffic-chip-toggle]'),closeChip=e.target.closest('[data-traffic-chip-close]'),verify=e.target.closest('[data-traffic-verify]'),manual=e.target.closest('[data-traffic-manual]'),edit=e.target.closest('[data-traffic-edit]'),del=e.target.closest('[data-traffic-delete]');if(toggle){const id=String(toggle.dataset.trafficChipToggle||'');document.querySelectorAll('.traffic-chip-popover').forEach(pop=>{if(pop.id!==`traffic-chip-popover-${id}`)pop.hidden=true;});document.querySelectorAll('[data-traffic-chip-toggle]').forEach(btn=>{if(btn!==toggle)btn.setAttribute('aria-expanded','false');});const pop=byId(`traffic-chip-popover-${id}`);if(pop){const open=pop.hidden;pop.hidden=!open;toggle.setAttribute('aria-expanded',open?'true':'false');}return;}if(closeChip){const id=String(closeChip.dataset.trafficChipClose||'');const pop=byId(`traffic-chip-popover-${id}`),btn=document.querySelector(`[data-traffic-chip-toggle="${id}"]`);if(pop)pop.hidden=true;if(btn)btn.setAttribute('aria-expanded','false');return;}if(verify){await testPolicy(Number(verify.dataset.trafficVerify));return;}if(manual){openManualDestinationTest(Number(manual.dataset.trafficManual));return;}if(edit){const p=policies[Number(edit.dataset.trafficEdit)];if(p)openPolicyEditor(p);return;}if(del){const index=Number(del.dataset.trafficDelete),p=policies[index];if(!p)return;const ok=await window.confirmDialog?.({title:'Delete traffic policy?',body:`Remove “${p.name||'Traffic policy'}”? This will also remove its live rule immediately.`,okText:'Delete',cancelText:'Cancel'});if(!ok)return;const before=policies.map(row=>({...row,domains:[...(row.domains||[])],cidrs:[...(row.cidrs||[])],countries:[...(row.countries||[])]}));policies.splice(index,1);renderPolicies();closeVerify();closeManual();const saved=await persistTrafficAutomatically('Policy deleted and live rules updated.');if(!saved){policies=before;renderPolicies();}}});
+  byId('traffic-policy-list')?.addEventListener('click',async e=>{
+    const toggle=e.target.closest('[data-traffic-chip-toggle]'),closeChip=e.target.closest('[data-traffic-chip-close]'),verify=e.target.closest('[data-traffic-verify]'),manual=e.target.closest('[data-traffic-manual]'),edit=e.target.closest('[data-traffic-edit]'),del=e.target.closest('[data-traffic-delete]');
+    if(toggle){
+      const id=String(toggle.dataset.trafficChipToggle||'');
+      document.querySelectorAll('.traffic-chip-popover').forEach(pop=>{if(pop.id!==`traffic-chip-popover-${id}`){pop.hidden=true;pop.classList.remove('is-below');}});
+      document.querySelectorAll('[data-traffic-chip-toggle]').forEach(btn=>{if(btn!==toggle)btn.setAttribute('aria-expanded','false');});
+      document.querySelectorAll('.traffic-policy-item').forEach(it=>{it.classList.remove('has-open-popover');it.style.zIndex='';});
+      const pop=byId(`traffic-chip-popover-${id}`);
+      if(pop){
+        const willOpen=pop.hidden;
+        pop.hidden=!willOpen;
+        toggle.setAttribute('aria-expanded',willOpen?'true':'false');
+        const article=toggle.closest('.traffic-policy-item');
+        if(willOpen){
+          if(article){article.classList.add('has-open-popover');article.style.zIndex='50';}
+          const rect=toggle.getBoundingClientRect();
+          const spaceBelow=window.innerHeight-rect.bottom;
+          const spaceAbove=rect.top;
+          if(spaceAbove<160&&spaceBelow>=180){
+            pop.classList.add('is-below');
+          }else{
+            pop.classList.remove('is-below');
+          }
+        }else{
+          pop.classList.remove('is-below');
+          if(article){article.classList.remove('has-open-popover');article.style.zIndex='';}
+        }
+      }
+      return;
+    }
+    if(closeChip){
+      const id=String(closeChip.dataset.trafficChipClose||'');
+      const pop=byId(`traffic-chip-popover-${id}`),btn=document.querySelector(`[data-traffic-chip-toggle="${id}"]`);
+      if(pop){pop.hidden=true;pop.classList.remove('is-below');}
+      if(btn)btn.setAttribute('aria-expanded','false');
+      const article=closeChip.closest('.traffic-policy-item');
+      if(article){article.classList.remove('has-open-popover');article.style.zIndex='';}
+      return;
+    }
+    if(verify){await testPolicy(Number(verify.dataset.trafficVerify));return;}
+    if(manual){openManualDestinationTest(Number(manual.dataset.trafficManual));return;}
+    if(edit){const p=policies[Number(edit.dataset.trafficEdit)];if(p)openPolicyEditor(p);return;}
+    if(del){
+      const index=Number(del.dataset.trafficDelete),p=policies[index];
+      if(!p)return;
+      const ok=await window.confirmDialog?.({title:'Delete traffic policy?',body:`Remove “${p.name||'Traffic policy'}”? This will also remove its live rule immediately.`,okText:'Delete',cancelText:'Cancel'});
+      if(!ok)return;
+      const before=policies.map(row=>({...row,domains:[...(row.domains||[])],cidrs:[...(row.cidrs||[])],countries:[...(row.countries||[])]}));
+      policies.splice(index,1);
+      renderPolicies();
+      closeVerify();
+      closeManual();
+      const saved=await persistTrafficAutomatically('Policy deleted and live rules updated.');
+      if(!saved){policies=before;renderPolicies();}
+    }
+  });
 
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!byId('traffic-policy-modal')?.hidden)closePolicyEditor();});
-  document.addEventListener('click',e=>{if(!e.target.closest('.traffic-token-card'))['domains','cidrs','countries'].forEach(hideTokenSuggestions);if(!e.target.closest('.traffic-autocomplete-field')){const box=byId('traffic-test-autocomplete');if(box){box.hidden=true;box.style.display='none';}}});
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      if(!byId('traffic-policy-modal')?.hidden)closePolicyEditor();
+      document.querySelectorAll('.traffic-chip-popover').forEach(pop=>{pop.hidden=true;pop.classList.remove('is-below');});
+      document.querySelectorAll('[data-traffic-chip-toggle]').forEach(btn=>btn.setAttribute('aria-expanded','false'));
+      document.querySelectorAll('.traffic-policy-item').forEach(it=>{it.classList.remove('has-open-popover');it.style.zIndex='';});
+    }
+  });
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('[data-traffic-chip-toggle]')&&!e.target.closest('.traffic-chip-popover')){
+      document.querySelectorAll('.traffic-chip-popover').forEach(pop=>{pop.hidden=true;pop.classList.remove('is-below');});
+      document.querySelectorAll('[data-traffic-chip-toggle]').forEach(btn=>btn.setAttribute('aria-expanded','false'));
+      document.querySelectorAll('.traffic-policy-item').forEach(it=>{it.classList.remove('has-open-popover');it.style.zIndex='';});
+    }
+    if(!e.target.closest('.traffic-token-card'))['domains','cidrs','countries'].forEach(hideTokenSuggestions);
+    if(!e.target.closest('.traffic-autocomplete-field')){const box=byId('traffic-test-autocomplete');if(box){box.hidden=true;box.style.display='none';}}
+  });
   document.getElementById('set-tabs')?.addEventListener('click',e=>{if(e.target.closest('.tab')?.dataset?.tab==='traffic')loadTraffic();});
   if(document.documentElement.getAttribute('data-tab')==='traffic')loadTraffic();
 })();
