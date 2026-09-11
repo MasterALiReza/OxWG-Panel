@@ -55,7 +55,10 @@ def api_shortlink_by_public_key(public_key):
     public_key = (public_key or '').strip()
     if not public_key:
         abort(404)
-    peer = Peer.query.filter_by(public_key=public_key).first()
+    if public_key.isdigit():
+        peer = db.session.get(Peer, int(public_key))
+    else:
+        peer = Peer.query.filter_by(public_key=public_key).first()
     if not peer:
         abort(404)
     return _shortlink_response_for_peer(peer)

@@ -314,12 +314,25 @@ class TestBlueprintLayer(unittest.TestCase):
             sess['_user_id'] = '1'
             sess['_fresh'] = True
 
-        # Test config_qr with mock valid conf -> should return image/png
+        # Test config_qr with mock valid conf -> should return image/png (both by public key and by int ID)
         with mock.patch('blueprints.peers_bp._peer_client_conf_or_502', return_value=('[Interface]\nAddress = 10.77.0.2/32', None)):
             resp_qr = self.client.get('/api/peer/test_pub_qr/config_qr')
             self.assertEqual(resp_qr.status_code, 200)
             self.assertEqual(resp_qr.content_type, 'image/png')
             self.assertGreater(len(resp_qr.data), 100)
+
+            # Test by integer peer ID (what users.js sends)
+            with self.app.app_context():
+                peer_db = Peer.query.filter_by(public_key='test_pub_qr').first()
+                pid = peer_db.id
+
+            resp_qr_id = self.client.get(f'/api/peer/{pid}/config_qr')
+            self.assertEqual(resp_qr_id.status_code, 200)
+            self.assertEqual(resp_qr_id.content_type, 'image/png')
+
+            resp_cfg_id = self.client.get(f'/api/peer/{pid}/config')
+            self.assertEqual(resp_cfg_id.status_code, 200)
+            self.assertIn('[Interface]', resp_cfg_id.text)
 
     def test_admin_management_and_branding(self):
         """Verify admin routes and 2FA branding compliance."""

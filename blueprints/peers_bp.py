@@ -316,8 +316,17 @@ def install_local_peer(peer: Peer):
     _wg_enable(peer)
 
 
-def _peer_by_public_key_or_404(public_key: str) -> Peer:
-    return Peer.query.filter_by(public_key=public_key).first() or abort(404)
+def _peer_by_public_key_or_404(public_key: str | int) -> Peer:
+    key = str(public_key or "").strip()
+    if not key:
+        abort(404)
+    if key.isdigit():
+        peer = db.session.get(Peer, int(key))
+    else:
+        peer = Peer.query.filter_by(public_key=key).first()
+    if not peer:
+        abort(404)
+    return peer
 
 
 # ---------------------------------------------------------------------------
@@ -945,8 +954,26 @@ def api_peer_config_qr_by_public_key(public_key):
     if not cfg or not cfg.strip():
         return jsonify(ok=False, error="config_empty", message="The peer configuration is empty."), 404
 
+    safe_name = re.sub(
+        r"[^A-Za-z0-9_.-]+",
+        "_",
+        peer.name or f"peer-{peer.id}",
+    ).strip("._") or f"peer-{peer.id}"
+
     img = qrcode.make(cfg)
     buf = BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
-    return send_file(buf, mimetype="image/png")
+
+    response = send_file(
+        buf,
+        mimetype="image/png",
+        as_attachment=False,
+        download_name=f"{safe_name}.png",
+        max_age=0,
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Cache-Control"] = (
+        "private, no-store, no-cache, must-revalidate, max-age=0"
+    )
+    return response
