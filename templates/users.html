@@ -275,180 +275,159 @@
                 </div>
             </section>
 
-            <!-- Progressive Disclosure Tab Switcher -->
-            <nav class="peerx-tab-nav" role="tablist" aria-label="Peer options">
-                <button type="button" class="peerx-tab-btn active" role="tab" id="create-tab-btn-general" aria-selected="true" aria-controls="create-tab-general">
-                    <i class="fas fa-user-gear"></i>
-                    <div class="peerx-tab-btn-content">
-                        <span>تنظیمات اصلی و محدودیت‌ها</span>
-                        <small>مشخصات، حجم مصرفی، زمان اعتبار و سقف‌ها</small>
+            <!-- Left Column: Identity, Limits, Contact -->
+            <div class="peerx-column peerx-left-col">
+                <!-- Identity Card -->
+                <section class="peerx-form-card">
+                    <div class="peerx-section-head">
+                        <span><i class="fas fa-id-card"></i></span>
+                        <div><b>Identity</b><small>Friendly name and tunnel IP address.</small></div>
                     </div>
-                </button>
-                <button type="button" class="peerx-tab-btn" role="tab" id="create-tab-btn-wireguard" aria-selected="false" aria-controls="create-tab-wireguard">
-                    <i class="fas fa-network-wired"></i>
-                    <div class="peerx-tab-btn-content">
-                        <span>تنظیمات شبکه وایرگارد</span>
-                        <small>Endpoint، DNS، Allowed IPs و MTU</small>
+                    <div class="peerx-form-grid two">
+                        <label class="form-group">
+                            {{ form.name.label }}
+                            {{ form.name(class="input", placeholder="e.g. oxwg") }}
+                        </label>
+                        <label class="form-group peer-ip-address-group">
+                            <span>IP Address</span>
+                            <select id="create-address-select" class="input peerx-ip-select"></select>
+                            <small class="hint peer-ip-address-hint">Available IPs are automatically suggested.</small>
+                        </label>
+                        <input type="hidden" id="create-address" name="address">
                     </div>
-                </button>
-            </nav>
+                </section>
 
-            <!-- Scrollable Tab Panels Body -->
-            <div class="peerx-modal-body-scroll">
-                <!-- TAB 1: General & Limits -->
-                <div id="create-tab-general" class="peerx-tab-panel active" role="tabpanel" aria-labelledby="create-tab-btn-general">
-                    <!-- Identity Section -->
-                    <section class="peerx-form-card">
-                        <div class="peerx-section-head">
-                            <span><i class="fas fa-id-card"></i></span>
-                            <div><b>مشخصات کاربر (Identity)</b><small>نام اختصاصی و آدرس IP کاربر داخل تونل.</small></div>
+                <!-- Limits & Quota Card -->
+                <section class="peerx-form-card" id="peerx-limits-card">
+                    <div class="peerx-section-head">
+                        <span><i class="fas fa-gauge-high"></i></span>
+                        <div><b>Limits &amp; Quota</b><small>Traffic allowance and expiration timer rules.</small></div>
+                    </div>
+                    <div class="peerx-form-grid limits">
+                        <label class="form-group">
+                            <span>{{ form.data_limit.label.text }}</span>
+                            {{ form.data_limit(class="input", id="peer-data-limit-value", placeholder="e.g. 10") }}
+                        </label>
+                        <label class="form-group">
+                            <span>{{ form.limit_unit.label.text }}</span>
+                            {{ form.limit_unit(class="input", id="peer-data-limit-unit") }}
+                        </label>
+                        <label class="form-group">
+                            <span>Days</span>
+                            {{ form.time_limit_days(class="input", id="time_limit_days", min="0", placeholder="0") }}
+                        </label>
+                        <label class="form-group">
+                            <span>Hours</span>
+                            {{ form.time_limit_hours(class="input", id="time_limit_hours", min="0", max="23", placeholder="0–23") }}
+                        </label>
+                    </div>
+
+                    <!-- Quick Preset Chips -->
+                    <div class="peerx-chips-container">
+                        <div class="peerx-chips-group">
+                            <span class="peerx-chips-label"><i class="fas fa-database"></i> Traffic:</span>
+                            <div class="peerx-preset-chips" data-target="data">
+                                <button type="button" class="peerx-chip" data-val="10" data-unit="Gi">10 GB</button>
+                                <button type="button" class="peerx-chip" data-val="25" data-unit="Gi">25 GB</button>
+                                <button type="button" class="peerx-chip" data-val="50" data-unit="Gi">50 GB</button>
+                                <button type="button" class="peerx-chip" data-val="100" data-unit="Gi">100 GB</button>
+                                <button type="button" class="peerx-chip" data-val="200" data-unit="Gi">200 GB</button>
+                            </div>
                         </div>
-                        <div class="peerx-form-grid two">
+                        <div class="peerx-chips-group">
+                            <span class="peerx-chips-label"><i class="fas fa-calendar-day"></i> Expiry:</span>
+                            <div class="peerx-preset-chips" data-target="days">
+                                <button type="button" class="peerx-chip" data-days="7">7 Days</button>
+                                <button type="button" class="peerx-chip" data-days="30">30 Days</button>
+                                <button type="button" class="peerx-chip" data-days="60">60 Days</button>
+                                <button type="button" class="peerx-chip" data-days="90">90 Days</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="peerx-limit-switch-row">
+                        <label class="peerx-switch" for="peer-start-first-use">
+                            {{ form.start_on_first_use(id="peer-start-first-use") }}
+                            <span aria-hidden="true"></span>
+                            <b>Start timer on first connection</b>
+                        </label>
+                        <label class="peerx-switch" for="peer-unlimited">
+                            {{ form.unlimited(id="peer-unlimited") }}
+                            <span aria-hidden="true"></span>
+                            <b>Unlimited</b>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Contact Details Card -->
+                <section class="peerx-form-card peerx-contact-side-card">
+                    <div class="peerx-section-head">
+                        <span><i class="fas fa-address-book"></i></span>
+                        <div><b>Contact (Optional)</b><small>Optional phone number and Telegram handle.</small></div>
+                    </div>
+                    <div class="peerx-form-grid two">
+                        <label class="form-group">{{ form.phone_number.label }} {{ form.phone_number(class="input", placeholder="+31...") }}</label>
+                        <label class="form-group">{{ form.telegram_id.label }} {{ form.telegram_id(class="input", placeholder="@username or ID") }}</label>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: WireGuard config -->
+            <div class="peerx-column peerx-right-col">
+                <section class="peerx-form-card peerx-wireguard-card">
+                    <div class="peerx-section-head peerx-section-head-endpoint">
+                        <div class="peerx-section-head-main">
+                            <span><i class="fas fa-network-wired"></i></span>
+                            <div><b>WireGuard config</b><small>Endpoints, routing, keepalive and MTU.</small></div>
+                        </div>
+                        <details class="peerx-endpoint-help peerx-inline-help-endpoint">
+                            <summary aria-label="Endpoint information" title="Endpoint information"><span class="peerx-help-pulse" aria-hidden="true"></span><i class="fas fa-circle-info" aria-hidden="true"></i></summary>
+                            <div class="peerx-endpoint-help-pop"><b>Endpoint information</b><p><strong>Server endpoint</strong> is written into the client config. <strong>Fixed client endpoint</strong> is only for a stable reachable client IP or domain.</p></div>
+                        </details>
+                    </div>
+                    <div class="peerx-form-grid two peerx-wireguard-grid">
+                        <label class="form-group wide peerx-endpoint-field">
+                            <span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Server endpoint</span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span>
+                            {{ form.endpoint(class="input", id="peer-endpoint", placeholder="Leave empty to use interface default") }}
+                            <span class="endpoint-effective" id="peer-endpoint-effective" data-state="loading"><i class="fas fa-link" aria-hidden="true"></i><span>Interface default:</span><b id="peer-endpoint-effective-value">Detecting…</b></span>
+                        </label>
+                        <label class="form-group wide peerx-fixed-endpoint-field">
+                            <span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Fixed client endpoint <em class="field-optional">Optional</em></span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span>
+                            {{ form.peer_endpoint(class="input", id="peer-fixed-endpoint", placeholder="Leave empty for roaming clients") }}
+                            <small class="field-hint">Only for clients with a static IP or domain; leave empty for regular peers.</small>
+                        </label>
+                        <div class="form-group wide auto-network-field">
+                            {{ form.allowed_ips.label }}
+                            {{ form.allowed_ips(class="input", id="peer-allowed-ips", value=(form.allowed_ips.data or "0.0.0.0/0, ::/0"), placeholder="0.0.0.0/0, ::/0") }}
+                            <label class="auto-network-toggle" for="peer-include-internal-network">
+                                <input type="checkbox" id="peer-include-internal-network">
+                                <span class="auto-network-switch" aria-hidden="true"></span>
+                                <span class="auto-network-copy"><b>Include private networks</b><small>Automatically route server private networks.</small></span>
+                            </label>
+                            <input type="hidden" id="peer-internal-network" value="">
+                        </div>
+                        <label class="form-group wide">
+                            {{ form.dns.label }}
+                            {{ form.dns(class="input", id="peer-dns", placeholder="1.1.1.1, 1.0.0.1") }}
+                        </label>
+                        <div class="peerx-inline-wireguard wide">
                             <label class="form-group">
-                                {{ form.name.label }}
-                                {{ form.name(class="input", placeholder="e.g. oxwg") }}
+                                {{ form.persistent_keepalive.label }}
+                                {{ form.persistent_keepalive(class="input", id="peer-keepalive", placeholder="25") }}
                             </label>
-                            <label class="form-group peer-ip-address-group">
-                                <span>آدرس IP در تونل (Client IP)</span>
-                                <select id="create-address-select" class="input peerx-ip-select"></select>
-                                <small class="hint peer-ip-address-hint">آدرس‌های آزاد اینترفیس به صورت خودکار شناسایی و پیشنهاد می‌شوند.</small>
+                            <label class="form-group">
+                                {{ form.mtu.label }}
+                                {{ form.mtu(class="input", id="peer-mtu", placeholder="Interface/profile default") }}
                             </label>
-                            <input type="hidden" id="create-address" name="address">
-                        </div>
-                    </section>
-
-                    <!-- Limits & Quota Section -->
-                    <section class="peerx-form-card" id="peerx-limits-card">
-                        <div class="peerx-section-head">
-                            <span><i class="fas fa-gauge-high"></i></span>
-                            <div><b>سقف مصرف و اعتبار زمانی (Limits)</b><small>تعیین حجم، دوره زمانی و شروع خودکار.</small></div>
-                        </div>
-                        <div class="peerx-form-grid limits">
-                            <div class="form-group">
-                                {{ form.data_limit.label }}
-                                {{ form.data_limit(class="input", id="peer-data-limit-value", placeholder="e.g. 30") }}
-                                <div class="peerx-preset-chips" data-target="data">
-                                    <span class="peerx-chip" data-val="10" data-unit="Gi">10 GB</span>
-                                    <span class="peerx-chip" data-val="25" data-unit="Gi">25 GB</span>
-                                    <span class="peerx-chip" data-val="50" data-unit="Gi">50 GB</span>
-                                    <span class="peerx-chip" data-val="100" data-unit="Gi">100 GB</span>
-                                    <span class="peerx-chip" data-val="200" data-unit="Gi">200 GB</span>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                {{ form.limit_unit.label }}
-                                {{ form.limit_unit(class="input", id="peer-data-limit-unit") }}
-                            </div>
-                            <div class="form-group">
-                                <span>مدت اعتبار (روز)</span>
-                                {{ form.time_limit_days(class="input", id="time_limit_days", min="0", placeholder="0") }}
-                                <div class="peerx-preset-chips" data-target="days">
-                                    <span class="peerx-chip" data-days="7">۷ روز</span>
-                                    <span class="peerx-chip" data-days="30">۳۰ روز</span>
-                                    <span class="peerx-chip" data-days="60">۶۰ روز</span>
-                                    <span class="peerx-chip" data-days="90">۹۰ روز</span>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <span>ساعت اضافه</span>
-                                {{ form.time_limit_hours(class="input", id="time_limit_hours", min="0", max="23", placeholder="0–23") }}
-                            </div>
-                        </div>
-
-                        <!-- Modern Switch Cards -->
-                        <div class="peerx-switch-grid">
-                            <label class="peerx-switch-card" for="peer-unlimited">
-                                {{ form.unlimited(id="peer-unlimited") }}
-                                <div class="peerx-switch-card-info">
-                                    <b>نامحدود (Unlimited)</b>
-                                    <small>کاربر بدون محدودیت حجم و زمان فعال خواهد ماند.</small>
-                                </div>
-                            </label>
-                            <label class="peerx-switch-card" for="peer-start-first-use">
-                                {{ form.start_on_first_use(id="peer-start-first-use") }}
-                                <div class="peerx-switch-card-info">
-                                    <b>شروع زمان با اولین اتصال</b>
-                                    <small>شمارش معکوس روزها تنها پس از اولین برقراری ارتباط کلاینت آغاز می‌شود.</small>
-                                </div>
-                            </label>
-                        </div>
-                    </section>
-
-                    <!-- Contact Details Section -->
-                    <section class="peerx-form-card">
-                        <div class="peerx-section-head">
-                            <span><i class="fas fa-address-book"></i></span>
-                            <div><b>اطلاعات تماس (اختیاری)</b><small>برای مدیریت آسان‌تر و جستجوی کاربران.</small></div>
-                        </div>
-                        <div class="peerx-form-grid two">
-                            <label class="form-group">{{ form.phone_number.label }} {{ form.phone_number(class="input", placeholder="+989...") }}</label>
-                            <label class="form-group">{{ form.telegram_id.label }} {{ form.telegram_id(class="input", placeholder="@username") }}</label>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- TAB 2: Advanced WireGuard Network Settings -->
-                <div id="create-tab-wireguard" class="peerx-tab-panel" role="tabpanel" aria-labelledby="create-tab-btn-wireguard">
-                    <!-- Info Banner -->
-                    <div class="peerx-info-banner">
-                        <i class="fas fa-circle-info"></i>
-                        <div class="peerx-info-banner-text">
-                            <b>تنظیمات پیش‌فرض شبکه</b>
-                            پارامترهای این بخش به طور خودکار از روی تنظیمات بهینه اینترفیس و سرور اعمال می‌شوند و در بیشتر شرایط نیازی به تغییر دستی ندارند.
                         </div>
                     </div>
-
-                    <section class="peerx-form-card peerx-wireguard-card">
-                        <div class="peerx-section-head peerx-section-head-endpoint">
-                            <div class="peerx-section-head-main">
-                                <span><i class="fas fa-network-wired"></i></span>
-                                <div><b>پیکربندی و روتینگ وایرگارد</b><small>Endpoints، DNS، Keepalive و MTU</small></div>
-                            </div>
-                        </div>
-                        <div class="peerx-form-grid two peerx-wireguard-grid">
-                            <label class="form-group wide peerx-endpoint-field">
-                                <span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Server endpoint</span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span>
-                                {{ form.endpoint(class="input", id="peer-endpoint", placeholder="Leave empty to use interface default") }}
-                                <span class="endpoint-effective" id="peer-endpoint-effective" data-state="loading"><i class="fas fa-link" aria-hidden="true"></i><span>Interface default:</span><b id="peer-endpoint-effective-value">Detecting…</b></span>
-                            </label>
-                            <label class="form-group wide peerx-fixed-endpoint-field">
-                                <span class="peerx-endpoint-label"><span class="peerx-endpoint-label-title">Fixed client endpoint <em class="field-optional">Optional</em></span><span class="peerx-endpoint-label-meta"><span class="peerx-endpoint-chip peerx-endpoint-chip-host">host</span><span class="peerx-endpoint-sep">:</span><span class="peerx-endpoint-chip peerx-endpoint-chip-port">port</span></span></span>
-                                {{ form.peer_endpoint(class="input", id="peer-fixed-endpoint", placeholder="Leave empty for roaming clients") }}
-                                <small class="field-hint">فقط برای کلاینت‌های با IP یا دامنه استاتیک؛ برای کلاینت‌های معمولی خالی بگذارید.</small>
-                            </label>
-                            <div class="form-group wide auto-network-field">
-                                {{ form.allowed_ips.label }}
-                                {{ form.allowed_ips(class="input", id="peer-allowed-ips", value=(form.allowed_ips.data or "0.0.0.0/0, ::/0"), placeholder="0.0.0.0/0, ::/0") }}
-                                <label class="auto-network-toggle" for="peer-include-internal-network">
-                                    <input type="checkbox" id="peer-include-internal-network">
-                                    <span class="auto-network-switch" aria-hidden="true"></span>
-                                    <span class="auto-network-copy"><b>Include private networks</b><small>شبکه‌های خصوصی سرور شناسایی و در روتینگ اضافه می‌شوند.</small></span>
-                                </label>
-                                <input type="hidden" id="peer-internal-network" value="">
-                            </div>
-                            <label class="form-group wide">
-                                {{ form.dns.label }}
-                                {{ form.dns(class="input", id="peer-dns", placeholder="1.1.1.1, 1.0.0.1") }}
-                            </label>
-                            <div class="peerx-inline-wireguard wide">
-                                <label class="form-group">
-                                    {{ form.persistent_keepalive.label }}
-                                    {{ form.persistent_keepalive(class="input", id="peer-keepalive", placeholder="25") }}
-                                </label>
-                                <label class="form-group">
-                                    {{ form.mtu.label }}
-                                    {{ form.mtu(class="input", id="peer-mtu", placeholder="Interface/profile default") }}
-                                </label>
-                            </div>
-                        </div>
-                    </section>
-                </div>
+                </section>
             </div>
 
             <!-- Unified Full-width Modal Footer -->
             <footer class="modal-footer peerx-form-actions">
-                <button type="button" class="btn secondary" id="create-cancel">لغو</button>
-                <button type="submit" class="btn"><i class="fas fa-save"></i> ایجاد و ذخیره کاربر</button>
+                <button type="button" class="btn secondary" id="create-cancel">Cancel</button>
+                <button type="submit" class="btn"><i class="fas fa-save"></i> Save peer</button>
             </footer>
         </form>
     </div>
@@ -976,37 +955,20 @@
   else mq.addListener(syncPeerModalPortal);
 })();
 
-// OxWg Create Peer Modal - Tabs, Preset Chips, and Switch Cards
+// OxWg Create Peer Modal - Preset Chips and Unlimited Sync
 (function initCreatePeerModalUX() {
   function setup() {
     const modal = document.getElementById('peer-modal');
     if (!modal) return;
 
-    // 1. Tab Switching
-    const tabBtns = modal.querySelectorAll('.peerx-tab-btn');
-    const tabPanels = modal.querySelectorAll('.peerx-tab-panel');
-
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const targetId = btn.getAttribute('aria-controls');
-        tabBtns.forEach(b => {
-          b.classList.toggle('active', b === btn);
-          b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
-        });
-        tabPanels.forEach(panel => {
-          panel.classList.toggle('active', panel.id === targetId);
-        });
-      });
-    });
-
-    // 2. Preset Chips for Data Limit
     const dataChips = modal.querySelectorAll('.peerx-preset-chips[data-target="data"] .peerx-chip');
     const dataValInput = document.getElementById('peer-data-limit-value');
     const dataUnitSelect = document.getElementById('peer-data-limit-unit');
     const unlimitedCheck = document.getElementById('peer-unlimited');
 
     dataChips.forEach(chip => {
-      chip.addEventListener('click', () => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
         const val = chip.getAttribute('data-val');
         const unit = chip.getAttribute('data-unit') || 'Gi';
         if (dataValInput) {
@@ -1018,7 +980,6 @@
           dataUnitSelect.value = unit;
           dataUnitSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
-        // If unlimited was checked, uncheck it
         if (unlimitedCheck && unlimitedCheck.checked) {
           unlimitedCheck.checked = false;
           unlimitedCheck.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1027,13 +988,13 @@
       });
     });
 
-    // 3. Preset Chips for Duration (Days)
     const daysChips = modal.querySelectorAll('.peerx-preset-chips[data-target="days"] .peerx-chip');
     const daysInput = document.getElementById('time_limit_days');
     const hoursInput = document.getElementById('time_limit_hours');
 
     daysChips.forEach(chip => {
-      chip.addEventListener('click', () => {
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
         const days = chip.getAttribute('data-days');
         if (daysInput) {
           daysInput.value = days;
@@ -1043,25 +1004,12 @@
         if (hoursInput && (!hoursInput.value || hoursInput.value === '0')) {
           hoursInput.value = '0';
         }
-        // If unlimited was checked, uncheck it
         if (unlimitedCheck && unlimitedCheck.checked) {
           unlimitedCheck.checked = false;
           unlimitedCheck.dispatchEvent(new Event('change', { bubbles: true }));
         }
         daysChips.forEach(c => c.classList.toggle('active', c === chip));
       });
-    });
-
-    // 4. Switch Cards Active Sync & Unlimited Styling
-    const switchCards = modal.querySelectorAll('.peerx-switch-card');
-    switchCards.forEach(card => {
-      const checkbox = card.querySelector('input[type="checkbox"]');
-      if (!checkbox) return;
-      const syncCard = () => {
-        card.classList.toggle('active', checkbox.checked);
-      };
-      checkbox.addEventListener('change', syncCard);
-      syncCard();
     });
 
     if (unlimitedCheck) {
@@ -1072,6 +1020,12 @@
           const limitInputs = limitsCard.querySelectorAll('#peer-data-limit-value, #peer-data-limit-unit, #time_limit_days, #time_limit_hours');
           limitInputs.forEach(inp => {
             inp.style.opacity = isUnlimited ? '0.45' : '1';
+            inp.style.pointerEvents = isUnlimited ? 'none' : 'auto';
+          });
+          const chips = limitsCard.querySelectorAll('.peerx-chip');
+          chips.forEach(c => {
+            c.style.opacity = isUnlimited ? '0.45' : '1';
+            c.style.pointerEvents = isUnlimited ? 'none' : 'auto';
           });
         }
         if (isUnlimited) {
