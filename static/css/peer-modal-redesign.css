@@ -535,7 +535,7 @@ html[data-theme="dark"] .peer-ip-combobox-copy small {
 
 /* IP Dropdown Menu */
 .peer-ip-menu {
-  z-index: 10060 !important;
+  z-index: 50000 !important;
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: var(--peerx-radius-md) !important;
@@ -611,15 +611,18 @@ html[data-theme="dark"] .peerx-switch b {
    ========================================================================== */
 .peerx-endpoint-label {
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
+  width: 100% !important;
   gap: 8px !important;
 }
 
 .peerx-endpoint-label-meta {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 3px !important;
+  gap: 4px !important;
+  margin-left: auto !important;
   font-size: 11px !important;
 }
 
@@ -1153,16 +1156,16 @@ html[data-theme="dark"] #peer-modal .peerx-profile-row .peerx-switch > b i {
 #edit-peer-modal .profile-picker,
 #bulk-modal .profile-picker {
   display: grid !important;
-  grid-template-columns: 24px minmax(0, 1fr) 30px 30px !important;
+  grid-template-columns: 24px minmax(0, 1fr) 32px 32px !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 8px !important;
   flex: 1 1 auto !important;
-  min-height: 38px !important;
-  height: 38px !important;
-  padding: 0 6px !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  padding: 0 8px !important;
   background: #ffffff !important;
   border: 1px solid #cbd5e1 !important;
-  border-radius: 10px !important;
+  border-radius: 12px !important;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
   box-sizing: border-box !important;
   color: #0f172a !important;
@@ -1195,7 +1198,7 @@ html[data-theme="dark"] #peer-modal .profile-picker > i {
 #profile-select {
   width: 100% !important;
   min-width: 0 !important;
-  height: 34px !important;
+  height: 36px !important;
   border: 0 !important;
   background: transparent !important;
   color: #0f172a !important;
@@ -1230,20 +1233,29 @@ html[data-theme="dark"] #profile-select option {
 }
 
 /* OxSelect Integration for Profile Picker */
-.profile-picker .ox-select-shell {
+.profile-picker .ox-select-shell,
+#peer-modal .profile-picker .ox-select-shell {
   min-width: 0 !important;
   width: 100% !important;
 }
 
-.profile-picker .ox-select-trigger {
-  height: 34px !important;
-  padding: 0 4px !important;
+.profile-picker .ox-select-trigger,
+#peer-modal .profile-picker .ox-select-trigger,
+html[data-theme="dark"] .profile-picker .ox-select-trigger,
+html[data-theme="dark"] #peer-modal .profile-picker .ox-select-trigger {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 6px !important;
   font-size: 13px !important;
   font-weight: 700 !important;
   color: #0f172a !important;
 }
 
-html[data-theme="dark"] .profile-picker .ox-select-trigger {
+html[data-theme="dark"] .profile-picker .ox-select-trigger,
+html[data-theme="dark"] #peer-modal .profile-picker .ox-select-trigger {
   color: #f1f5f9 !important;
 }
 
@@ -1255,24 +1267,34 @@ html[data-theme="dark"] .profile-picker .ox-select-trigger {
 
 .profile-picker .icon-btn,
 #save-profile-btn,
-#profile-menu-btn {
+#profile-menu-btn,
+#peer-modal .profile-picker .icon-btn,
+#peer-modal #save-profile-btn,
+#peer-modal #profile-menu-btn {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  border-radius: 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  border-radius: 9px !important;
   background: #f1f5f9 !important;
   border: 1px solid #e2e8f0 !important;
   color: #475569 !important;
   cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
   transition: var(--peerx-transition) !important;
 }
 
 .profile-picker .icon-btn:hover,
 #save-profile-btn:hover,
-#profile-menu-btn:hover {
+#profile-menu-btn:hover,
+#peer-modal .profile-picker .icon-btn:hover,
+#peer-modal #save-profile-btn:hover,
+#peer-modal #profile-menu-btn:hover {
   background: #e2e8f0 !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
@@ -1280,7 +1302,10 @@ html[data-theme="dark"] .profile-picker .ox-select-trigger {
 
 html[data-theme="dark"] .profile-picker .icon-btn,
 html[data-theme="dark"] #save-profile-btn,
-html[data-theme="dark"] #profile-menu-btn {
+html[data-theme="dark"] #profile-menu-btn,
+html[data-theme="dark"] #peer-modal .profile-picker .icon-btn,
+html[data-theme="dark"] #peer-modal #save-profile-btn,
+html[data-theme="dark"] #peer-modal #profile-menu-btn {
   background: #172236 !important;
   border-color: #2b3e58 !important;
   color: #cbd5e1 !important;
@@ -1288,7 +1313,10 @@ html[data-theme="dark"] #profile-menu-btn {
 
 html[data-theme="dark"] .profile-picker .icon-btn:hover,
 html[data-theme="dark"] #save-profile-btn:hover,
-html[data-theme="dark"] #profile-menu-btn:hover {
+html[data-theme="dark"] #profile-menu-btn:hover,
+html[data-theme="dark"] #peer-modal .profile-picker .icon-btn:hover,
+html[data-theme="dark"] #peer-modal #save-profile-btn:hover,
+html[data-theme="dark"] #peer-modal #profile-menu-btn:hover {
   background: #22324e !important;
   color: #ffffff !important;
   border-color: #3b506f !important;
@@ -1305,7 +1333,7 @@ html[data-theme="dark"] #profile-menu-btn:hover {
   box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08) !important;
   min-width: 180px !important;
   padding: 6px !important;
-  z-index: 50 !important;
+  z-index: 50000 !important;
   box-sizing: border-box !important;
 }
 
