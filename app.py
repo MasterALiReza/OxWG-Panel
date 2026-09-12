@@ -379,7 +379,8 @@ if __name__ == "__main__":
             pass
 
         try:
-            bootstrap(server.app.callable)
+            target_app = getattr(server.app, "application", None) or app
+            bootstrap(target_app)
         except Exception as exc:
             server.log.exception("Worker bootstrap failed: %s", exc)
 

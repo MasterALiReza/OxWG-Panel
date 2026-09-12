@@ -82,9 +82,16 @@ def bootstrap(app: Flask | None = None) -> None:
     5. Background worker daemon threads (guarded by cross-process lock)
     6. Initial log retention cleanup
     """
-    if app is None:
-        from flask import current_app
-        app = current_app
+    if app is None or not hasattr(app, 'app_context'):
+        try:
+            import app as app_module
+            app = getattr(app_module, 'app', None)
+        except Exception:
+            pass
+
+    if app is None or not hasattr(app, 'app_context'):
+        logger.warning("bootstrap called without a valid Flask app instance; skipping.")
+        return
 
     with app.app_context():
         # 1. Ensure runtime directories & database migrations
