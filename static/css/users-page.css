@@ -2059,7 +2059,7 @@ html:not([data-theme="light"]) .field-optional{background: rgba(146, 64, 14, 0.3
 #peer-modal #create-peer-form > .peerx-profile-card, #edit-peer-modal #edit-peer-form > .peerx-profile-card, #bulk-modal #bulk-form > .peerx-profile-card{width: 100% !important;max-width: none !important;}
 #peer-modal .peerx-profile-card .peerx-profile-row, #edit-peer-modal .peerx-profile-card .peerx-profile-row, #bulk-modal .peerx-profile-card .peerx-profile-row{width: 100% !important;}
 #peer-modal .peerx-left-col, #edit-peer-modal .peerx-left-col, #bulk-modal .peerx-left-col, #peer-modal .peerx-right-col, #edit-peer-modal .peerx-right-col, #bulk-modal .peerx-right-col{grid-auto-rows: min-content !important;}
-#peer-modal .peerx-contact-side-card, #edit-peer-modal .peerx-contact-side-card, #bulk-modal .peerx-contact-side-card{min-height: 100% !important;}
+#peer-modal .peerx-contact-side-card, #edit-peer-modal .peerx-contact-side-card, #bulk-modal .peerx-contact-side-card{min-height: auto !important;}
 
 .peerx-inline-wireguard{display: grid !important;grid-template-columns: repeat(2, minmax(0, 1fr)) !important;gap: 10px !important;align-items: start !important;}
 .peerx-inline-wireguard .form-group{min-width: 0 !important;}
@@ -2084,10 +2084,10 @@ html:not([data-theme="light"]) .field-optional{background: rgba(146, 64, 14, 0.3
 #peer-modal #create-peer-form > .peerx-profile-card{grid-area: profile !important;grid-column: 1/-1 !important;width: 100% !important;max-width: none !important;box-sizing: border-box !important;}
 #peer-modal #create-peer-form > .peerx-left-col{grid-area: left !important;}
 #peer-modal #create-peer-form > .peerx-right-col{grid-area: right !important;}
-#peer-modal #create-peer-form > .peerx-form-actions{grid-area: actions !important;}
+#peer-modal #create-peer-form > .peerx-form-actions{grid-area: auto !important; order: 9999 !important;}
 
-#peer-modal .peerx-left-col, #peer-modal .peerx-right-col, #edit-peer-modal .peerx-left-col, #edit-peer-modal .peerx-right-col, #bulk-modal .peerx-left-col, #bulk-modal .peerx-right-col{display: grid !important;gap: 12px !important;min-width: 0 !important;height: 100% !important;align-content: start !important;}
-#peer-modal .peerx-right-col > .peerx-form-card:first-child, #edit-peer-modal .peerx-right-col > .peerx-form-card:first-child, #bulk-modal .peerx-right-col > .peerx-form-card:first-child{min-height: 100% !important;box-sizing: border-box !important;}
+#peer-modal .peerx-left-col, #peer-modal .peerx-right-col, #edit-peer-modal .peerx-left-col, #edit-peer-modal .peerx-right-col, #bulk-modal .peerx-left-col, #bulk-modal .peerx-right-col{display: grid !important;gap: 12px !important;min-width: 0 !important;height: auto !important;min-height: 0 !important;align-content: start !important;}
+#peer-modal .peerx-right-col > .peerx-form-card:first-child, #edit-peer-modal .peerx-right-col > .peerx-form-card:first-child, #bulk-modal .peerx-right-col > .peerx-form-card:first-child{min-height: auto !important;box-sizing: border-box !important;}
 
 #peer-modal .peerx-right-col > .peerx-form-card:first-child .peerx-form-grid,
 #edit-peer-modal

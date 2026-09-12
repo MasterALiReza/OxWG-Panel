@@ -180,10 +180,8 @@
     overflow-wrap: anywhere !important;
   }
 
-  #peer-modal .peerx-smart-form,
   #edit-peer-modal .peerx-smart-form,
   #bulk-modal .peerx-smart-form,
-  html body #peer-modal.peerx-form-modal #create-peer-form,
   html body #edit-peer-modal.peerx-form-modal #edit-peer-form,
   html body #bulk-modal.peerx-form-modal #bulk-form {
     display: grid !important;

@@ -2326,7 +2326,30 @@ html[data-theme="dark"] #iface-create-cancel:hover {
    OxWg Panel - Create Peer Modal Enhancements
    ========================================================================== */
 
-/* Structure: Clean vertical stack of Profile, 2-Column Body, and Footer */
+/* Fix: Kill all rogue min-height 100% and height 100% constraints on cards and columns */
+#peer-modal .peerx-contact-side-card,
+#peer-modal .peerx-form-card,
+#peer-modal .peerx-wireguard-card,
+#peer-modal .peerx-left-col,
+#peer-modal .peerx-right-col,
+#edit-peer-modal .peerx-contact-side-card,
+#edit-peer-modal .peerx-form-card,
+#edit-peer-modal .peerx-wireguard-card,
+#edit-peer-modal .peerx-left-col,
+#edit-peer-modal .peerx-right-col,
+#bulk-modal .peerx-contact-side-card,
+#bulk-modal .peerx-form-card,
+#bulk-modal .peerx-wireguard-card,
+#bulk-modal .peerx-left-col,
+#bulk-modal .peerx-right-col {
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Structure: Clean vertical flex stack for create-peer-form across all screens */
+html body #peer-modal.peerx-form-modal #create-peer-form,
+html body #peer-modal #create-peer-form,
 #peer-modal #create-peer-form {
   display: flex !important;
   flex-direction: column !important;
@@ -2334,24 +2357,30 @@ html[data-theme="dark"] #iface-create-cancel:hover {
   width: 100% !important;
   overflow: visible !important;
   grid-template-areas: none !important;
+  grid-template-columns: none !important;
 }
 
 #peer-modal #create-peer-form input[type="hidden"] {
   display: none !important;
 }
 
-#peer-modal #create-peer-form > .peerx-profile-card {
+/* Profile Card: Always at the top */
+html body #peer-modal #create-peer-form > .peerx-profile-card {
+  order: 1 !important;
   width: 100% !important;
   flex: 0 0 auto !important;
   margin: 0 !important;
 }
 
-#peer-modal .peerx-columns-container {
+/* Columns Container: Balanced 2 columns */
+html body #peer-modal #create-peer-form > .peerx-columns-container {
+  order: 2 !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
   gap: 12px !important;
   align-items: start !important;
   width: 100% !important;
+  flex: 1 1 auto !important;
 }
 
 #peer-modal .peerx-columns-container > .peerx-left-col,
@@ -2363,7 +2392,7 @@ html[data-theme="dark"] #iface-create-cancel:hover {
 }
 
 @media (max-width: 980px) {
-  #peer-modal .peerx-columns-container {
+  html body #peer-modal #create-peer-form > .peerx-columns-container {
     grid-template-columns: 1fr !important;
   }
 }
@@ -2459,9 +2488,10 @@ html[data-theme="dark"] #iface-create-cancel:hover {
 }
 
 /* Full-width bottom footer */
-#peer-modal #create-peer-form > .modal-footer.peerx-form-actions {
-  grid-area: actions !important;
-  grid-column: 1 / -1 !important;
+html body #peer-modal #create-peer-form > .modal-footer.peerx-form-actions {
+  order: 9999 !important;
+  grid-area: auto !important;
+  grid-column: auto !important;
   display: flex !important;
   justify-content: flex-end !important;
   align-items: center !important;
@@ -2472,6 +2502,7 @@ html[data-theme="dark"] #iface-create-cancel:hover {
   border-top: 1px solid rgba(226, 232, 240, 0.9) !important;
   border-radius: 0 0 16px 16px !important;
   width: 100% !important;
+  flex: 0 0 auto !important;
 }
 
 #peer-modal #create-peer-form > .modal-footer.peerx-form-actions .btn {
@@ -2493,6 +2524,87 @@ html[data-theme="dark"] #iface-create-cancel:hover {
   background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
   box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4) !important;
   transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   Mobile Responsive Optimizations (<= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  html body #peer-modal.peerx-form-modal .peerx-dialog {
+    padding: 0 !important;
+    border-radius: 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 94dvh !important;
+    overflow: hidden !important;
+  }
+
+  #peer-modal .peerx-modal-head {
+    padding: 14px 16px 12px !important;
+    flex: 0 0 auto !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+  }
+
+  html body #peer-modal.peerx-form-modal #create-peer-form {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 12px 14px 16px !important;
+    gap: 12px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  html body #peer-modal #create-peer-form > .peerx-columns-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* Mobile Sticky Footer */
+  html body #peer-modal #create-peer-form > .modal-footer.peerx-form-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 100 !important;
+    margin-top: auto !important;
+    padding: 12px 16px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(226, 232, 240, 0.9) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.06) !important;
+    display: flex !important;
+    gap: 10px !important;
+  }
+
+  html body #peer-modal #create-peer-form > .modal-footer.peerx-form-actions .btn {
+    flex: 1 1 50% !important;
+    height: 44px !important;
+    font-size: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #peer-modal .peerx-form-card {
+    padding: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  #peer-modal input.input,
+  #peer-modal select.input {
+    font-size: 15px !important;
+    height: 42px !important;
+  }
+
+  .peerx-chips-container {
+    padding: 10px !important;
+  }
+
+  .peerx-chip {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
 }
 
 /* Dark Theme Support */
@@ -2520,4 +2632,16 @@ html[data-theme="dark"] .peerx-chip:hover {
 html[data-theme="dark"] #peer-modal #create-peer-form > .modal-footer.peerx-form-actions {
   background: linear-gradient(180deg, #1e293b, #0f172a) !important;
   border-top-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+@media (max-width: 768px) {
+  html[data-theme="dark"] body #peer-modal.peerx-form-modal .peerx-modal-head {
+    border-bottom-color: rgba(51, 65, 85, 0.6) !important;
+  }
+
+  html[data-theme="dark"] body #peer-modal #create-peer-form > .modal-footer.peerx-form-actions {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-top-color: rgba(51, 65, 85, 0.7) !important;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.35) !important;
+  }
 }
