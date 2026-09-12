@@ -912,6 +912,15 @@ def reset_data(pid):
         current = 0
     p.bytes_offset = max(0, current)
     p.used_bytes_total = 0
+
+    # If peer was blocked (e.g. data limit exceeded), and timer is not expired, reactivate
+    exp_ts = to_ts(getattr(p, 'expires_at', None))
+    now = now_ts()
+    timer_valid = not exp_ts or now < exp_ts or getattr(p, 'unlimited', False)
+    if p.status in ('blocked', 'expired') and timer_valid:
+        p.status = 'online'
+        _wg_enable(p)
+
     db.session.commit()
     log_event(p, 'reset_data', f'Traffic usage reset; runtime offset={current}')
     return jsonify(success=True, status=p.status, timer_preserved=True, data_reset=True)
@@ -925,9 +934,15 @@ def api_reset_timer(pid):
     p.timer_started_at = from_ts(created_ts)
     if p.time_limit_days and not p.unlimited:
         p.expires_at = from_ts(add_days_ts(created_ts, float(p.time_limit_days)))
-    if p.status == 'expired':
+
+    # If peer was blocked/expired, and data quota is not exhausted, reactivate
+    limit_bytes = p.limit_bytes() if callable(getattr(p, 'limit_bytes', None)) else None
+    used_total = int(getattr(p, 'used_bytes_total', 0) or 0)
+    data_valid = limit_bytes is None or getattr(p, 'unlimited', False) or used_total < limit_bytes
+    if p.status in ('expired', 'blocked') and data_valid:
         p.status = 'online'
         _wg_enable(p)
+
     db.session.commit()
     log_event(p, 'reset_timer', 'Timer reset')
     return jsonify(success=True, status=p.status)

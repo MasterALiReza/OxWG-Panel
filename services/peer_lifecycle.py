@@ -494,7 +494,7 @@ def _disable_peer(peer: Any, reason: str = 'manual', status: str = 'offline') ->
         peer.status = status
         try:
             from models import PeerEvent
-            ev = PeerEvent(peer_id=peer.id, event_type=reason, detail=f'status → {status}')
+            ev = PeerEvent(peer_id=peer.id, event=reason, details=f'status → {status}')
             db.session.add(ev)
         except Exception:
             pass
@@ -532,7 +532,7 @@ def _expire() -> bool:
 
                 try:
                     from models import PeerEvent
-                    ev = PeerEvent(peer_id=peer.id, event_type='first_use', detail='First WireGuard handshake recorded')
+                    ev = PeerEvent(peer_id=peer.id, event='first_use', details='First WireGuard handshake recorded')
                     db.session.add(ev)
                 except Exception:
                     pass

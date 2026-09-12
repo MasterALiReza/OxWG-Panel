@@ -247,6 +247,17 @@ def userpeer_config(token):
     if not p:
         abort(404)
 
+    exp_ts = _effective_expiry_ts(p)
+    if (
+        getattr(p, 'status', '') in ('blocked', 'offline')
+        or (exp_ts and now_ts() >= exp_ts and not getattr(p, 'unlimited', False))
+    ):
+        return jsonify(
+            ok=False,
+            error='peer_inactive',
+            message='This configuration is inactive, blocked, or expired.',
+        ), 403
+
     cfg, err = _peer_client_conf_or_502(p)
     if err:
         return err

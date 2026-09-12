@@ -426,6 +426,9 @@ def _check_update_notifications(state: dict[str, Any]) -> None:
         except Exception:
             continue
 
+        if not isinstance(node_status, dict):
+            continue
+
         node_state = str(node_status.get('status') or '').strip().lower()
         node_stage = str(node_status.get('stage') or '').strip().lower()
         node_identity = (
@@ -493,8 +496,15 @@ def _node_monitor_loop() -> None:
     try:
         import fcntl
         lock_handle = open(_NODE_NOTIFY_MONITOR_LOCK_FILE, 'a+', encoding='utf-8')
-        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except (ImportError, OSError):
+        try:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (BlockingIOError, OSError):
+            try:
+                lock_handle.close()
+            except Exception:
+                pass
+            return
+    except ImportError:
         pass
     except Exception:
         if lock_handle:

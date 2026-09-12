@@ -19,7 +19,7 @@ from flask import Flask, url_for
 from werkzeug.routing import BuildError
 
 from core.extensions import db, init_extensions
-from models import AdminAccount, InterfaceConfig, Node, Peer
+from models import AdminAccount, InterfaceConfig, Node, Peer, PeerEvent, ShortLink
 from blueprints import (
     ALL_BLUEPRINTS,
     admin_bp,
@@ -499,6 +499,97 @@ class TestBlueprintLayer(unittest.TestCase):
                     self.assertIsNotNone(item.get('ts'))
                     self.assertIsNotNone(item.get('time_display'))
                     self.assertIn(item['level'], ['INFO', 'WARN', 'ERROR', 'DEBUG'])
+
+    def test_audit_fixes_lifecycle_and_security(self):
+        """Verify the deep audit fixes:
+        1. Blocked peers unblock to 'online' on reset_data & reset_timer.
+        2. PeerEvent is created cleanly without TypeError.
+        3. Public shortlink config route blocks inactive/blocked/expired peers with 403.
+        4. delete_iface cascades and removes PeerEvents cleanly.
+        """
+        with self.app.app_context():
+            iface = InterfaceConfig(
+                name='wgtestaudit',
+                path='/etc/wireguard/wgtestaudit.conf',
+                address='10.88.0.1/24',
+                listen_port=51899,
+                private_key='testprivkeyaudit',
+            )
+            db.session.add(iface)
+            db.session.commit()
+
+            peer = Peer(
+                iface_id=iface.id,
+                name='audit_peer',
+                public_key='testpubaudit123',
+                private_key='testprivaudit123',
+                address='10.88.0.2/32',
+                status='blocked',
+                data_limit_value=100,
+                data_limit_unit='Mi',
+                used_bytes_total=105 * 1024 * 1024,
+            )
+            db.session.add(peer)
+            db.session.commit()
+            pid = peer.id
+
+            slink = ShortLink(token='audit_token_test_123', peer_id=pid)
+            db.session.add(slink)
+            db.session.commit()
+
+        # 1. Blocked peer downloading config via public shortlink should return 403
+        resp_blocked = self.client.get('/api/u/audit_token_test_123/config')
+        self.assertEqual(resp_blocked.status_code, 403)
+        self.assertEqual(resp_blocked.get_json().get('error'), 'peer_inactive')
+
+        # 2. Reset data should restore status to 'online'
+        headers = {'X-API-Key': 'test-api-key'}
+        with mock.patch('blueprints.peers_bp._wg_enable') as mock_enable:
+            resp_reset_data = self.client.post(f'/api/peer/{pid}/reset_data', headers=headers)
+            self.assertEqual(resp_reset_data.status_code, 200)
+            data = resp_reset_data.get_json()
+            self.assertEqual(data.get('status'), 'online')
+            mock_enable.assert_called_once()
+
+        # Verify PeerEvent was recorded
+        with self.app.app_context():
+            evs = PeerEvent.query.filter_by(peer_id=pid).all()
+            self.assertGreater(len(evs), 0)
+            self.assertEqual(evs[-1].event, 'reset_data')
+
+        # 3. Block peer again, reset timer should restore to 'online'
+        with self.app.app_context():
+            p = db.session.get(Peer, pid)
+            p.status = 'blocked'
+            p.time_limit_days = 30
+            db.session.commit()
+
+        with mock.patch('blueprints.peers_bp._wg_enable') as mock_enable:
+            resp_reset_timer = self.client.post(f'/api/peer/{pid}/reset_timer', headers=headers)
+            self.assertEqual(resp_reset_timer.status_code, 200)
+            data = resp_reset_timer.get_json()
+            self.assertEqual(data.get('status'), 'online')
+            mock_enable.assert_called_once()
+
+        # 4. Now that peer is online, /api/u/<token>/config serves config
+        with mock.patch('blueprints.shortlinks_bp._peer_client_conf_or_502', return_value=('[Interface]\nAddress = 10.88.0.2/32', None)):
+            resp_online = self.client.get('/api/u/audit_token_test_123/config')
+            self.assertEqual(resp_online.status_code, 200)
+
+        # 5. Delete interface should cascade cleanly and remove PeerEvents without IntegrityError
+        with self.client.session_transaction() as sess:
+            sess['_user_id'] = '1'
+
+        with self.app.app_context():
+            iface_obj = InterfaceConfig.query.filter_by(name='wgtestaudit').first()
+            iface_id = iface_obj.id
+
+        resp_del = self.client.delete(f'/api/iface/{iface_id}', query_string={'delete_peers': '1'})
+        self.assertEqual(resp_del.status_code, 200)
+        with self.app.app_context():
+            self.assertIsNone(InterfaceConfig.query.filter_by(name='wgtestaudit').first())
+            self.assertIsNone(db.session.get(Peer, pid))
+            self.assertEqual(PeerEvent.query.filter_by(peer_id=pid).count(), 0)
 
 
 if __name__ == '__main__':

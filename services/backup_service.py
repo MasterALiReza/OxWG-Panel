@@ -639,9 +639,16 @@ def _backup_scheduler_loop(app: Any = None) -> None:
     try:
         import fcntl
         lock_handle = open(_BACKUP_SCHEDULER_LOCK_FILE, "a+", encoding="utf-8")
-        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except (ImportError, OSError):
-        # On Windows or if lock already held by another worker
+        try:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (BlockingIOError, OSError):
+            try:
+                lock_handle.close()
+            except Exception:
+                pass
+            return
+    except ImportError:
+        # On Windows
         pass
     except Exception:
         if lock_handle:

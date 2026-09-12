@@ -90,8 +90,15 @@ def _shortlink_for_peer(peer: Peer) -> tuple[str | None, str | None]:
         token = secrets.token_urlsafe(24)
 
     link = ShortLink(token=token, peer_id=peer.id)
-    db.session.add(link)
-    db.session.commit()
+    try:
+        db.session.add(link)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        existing = ShortLink.query.filter_by(peer_id=peer.id).first()
+        if existing:
+            return existing.token, _shortlink_url(existing.token)
+        raise
 
     return token, _shortlink_url(token)
 

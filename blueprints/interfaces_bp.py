@@ -32,6 +32,7 @@ from models import (
     db,
     InterfaceConfig,
     Peer,
+    PeerEvent,
     SubscriptionPeer,
     ShortLink,
 )
@@ -947,7 +948,9 @@ def create_local_interface():
     lines.append("")
 
     try:
-        with open(conf_path, "w", encoding="utf-8") as handle:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        fd = os.open(conf_path, flags, 0o600)
+        with open(fd, "w", encoding="utf-8") as handle:
             handle.write("\n".join(lines))
     except Exception as exc:
         return jsonify(ok=False, error="write_config_failed", detail=str(exc)), 500
@@ -1068,6 +1071,7 @@ def iface_delete(iface_id):
 
     peer_ids = [p.id for p in peers]
     if peer_ids:
+        PeerEvent.query.filter(PeerEvent.peer_id.in_(peer_ids)).delete(synchronize_session=False)
         ShortLink.query.filter(ShortLink.peer_id.in_(peer_ids)).delete(synchronize_session=False)
         SubscriptionPeer.query.filter(SubscriptionPeer.peer_id.in_(peer_ids)).delete(synchronize_session=False)
         Peer.query.filter(Peer.iface_id == iface.id).delete(synchronize_session=False)
