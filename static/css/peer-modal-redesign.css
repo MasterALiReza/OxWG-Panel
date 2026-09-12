@@ -2326,10 +2326,54 @@ html[data-theme="dark"] #iface-create-cancel:hover {
    OxWg Panel - Create Peer Modal Enhancements
    ========================================================================== */
 
-/* Completely hide duplicate native select when custom combobox is active */
+/* Structure: Clean vertical stack of Profile, 2-Column Body, and Footer */
+#peer-modal #create-peer-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+  overflow: visible !important;
+  grid-template-areas: none !important;
+}
+
+#peer-modal #create-peer-form input[type="hidden"] {
+  display: none !important;
+}
+
+#peer-modal #create-peer-form > .peerx-profile-card {
+  width: 100% !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+}
+
+#peer-modal .peerx-columns-container {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: start !important;
+  width: 100% !important;
+}
+
+#peer-modal .peerx-columns-container > .peerx-left-col,
+#peer-modal .peerx-columns-container > .peerx-right-col {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+@media (max-width: 980px) {
+  #peer-modal .peerx-columns-container {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Completely hide duplicate native select and rogue custom shells */
 #peer-modal .peer-ip-custom-ready select,
 #peer-modal .peer-ip-select-shell select,
-#peer-modal select#create-address-select {
+#peer-modal select#create-address-select,
+#peer-modal .peer-ip-select-shell .ox-select-shell,
+#peer-modal .ox-select-shell[data-for="create-address-select"] {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -2342,6 +2386,11 @@ html[data-theme="dark"] #iface-create-cancel:hover {
   overflow: hidden !important;
   border: 0 !important;
   min-height: 0 !important;
+}
+
+#peer-modal .peer-ip-select-shell .ox-select-shell,
+#peer-modal .ox-select-shell[data-for="create-address-select"] {
+  display: none !important;
 }
 
 /* Quick Preset Chips Container */
