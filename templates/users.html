@@ -2,12 +2,12 @@
 {% block head_extras %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/users.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/users-page.css') }}?v=1.4.5">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-dark.css') }}?v=1.4.5">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/peer-workspace.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/peer-interface-inline.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/peer-modal-redesign.css') }}?v=1.4.5">
 {% endblock %}
 {% block responsive_extras %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-mobile.css') }}?v=1.4.5">
 {% endblock %}
 {% block content %}
 
@@ -920,42 +920,6 @@
   scheduleRender();
 })();
 </script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-mobile.css') }}?v=1.4.5">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/peer-modal-redesign.css') }}?v=1.4.5">
-<script>
-
-(() => {
-  const mq = window.matchMedia('(max-width: 760px)');
-  const ids = ['peer-modal', 'edit-peer-modal', 'bulk-modal', 'iface-create-modal'];
-  const homes = new Map();
-
-  function syncPeerModalPortal() {
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-
-      if (!homes.has(el)) {
-        homes.set(el, { parent: el.parentNode, next: el.nextSibling });
-      }
-
-      const home = homes.get(el);
-      if (mq.matches) {
-        if (el.parentNode !== document.body) document.body.appendChild(el);
-      } else if (home && el.parentNode !== home.parent) {
-        if (home.next && home.next.parentNode === home.parent) home.parent.insertBefore(el, home.next);
-        else home.parent.appendChild(el);
-      }
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', syncPeerModalPortal, { once: true });
-  } else {
-    syncPeerModalPortal();
-  }
-  if (mq.addEventListener) mq.addEventListener('change', syncPeerModalPortal);
-  else mq.addListener(syncPeerModalPortal);
-})();
 
 // OxWg Create Peer Modal - Preset Chips and Unlimited Sync
 (function initCreatePeerModalUX() {

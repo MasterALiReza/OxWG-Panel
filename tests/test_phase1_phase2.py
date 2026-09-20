@@ -508,10 +508,75 @@ class TestDatabaseMigrations(unittest.TestCase):
             self.assertFalse(os.path.exists(json_file))
             self.assertTrue(os.path.exists(json_file + '.migrated'))
 
-    def test_bootstrap_callable(self):
+class TestNodeMonitorSyncAndRecovery(unittest.TestCase):
+    def setUp(self):
+        self.app = Flask('test_node_monitor_app')
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        self.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        db.init_app(self.app)
         with self.app.app_context():
-            migrations.bootstrap(self.app)
+            db.create_all()
+
+    def test_resync_node_blocked_peers(self):
+        from models import Node, InterfaceConfig, Peer
+        from services.node_monitor import _resync_node_blocked_peers
+        from unittest.mock import patch
+
+        with self.app.app_context():
+            node = Node(name='TestNode', base_url='https://node1.example.com', api_key='key123', enabled=True)
+            db.session.add(node)
+            db.session.commit()
+
+            iface = InterfaceConfig(name=f'n{node.id}:wg0', path='dummy', address='10.10.0.1/24', listen_port=51820, private_key='privkey123', node_id=node.id)
+            db.session.add(iface)
+            db.session.commit()
+
+            p_blocked = Peer(iface_id=iface.id, name='blocked_user', public_key='pub_blocked', private_key='priv1', address='10.10.0.2/32', status='blocked')
+            p_online = Peer(iface_id=iface.id, name='online_user', public_key='pub_online', private_key='priv2', address='10.10.0.3/32', status='online')
+            db.session.add_all([p_blocked, p_online])
+            db.session.commit()
+
+            calls = []
+            with patch('services.node_client.node_post', side_effect=lambda n, path, payload, **kwargs: calls.append((path, payload))):
+                _resync_node_blocked_peers(node)
+
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(calls[0][0], '/api/peer/pub_blocked/disable')
+            self.assertEqual(calls[0][1]['reason'], 'recovery_resync')
+
+    def test_sync_node_peers_usage(self):
+        from models import Node, InterfaceConfig, Peer
+        from services.node_monitor import _sync_node_peers_usage
+        from unittest.mock import patch
+
+        with self.app.app_context():
+            node = Node(name='TestNode', base_url='https://node1.example.com', api_key='key123', enabled=True)
+            db.session.add(node)
+            db.session.commit()
+
+            iface = InterfaceConfig(name=f'n{node.id}:wg0', path='dummy', address='10.10.0.1/24', listen_port=51820, private_key='privkey123', node_id=node.id)
+            db.session.add(iface)
+            db.session.commit()
+
+            p = Peer(iface_id=iface.id, name='user1', public_key='pub1', private_key='priv_user1', address='10.10.0.5/32', used_bytes_total=0)
+            db.session.add(p)
+            db.session.commit()
+
+            mock_data = {
+                'peers': [
+                    {'public_key': 'pub1', 'rx_mib': 10.0, 'tx_mib': 15.0, 'latest_handshake': 1700000000}
+                ]
+            }
+            with patch('services.node_client.node_get', return_value=mock_data):
+                changed = _sync_node_peers_usage(node)
+                self.assertTrue(changed)
+
+            db.session.refresh(p)
+            expected_bytes = int((10.0 + 15.0) * 1024 * 1024)
+            self.assertEqual(p.used_bytes_total, expected_bytes)
+            self.assertIsNotNone(p.first_used_at)
 
 
 if __name__ == '__main__':
     unittest.main()
+

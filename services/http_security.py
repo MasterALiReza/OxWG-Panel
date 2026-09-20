@@ -197,8 +197,35 @@ def _http_security_is_temporarily_allowed(ip_str: str, state: dict[str, Any] | N
     return expires > int(time.time())
 
 
+_TRUSTED_PROXY_DEFAULT_NETWORKS = (
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("fc00::/7"),
+)
+
+
+def _http_security_is_trusted_proxy(ip_str: str, settings: dict[str, Any] | None = None) -> bool:
+    """Check if direct connection remote_addr is a trusted proxy or internal network."""
+    if not ip_str or ip_str == "unknown":
+        return False
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        if any(ip in net for net in _TRUSTED_PROXY_DEFAULT_NETWORKS):
+            return True
+    except ValueError:
+        return False
+
+    if settings is None:
+        settings = _load_http_security_settings()
+    trusted = settings.get("trusted_networks", [])
+    return _http_security_is_network_match(ip_str, trusted)
+
+
 def _http_security_client_ip(settings: dict[str, Any], req: Any = None) -> str:
-    """Resolve client IP from request, respecting ip_source setting."""
+    """Resolve client IP from request, respecting ip_source setting and trusted proxy boundaries."""
     if req is None:
         try:
             from flask import request
@@ -206,16 +233,19 @@ def _http_security_client_ip(settings: dict[str, Any], req: Any = None) -> str:
         except Exception:
             return "127.0.0.1"
 
-    if settings.get("ip_source") == "direct":
-        return str(getattr(req, "remote_addr", None) or "unknown")
+    remote_addr = str(getattr(req, "remote_addr", None) or "unknown")
 
-    headers = getattr(req, "headers", {})
-    xff = headers.get("X-Forwarded-For")
-    if xff:
-        client = xff.split(",")[0].strip()
-        if client:
-            return client
-    return str(getattr(req, "remote_addr", None) or "unknown")
+    if settings.get("ip_source") == "direct":
+        return remote_addr
+
+    if _http_security_is_trusted_proxy(remote_addr, settings):
+        headers = getattr(req, "headers", {})
+        xff = headers.get("X-Forwarded-For")
+        if xff:
+            client = xff.split(",")[0].strip()
+            if client:
+                return client
+    return remote_addr
 
 
 def _http_security_scope_applies(path: str, block_scope: str) -> bool:
@@ -447,13 +477,18 @@ def _request_client_ip(req: Any = None) -> tuple[str, str]:
         if item.strip()
     )
 
-    candidates = [
-        headers.get('CF-Connecting-IP'),
-        headers.get('True-Client-IP'),
-        headers.get('X-Real-IP'),
-        (proxy_chain.split(',', 1)[0].strip() if proxy_chain else None),
-        getattr(req, "remote_addr", None),
-    ]
+    remote_addr = getattr(req, "remote_addr", None)
+
+    if remote_addr and _http_security_is_trusted_proxy(str(remote_addr)):
+        candidates = [
+            headers.get('CF-Connecting-IP'),
+            headers.get('True-Client-IP'),
+            headers.get('X-Real-IP'),
+            (proxy_chain.split(',', 1)[0].strip() if proxy_chain else None),
+            remote_addr,
+        ]
+    else:
+        candidates = [remote_addr]
 
     client_ip = next(
         (

@@ -1436,6 +1436,12 @@ def _reset_subscription_data(sub):
                 peer.bytes_offset = max(0, int(current_total or 0))
             else:
                 peer.bytes_offset = max(0, int(_wg_transfer(peer) or 0))
+            prev_sub_bytes = int(getattr(peer, 'used_bytes_total', 0) or 0)
+            if prev_sub_bytes > 0 and getattr(peer, 'iface_id', None):
+                iface = db.session.get(InterfaceConfig, peer.iface_id)
+                if iface:
+                    iface.add_retired_bytes(prev_sub_bytes)
+                    db.session.add(iface)
             peer.used_bytes_total = 0
         except Exception as exc:
             current_app.logger.exception('Subscription data reset failed for peer %s', getattr(peer, 'id', '?'))
@@ -3088,17 +3094,14 @@ def subscription_public_inbound_geo(token, link_id):
     flag = geo.get('flag') or _flag_from_cc(cc)
     country = geo.get('country') or cc or ''
 
+    # Only populate empty country_code/flag for initial display; never overwrite custom location_label on public GET
     changed = False
-    if cc and (link.country_code or '').strip().upper() != cc:
+    if cc and not link.country_code:
         link.country_code = cc
         changed = True
 
-    if flag and flag != '🌐' and (link.flag or '').strip() != flag:
+    if flag and flag != '🌐' and not link.flag:
         link.flag = flag
-        changed = True
-
-    if country and (link.location_label or '').strip() != country:
-        link.location_label = country
         changed = True
 
     if changed:

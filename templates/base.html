@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <title>{% block title %}OxWg Panel{% endblock %}</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
 
     <link rel="icon" href="{{ url_for('static', filename='img/wireguard-badge.svg') }}" type="image/svg+xml" />
@@ -50,11 +50,32 @@
         root.style.colorScheme = effective;
       })();
     </script>
+    <style>
+      :root {
+        --theme-bg: #f4f7fb;
+        --theme-surface: #ffffff;
+        --theme-text: #142033;
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left, 0px);
+        --sar: env(safe-area-inset-right, 0px);
+      }
+      html[data-theme="dark"] {
+        --theme-bg: #0b111b;
+        --theme-surface: #121b29;
+        --theme-text: #edf3fb;
+      }
+      html, body {
+        background-color: var(--theme-bg);
+        color: var(--theme-text);
+      }
+      @media screen and (max-width: 768px) {
+        input, select, textarea {
+          font-size: 16px !important;
+        }
+      }
+    </style>
     <link rel="preload" as="image" href="{{ url_for('static', filename='img/wireguard-badge.svg') }}" />
-
-    {% if current_user.is_authenticated and config is defined and config.get('API_KEY') %}
-    <meta name="api-key" content="{{ config['API_KEY'] }}">
-    {% endif %}
 
     {% block preload_flags %}{% endblock %}
 
@@ -80,6 +101,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/panel-version.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v=1.4.5" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-compact.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/panel-update.css') }}" />
 
@@ -364,6 +386,17 @@
         </section>
     </div>
 
+
+    <div id="ui-confirm" class="ui-confirm" hidden>
+      <div class="ui-confirm__sheet" role="dialog" aria-modal="true" aria-labelledby="ui-confirm-title">
+        <div class="ui-confirm__title" id="ui-confirm-title"></div>
+        <div class="ui-confirm__body" id="ui-confirm-body"></div>
+        <div class="ui-confirm__actions">
+          <button type="button" class="btn ghost" data-act="cancel" id="ui-confirm-cancel">Cancel</button>
+          <button type="button" class="btn danger" data-act="ok" id="ui-confirm-ok">OK</button>
+        </div>
+      </div>
+    </div>
 
     {% block body_extras %}{% endblock %}
 

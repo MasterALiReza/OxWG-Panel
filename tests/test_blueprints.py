@@ -213,13 +213,34 @@ class TestBlueprintLayer(unittest.TestCase):
             self.assertEqual(resp.status_code, 302)
 
     def test_public_routes_accessible(self):
-        """Verify public endpoints respond without authentication."""
+        """Verify public endpoints respond without authentication and 404 for invalid tokens."""
         # /register redirects to /login when admin account exists
         resp = self.client.get('/register')
         self.assertIn(resp.status_code, [200, 302])
 
+        with self.app.app_context():
+            ifc = InterfaceConfig.query.first()
+            if not ifc:
+                ifc = InterfaceConfig(name="wg_pub", path="dummy", address="10.0.0.1/24", listen_port=51820, private_key="pk")
+                db.session.add(ifc)
+                db.session.commit()
+            p = Peer.query.filter_by(name="pub_peer").first()
+            if not p:
+                p = Peer(name="pub_peer", public_key="PUB_SAMPLE=", private_key="pk", address="10.0.0.99/32", iface_id=ifc.id)
+                db.session.add(p)
+                db.session.commit()
+            sl = ShortLink.query.filter_by(token="sample_token").first()
+            if not sl:
+                sl = ShortLink(token="sample_token", peer_id=p.id)
+                db.session.add(sl)
+                db.session.commit()
+
         resp = self.client.get('/u/sample_token')
         self.assertEqual(resp.status_code, 200)
+
+        # Invalid shortlink returns 404
+        resp_invalid = self.client.get('/u/nonexistent_token')
+        self.assertEqual(resp_invalid.status_code, 404)
 
         resp = self.client.get('/s/nonexistent_token')
         self.assertEqual(resp.status_code, 404)

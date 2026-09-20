@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block head_extras %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nodes.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/nodes-dark.css') }}">
 {% endblock %}
 {% block responsive_extras %}
 {% endblock %}
@@ -166,66 +165,6 @@
     </form>
   </div>
 </div>
-
-<div id="ui-confirm" class="ui-confirm" hidden>
-  <div class="ui-confirm__sheet">
-    <div class="ui-confirm__title"></div>
-    <div class="ui-confirm__body"></div>
-    <div class="ui-confirm__actions">
-      <button class="btn ghost" data-act="cancel">Cancel</button>
-      <button class="btn danger" data-act="ok">OK</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  window.showToast = (m, t = 'info', sticky = false) => toastSafe(m, t, sticky);
-  window.toastInfo = (m, s = false) => toastSafe(m, 'info', s);
-  window.toastWarn = (m, s = false) => toastSafe(m, 'warn', s);
-  window.toastError = (m, s = false) => toastSafe(m, 'error', s);
-  window.toastSuccess = (m, s = false) => toastSafe(m, 'success', s);
-
-  (function setupUiConfirm() {
-    if (window.uiConfirm) return;
-    const root = document.getElementById('ui-confirm');
-    if (!root) {
-      window.uiConfirm = (opts = {}) => Promise.resolve(confirm(opts.body || 'Are you sure?'));
-      return;
-    }
-    const titleEl = root.querySelector('.ui-confirm__title');
-    const bodyEl = root.querySelector('.ui-confirm__body');
-    const okBtn = root.querySelector('[data-act="ok"]');
-    const cancelBtn = root.querySelector('[data-act="cancel"]');
-    window.uiConfirm = function (opts = {}) {
-      const { title = 'Are you sure?', body = '', okText = 'OK', cancelText = 'Cancel' } = opts;
-      titleEl.textContent = title;
-      bodyEl.textContent = body;
-      okBtn.textContent = okText;
-      cancelBtn.textContent = cancelText;
-      root.hidden = false;
-      root.classList.add('open');
-      return new Promise((resolve) => {
-        function cleanup(result) {
-          root.classList.remove('open');
-          root.hidden = true;
-          okBtn.removeEventListener('click', onOk);
-          cancelBtn.removeEventListener('click', onCancel);
-          root.removeEventListener('click', onBackdrop);
-          document.removeEventListener('keydown', onKey);
-          resolve(result);
-        }
-        function onOk(e) { e.preventDefault(); cleanup(true); }
-        function onCancel(e) { e.preventDefault(); cleanup(false); }
-        function onBackdrop(e) { if (e.target === root) cleanup(false); }
-        function onKey(e) { if (e.key === 'Escape') cleanup(false); }
-        okBtn.addEventListener('click', onOk);
-        cancelBtn.addEventListener('click', onCancel);
-        root.addEventListener('click', onBackdrop);
-        document.addEventListener('keydown', onKey);
-      });
-    };
-  })();
-</script>
 
 <script defer src="{{ url_for('static', filename='js/nodes.js') }}"></script>
 

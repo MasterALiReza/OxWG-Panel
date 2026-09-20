@@ -302,6 +302,10 @@ def _interface_schema(db_session=None):
         statements.append(
             'ALTER TABLE interface_config ADD COLUMN pre_down TEXT'
         )
+    if 'retired_total_bytes' not in cols:
+        statements.append(
+            'ALTER TABLE interface_config ADD COLUMN retired_total_bytes BIGINT DEFAULT 0'
+        )
 
     if statements:
         with db.engine.begin() as conn:

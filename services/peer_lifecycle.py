@@ -12,7 +12,7 @@ import ipaddress
 from typing import Any
 from datetime import datetime, timezone
 
-from models import db, Peer
+from models import db, Peer, Subscription, SubscriptionPeer, PeerEvent
 from core.time_utils import now_ts, from_ts, to_ts, add_days_ts
 from core.ip_utils import _public_ipv4
 from core.paths import LAST_PUBLIC_IP_FILE
@@ -504,6 +504,120 @@ def _disable_peer(peer: Any, reason: str = 'manual', status: str = 'offline') ->
         return False
 
 
+def _expire_subscriptions(now: int, pending_notifications: list[dict[str, Any]]) -> bool:
+    """
+    Check all subscriptions for first-use handshakes, time-limit expiration,
+    quota exhaustion, or disabled status. Disables/blocks underlying peers when expired.
+    """
+    changed = False
+    try:
+        subs = Subscription.query.all()
+    except Exception:
+        return False
+
+    for sub in subs:
+        links = list(getattr(sub, 'links', []) or [])
+        if not links:
+            continue
+
+        peers = [getattr(link, 'peer', None) for link in links if getattr(link, 'peer', None)]
+        if not peers:
+            continue
+
+        # 1. First-use tracking: if start_on_first_use and not yet triggered, check if any peer has first_used_at
+        if getattr(sub, 'start_on_first_use', False) and not getattr(sub, 'first_used_at', None):
+            earliest_hs = None
+            for p in peers:
+                p_fu = getattr(p, 'first_used_at', None)
+                if p_fu:
+                    ts = to_ts(p_fu)
+                    if ts and (earliest_hs is None or ts < earliest_hs):
+                        earliest_hs = ts
+            if earliest_hs:
+                sub.first_used_at = from_ts(earliest_hs)
+                sub.timer_started_at = from_ts(earliest_hs)
+                if getattr(sub, 'time_limit_days', None) and not getattr(sub, 'unlimited', False):
+                    fu_expiry = add_days_ts(earliest_hs, _conv_time_limit(sub))
+                    sub.expires_at = from_ts(fu_expiry)
+                changed = True
+
+        # Immediate timer auto-start if not start_on_first_use
+        if (
+            not getattr(sub, 'start_on_first_use', False)
+            and getattr(sub, 'time_limit_days', None)
+            and not getattr(sub, 'expires_at', None)
+            and not getattr(sub, 'unlimited', False)
+        ):
+            if not getattr(sub, 'timer_started_at', None):
+                sub.timer_started_at = getattr(sub, 'created_at', None) or from_ts(now)
+            _sync_effective_expiry(sub)
+            changed = True
+
+        # Calculate cumulative data usage across all linked peers
+        total_sub_used = sum(int(getattr(p, 'used_bytes_total', 0) or 0) for p in peers)
+
+        # Time-limit check
+        calc_expiry_ts = _effective_expiry_ts(sub)
+        if calc_expiry_ts is not None:
+            if to_ts(getattr(sub, 'expires_at', None)) != calc_expiry_ts:
+                sub.expires_at = from_ts(calc_expiry_ts)
+                changed = True
+            sub_expiry_ts = calc_expiry_ts
+        else:
+            sub_expiry_ts = to_ts(getattr(sub, 'expires_at', None))
+
+        # Check if disabled
+        is_sub_enabled = bool(getattr(sub, 'enabled', True))
+        is_sub_unlimited = bool(getattr(sub, 'unlimited', False))
+
+        is_time_expired = (sub_expiry_ts is not None and now >= sub_expiry_ts and not is_sub_unlimited)
+
+        limit_bytes = getattr(sub, 'limit_bytes', None)
+        if callable(limit_bytes):
+            limit_bytes = limit_bytes()
+        is_quota_exhausted = (
+            limit_bytes is not None
+            and not is_sub_unlimited
+            and total_sub_used >= int(limit_bytes)
+        )
+
+        should_block = (not is_sub_enabled) or is_time_expired or is_quota_exhausted
+        block_reason = (
+            'disabled' if not is_sub_enabled
+            else ('expired' if is_time_expired else 'limit_reached')
+        )
+
+        if should_block:
+            blocked_any = False
+            for p in peers:
+                if getattr(p, 'status', None) != 'blocked':
+                    _disable_peer(p, f"subscription_{block_reason}", status='blocked')
+                    blocked_any = True
+                    changed = True
+
+            if blocked_any:
+                title_reason = (
+                    "disabled" if not is_sub_enabled
+                    else ("expired" if is_time_expired else "data limit exceeded")
+                )
+                pending_notifications.append({
+                    'event_key': f'sub_{block_reason}',
+                    'title': f"Subscription '{sub.name}' {title_reason}",
+                    'status': 'Blocked',
+                    'details': [
+                        ("Subscription", f"{sub.name} · ID {sub.id}"),
+                        ("Reason", title_reason.capitalize()),
+                        ("Used", f"{total_sub_used} bytes"),
+                        ("Limit", f"{limit_bytes or 'None'}"),
+                        ("Peers", f"{len(peers)} peers blocked"),
+                    ],
+                    'dedupe_key': f"sub-{block_reason}:{sub.id}",
+                    'dedupe_seconds': 0,
+                })
+
+    return changed
+
+
 def _expire() -> bool:
     """
     Check all peers for first-use handshakes, time-limit expiration, and data quota exhaustion.
@@ -617,6 +731,10 @@ def _expire() -> bool:
                 })
             changed = True
 
+    # Subscription kernel lifecycle enforcement
+    if _expire_subscriptions(now, pending_notifications):
+        changed = True
+
     if changed:
         try:
             db.session.commit()
@@ -659,10 +777,39 @@ def _run_expiry_once(source: str = 'manual') -> bool:
 
 
 def _expiry_enforcer_loop(app: Any = None) -> None:
-    """Background worker loop enforcing peer expiry periodically."""
+    """
+    Background worker loop enforcing peer expiry periodically.
+    Employs leader election via file lock so only one worker runs expiry across Gunicorn workers,
+    with standby workers waiting and seamlessly taking over on leader recycling.
+    """
     if app is not None:
         set_app(app)
+
+    lock_handle = None
+    is_leader = False
+
     while True:
+        if not is_leader:
+            try:
+                import fcntl
+                from core.paths import INSTANCE_DIR
+                os.makedirs(INSTANCE_DIR, exist_ok=True)
+                lock_path = os.path.join(INSTANCE_DIR, "peer_lifecycle.lock")
+                if lock_handle is None or lock_handle.closed:
+                    lock_handle = open(lock_path, "a+", encoding="utf-8")
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                is_leader = True
+                logger.info("Acquired peer lifecycle leader lock (PID %s)", os.getpid())
+            except (BlockingIOError, OSError):
+                time.sleep(_EXPIRY_INTERVAL_SEC)
+                continue
+            except ImportError:
+                is_leader = True
+            except Exception as exc:
+                logger.warning("Error attempting peer lifecycle leader lock: %s", exc)
+                time.sleep(_EXPIRY_INTERVAL_SEC)
+                continue
+
         try:
             with _get_app_context():
                 _run_expiry_once('background')

@@ -474,9 +474,109 @@
     sync();
   }
 
+  function setupGlobalUiConfirm() {
+    const root = document.getElementById("ui-confirm");
+    if (!root) return;
+    const titleEl = root.querySelector(".ui-confirm__title");
+    const bodyEl = root.querySelector(".ui-confirm__body");
+    const okBtn = root.querySelector('[data-act="ok"], #ui-confirm-ok');
+    const cancelBtn = root.querySelector('[data-act="cancel"], #ui-confirm-cancel');
+
+    window.uiConfirm = function (opts = {}) {
+      const {
+        title = "Are you sure?",
+        body = "",
+        okText = "OK",
+        cancelText = "Cancel",
+        tone = "danger",
+      } = opts;
+      if (titleEl) titleEl.textContent = title;
+      if (bodyEl) bodyEl.textContent = body;
+      if (okBtn) {
+        okBtn.textContent = okText;
+        okBtn.className = `btn ${tone === "danger" ? "danger" : "primary"}`;
+      }
+      if (cancelBtn) cancelBtn.textContent = cancelText;
+
+      root.hidden = false;
+      root.classList.add("open");
+
+      const previousActive = document.activeElement;
+      okBtn?.focus();
+
+      return new Promise((resolve) => {
+        function cleanup(result) {
+          root.classList.remove("open");
+          root.hidden = true;
+          okBtn?.removeEventListener("click", onOk);
+          cancelBtn?.removeEventListener("click", onCancel);
+          root.removeEventListener("click", onBackdrop);
+          document.removeEventListener("keydown", onKey);
+          if (previousActive && typeof previousActive.focus === "function") {
+            previousActive.focus();
+          }
+          resolve(result);
+        }
+        function onOk(e) {
+          e.preventDefault();
+          cleanup(true);
+        }
+        function onCancel(e) {
+          e.preventDefault();
+          cleanup(false);
+        }
+        function onBackdrop(e) {
+          if (e.target === root) cleanup(false);
+        }
+        function onKey(e) {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            cleanup(false);
+          } else if (e.key === "Tab") {
+            const focusables = [cancelBtn, okBtn].filter(Boolean);
+            if (!focusables.length) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+        okBtn?.addEventListener("click", onOk);
+        cancelBtn?.addEventListener("click", onCancel);
+        root.addEventListener("click", onBackdrop);
+        document.addEventListener("keydown", onKey);
+      });
+    };
+  }
+
+  function setupGlobalEscapeModalListener() {
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const openModal = document.querySelector(
+        ".peerx-form-modal.open, .subx-modal.open, .modal.open, .modal:not([hidden]):not([style*='display: none']), [data-modal].active"
+      );
+      if (openModal) {
+        const closeBtn = openModal.querySelector(".modal-close, [data-close], .close-btn, #node-mini-cancel");
+        if (closeBtn) {
+          closeBtn.click();
+        } else {
+          openModal.classList.remove("open", "active");
+          if (openModal.hasAttribute("hidden")) openModal.setAttribute("hidden", "");
+        }
+      }
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     renderFlashes();
     setupSidebar();
     setupSubscriptionStudioForeground();
+    setupGlobalUiConfirm();
+    setupGlobalEscapeModalListener();
   });
 })();

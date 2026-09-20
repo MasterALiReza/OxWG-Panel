@@ -2789,9 +2789,10 @@ document.getElementById('rt-restart')
     });
 
     disableBtn?.addEventListener('click', async () => {
-      if (!await confirmDialog({ title:'Disable 2FA', body:'Are you sure you want to disable two-factor authentication?', okText:'Disable' })) return;
+      const pwd = window.prompt("Enter your current admin password to confirm disabling 2FA:");
+      if (!pwd) return;
       try {
-        await jfetch('/api/admin/twofa_disable', { method:'POST' });
+        await jfetch('/api/admin/twofa_disable', { method:'POST', body: { password: pwd } });
         await refreshAdmin();
         toast('Two-factor authentication disabled.', 'success');
       } catch (e2) { toast(e2.message || 'Disable failed', 'error'); }

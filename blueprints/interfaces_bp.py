@@ -48,6 +48,7 @@ from services.wg_parser import (
     _derive_wg_public_key,
     _copy_local_iface_from_parsed,
     _iface_is_node,
+    generate_wg_keypair,
 )
 from services.config_generator import (
     EndpointValidationError,
@@ -833,6 +834,8 @@ def get_interfaces():
             'auto_endpoint': '',
             'effective_endpoint': override,
             'endpoint_source': 'override' if override else 'none',
+            'retired_total_bytes': int(getattr(iface, 'retired_total_bytes', 0) or 0),
+            'total_used_bytes': int(getattr(iface, 'total_used_bytes', 0) or 0),
         })
     return jsonify({'interfaces': out})
 
@@ -915,11 +918,13 @@ def create_local_interface():
             post_down = ""
 
     try:
-        private_key = subprocess.check_output(["wg", "genkey"], stderr=subprocess.DEVNULL, timeout=5).decode().strip()
+        private_key, _ = generate_wg_keypair()
     except Exception:
         # Fallback key generation if wg binary is missing in dev
         import base64
-        private_key = base64.b64encode(os.urandom(32)).decode()
+        from cryptography.hazmat.primitives.asymmetric import x25519
+        key = x25519.X25519PrivateKey.generate()
+        private_key = base64.b64encode(key.private_bytes_raw()).decode('ascii')
 
     lines = [
         "[Interface]",
@@ -1119,6 +1124,8 @@ def iface_settings(iid):
             post_up=getattr(iface, 'post_up', None) or '',
             post_down=getattr(iface, 'post_down', None) or '',
             is_up=_iface_up(dev),
+            retired_total_bytes=int(getattr(iface, 'retired_total_bytes', 0) or 0),
+            total_used_bytes=int(getattr(iface, 'total_used_bytes', 0) or 0),
             **{
                 k: v for k, v in _endpoint_default_payload(iface).items()
                 if k not in ('iface_id', 'iface', 'listen_port', 'scope')

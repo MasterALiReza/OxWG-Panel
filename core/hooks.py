@@ -59,10 +59,23 @@ def _unhandled(e: Exception):
 
 
 def _csrf_protect_ui():
-    """Enforce CSRF protection on UI POST/PUT/PATCH/DELETE methods, exempting /api/."""
+    """Enforce CSRF protection on UI and session-authenticated API requests, exempting Bearer/API-key callers."""
+    if not current_app.config.get("WTF_CSRF_ENABLED", True):
+        return
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        if request.path.startswith("/api/"):
+        auth_header = request.headers.get("Authorization", "")
+        api_key_header = request.headers.get("X-API-KEY", "") or request.headers.get("X-API-Key", "")
+        if auth_header.startswith("Bearer ") or api_key_header:
             return
+        if request.path.startswith("/api/"):
+            if current_app.config.get("TESTING"):
+                return
+            try:
+                from flask_login import current_user
+                if not getattr(current_user, "is_authenticated", False):
+                    return
+            except Exception:
+                return
         csrf.protect()
 
 
@@ -187,9 +200,6 @@ def _https_redirect():
         if not bool(getattr(current_app, "_tls_enabled_effective", False)):
             return None
 
-        if (request.path or "").startswith("/api/"):
-            return None
-
         host = (s.get("domain") or "").strip() or request.host.split(":", 1)[0]
         https_port = s.get("https_port")
         try:
@@ -202,7 +212,9 @@ def _https_redirect():
         if full.endswith("?"):
             full = full[:-1]
 
-        return redirect(f"https://{netloc}{full}", code=301)
+        # Use 308 for API endpoints or non-GET/HEAD methods to preserve method & body
+        code = 308 if (request.path or "").startswith("/api/") or request.method not in ("GET", "HEAD") else 301
+        return redirect(f"https://{netloc}{full}", code=code)
     except Exception as e:
         current_app.logger.warning("HTTPS redirect skipped: %s", e)
         return None
@@ -223,9 +235,10 @@ def _maybe_hsts(resp):
 
 
 def security_headers(resp):
-    """Set X-Frame-Options, Content-Security-Policy, and font CORS headers."""
+    """Set X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Content-Security-Policy, and font CORS headers."""
     p = (request.path or '').lower()
-    resp.headers['X-Frame-Options'] = 'DENY'
+    resp.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    resp.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
 
     if p.startswith('/preview/'):
         resp.headers['X-Frame-Options'] = 'SAMEORIGIN'
@@ -234,13 +247,18 @@ def security_headers(resp):
             "script-src 'self' 'unsafe-inline'; "
             "style-src 'self' 'unsafe-inline'; "
             "style-src-elem 'self' 'unsafe-inline'; "
-            "img-src 'self' data:; "
+            "img-src 'self' data: https:; "
             "font-src 'self' data:; "
             "connect-src 'self'; "
             "object-src 'none'; base-uri 'none'; "
             "form-action 'none'; "
             "frame-ancestors 'self'"
         )
+    else:
+        resp.headers.setdefault('X-Frame-Options', 'DENY')
+        ct = (resp.headers.get("Content-Type") or "").lower()
+        if "text/html" in ct and "Content-Security-Policy" not in resp.headers:
+            resp.headers['Content-Security-Policy'] = "frame-ancestors 'none'; object-src 'none'; base-uri 'self';"
 
     if (
         p.endswith(('.woff2', '.woff', '.ttf', '.otf')) or

@@ -797,7 +797,7 @@ class TestServicesBugFixes(BaseServiceTestCase):
         self.assertEqual(status["table"], "wgpanel_security")
         self.assertIn("install_command", status)
 
-        # Client IP resolution with proxy headers
+        # Client IP resolution with trusted proxy headers
         req_mock = SimpleNamespace(
             headers={'X-Forwarded-For': '203.0.113.195, 10.0.0.1'},
             remote_addr='10.0.0.1',
@@ -806,6 +806,16 @@ class TestServicesBugFixes(BaseServiceTestCase):
         self.assertEqual(client_ip, '203.0.113.195')
         self.assertIn('203.0.113.195, 10.0.0.1', proxy_chain)
 
+        # Anti-spoofing: Direct client from untrusted public IP cannot forge X-Forwarded-For or CF headers
+        req_attacker = SimpleNamespace(
+            headers={'X-Forwarded-For': '127.0.0.1', 'CF-Connecting-IP': '127.0.0.1'},
+            remote_addr='198.51.100.99',
+        )
+        attacker_ip, _ = http_security._request_client_ip(req_attacker)
+        self.assertEqual(attacker_ip, '198.51.100.99')
+        settings = {"ip_source": "effective"}
+        self.assertEqual(http_security._http_security_client_ip(settings, req_attacker), '198.51.100.99')
+
     def test_shortlink_service_response_for_peer(self):
         """Test _shortlink_response_for_peer outside and inside request context."""
         peer = Peer(id=99, name="eve")
@@ -813,7 +823,287 @@ class TestServicesBugFixes(BaseServiceTestCase):
             resp = shortlink_service._shortlink_response_for_peer(peer)
             self.assertEqual(resp, {'url': 'http://panel.test/u/token123', 'token': 'token123'})
 
+    def test_retired_traffic_accumulation_on_peer_delete(self):
+        """Task 2.20: Interface overall traffic NEVER drops when peers are deleted."""
+        from blueprints.peers_bp import _delete_peer_rows, remove_peer_everywhere
+        iface = InterfaceConfig(
+            name="wg99", path="dummy", address="10.99.0.1/24", listen_port=51820,
+            private_key="key", retired_total_bytes=1000
+        )
+        db.session.add(iface)
+        db.session.commit()
 
+        peer1 = Peer(
+            name="user1", public_key="USER1_PUB=", private_key="pk",
+            address="10.99.0.2", iface_id=iface.id, used_bytes_total=5000
+        )
+        peer2 = Peer(
+            name="user2", public_key="USER2_PUB=", private_key="pk",
+            address="10.99.0.3", iface_id=iface.id, used_bytes_total=7000
+        )
+        db.session.add_all([peer1, peer2])
+        db.session.commit()
+
+        # Initial total: 1000 (retired) + 5000 (peer1) + 7000 (peer2) = 13000
+        self.assertEqual(iface.total_used_bytes, 13000)
+
+        # Delete peer1 via _delete_peer_rows
+        _delete_peer_rows(peer1)
+        db.session.refresh(iface)
+
+        # After deleting peer1: retired should be 1000 + 5000 = 6000
+        self.assertEqual(iface.retired_total_bytes, 6000)
+        # Interface total traffic must remain exactly 13000!
+        self.assertEqual(iface.total_used_bytes, 13000)
+
+        # Delete peer2 via remove_peer_everywhere with mocked WireGuard
+        with patch('blueprints.peers_bp._iface_up', return_value=False):
+            remove_peer_everywhere(peer2)
+        db.session.refresh(iface)
+
+        # After deleting peer2: retired should be 6000 + 7000 = 13000
+        self.assertEqual(iface.retired_total_bytes, 13000)
+        # Total remains 13000!
+        self.assertEqual(iface.total_used_bytes, 13000)
+
+    def test_retired_traffic_accumulation_on_reset_and_clear(self):
+        """Task 2.20: Resetting peer data or clearing total accumulates into interface retired traffic."""
+        from blueprints.peers_bp import peer_clear_total
+        iface = InterfaceConfig(
+            name="wg98", path="dummy", address="10.98.0.1/24", listen_port=51820,
+            private_key="key", retired_total_bytes=0
+        )
+        db.session.add(iface)
+        db.session.commit()
+
+        peer = Peer(
+            name="user98", public_key="USER98_PUB=", private_key="pk",
+            address="10.98.0.2", iface_id=iface.id, used_bytes_total=4000
+        )
+        db.session.add(peer)
+        db.session.commit()
+
+        self.assertEqual(iface.total_used_bytes, 4000)
+
+        # Clear peer total within test request context
+        with self.app.test_request_context():
+            self.app.config['LOGIN_DISABLED'] = True
+            with patch('blueprints.peers_bp.logpanel_action'):
+                peer_clear_total(peer.id)
+
+        db.session.refresh(iface)
+        db.session.refresh(peer)
+
+        self.assertEqual(peer.used_bytes_total, 0)
+        self.assertEqual(iface.retired_total_bytes, 4000)
+        self.assertEqual(iface.total_used_bytes, 4000)
+
+    def test_subscription_expiry_in_lifecycle_loop(self):
+        """Task 2.1: Expired subscription disables underlying peers in lifecycle loop."""
+        from services.peer_lifecycle import _expire_subscriptions
+        from core.time_utils import now_ts, from_ts
+        now = now_ts()
+
+        ifc = InterfaceConfig(name="wg_sub1", path="dummy", address="10.0.0.1/24", listen_port=51820, private_key="pk")
+        db.session.add(ifc)
+        db.session.commit()
+
+        sub = Subscription(
+            name="Sub1", token="tok1", enabled=True,
+            expires_at=from_ts(now - 100), unlimited=False
+        )
+        db.session.add(sub)
+        db.session.commit()
+
+        peer = Peer(
+            name="subpeer1", public_key="SUBP1=", private_key="pk",
+            address="10.0.0.10", status="online", iface_id=ifc.id
+        )
+        db.session.add(peer)
+        db.session.commit()
+
+        sub_link = SubscriptionPeer(subscription_id=sub.id, peer_id=peer.id)
+        db.session.add(sub_link)
+        db.session.commit()
+
+        pending = []
+        with patch('services.peer_lifecycle._disable_peer') as mock_dis:
+            mock_dis.side_effect = lambda p, r, status='offline': setattr(p, 'status', status) or True
+            changed = _expire_subscriptions(now, pending)
+            self.assertTrue(changed)
+            mock_dis.assert_called_once()
+            args, kwargs = mock_dis.call_args
+            self.assertIn("expired", args[1])
+
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]['event_key'], 'sub_expired')
+
+    def test_subscription_data_limit_in_lifecycle_loop(self):
+        """Task 2.1: Subscription exceeding quota blocks underlying peers in lifecycle loop."""
+        from services.peer_lifecycle import _expire_subscriptions
+        from core.time_utils import now_ts
+        now = now_ts()
+
+        ifc = InterfaceConfig(name="wg_sub2", path="dummy", address="10.0.0.1/24", listen_port=51820, private_key="pk")
+        db.session.add(ifc)
+        db.session.commit()
+
+        # Limit: 1 GiB (1024^3 bytes)
+        sub = Subscription(
+            name="SubQuota", token="tokquota", enabled=True,
+            data_limit_value=1, data_limit_unit="Gi", unlimited=False
+        )
+        db.session.add(sub)
+        db.session.commit()
+
+        # Peer has used 2 GiB
+        peer = Peer(
+            name="quotapeer", public_key="QUOTAP=", private_key="pk",
+            address="10.0.0.11", status="online", used_bytes_total=2 * (1024**3), iface_id=ifc.id
+        )
+        db.session.add(peer)
+        db.session.commit()
+
+        sub_link = SubscriptionPeer(subscription_id=sub.id, peer_id=peer.id)
+        db.session.add(sub_link)
+        db.session.commit()
+
+        pending = []
+        with patch('services.peer_lifecycle._disable_peer') as mock_dis:
+            mock_dis.side_effect = lambda p, r, status='offline': setattr(p, 'status', status) or True
+            changed = _expire_subscriptions(now, pending)
+            self.assertTrue(changed)
+            mock_dis.assert_called_once()
+            args, kwargs = mock_dis.call_args
+            self.assertIn("limit_reached", args[1])
+
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]['event_key'], 'sub_limit_reached')
+
+    def test_subscription_first_use_trigger_in_lifecycle_loop(self):
+        """Task 2.1: When linked peer records first handshake, subscription start_on_first_use timer triggers."""
+        from services.peer_lifecycle import _expire_subscriptions
+        from core.time_utils import now_ts, from_ts
+        now = now_ts()
+
+        ifc = InterfaceConfig(name="wg_sub3", path="dummy", address="10.0.0.1/24", listen_port=51820, private_key="pk")
+        db.session.add(ifc)
+        db.session.commit()
+
+        sub = Subscription(
+            name="SubFirstUse", token="tokfu", enabled=True,
+            start_on_first_use=True, time_limit_days=7.0, unlimited=False
+        )
+        db.session.add(sub)
+        db.session.commit()
+
+        # Peer with recorded first_used_at
+        peer = Peer(
+            name="fupeer", public_key="FUP=", private_key="pk",
+            address="10.0.0.12", status="online", first_used_at=from_ts(now - 3600), iface_id=ifc.id
+        )
+        db.session.add(peer)
+        db.session.commit()
+
+        sub_link = SubscriptionPeer(subscription_id=sub.id, peer_id=peer.id)
+        db.session.add(sub_link)
+        db.session.commit()
+
+        self.assertIsNone(sub.first_used_at)
+        self.assertIsNone(sub.expires_at)
+
+        pending = []
+        changed = _expire_subscriptions(now, pending)
+        self.assertTrue(changed)
+
+        db.session.commit()
+        db.session.refresh(sub)
+        self.assertIsNotNone(sub.first_used_at)
+        self.assertIsNotNone(sub.expires_at)
+
+    def test_client_conf_crlf_sanitization(self):
+        """Task 2.3: Ensure WireGuard client conf generator strips CRLF characters preventing directive injection."""
+        from services.config_generator import _clean_conf_val, _client_conf_txt
+        self.assertEqual(_clean_conf_val("1.1.1.1\r\nPostUp = evil.sh"), "1.1.1.1PostUp = evil.sh")
+        self.assertEqual(_clean_conf_val("  1.1.1.1 \n\r "), "1.1.1.1")
+
+        ifc = InterfaceConfig(name="wg_crlf", path="dummy", address="10.0.0.1/24", listen_port=51820, private_key="pk", public_key="SRVPUB=")
+        db.session.add(ifc)
+        db.session.commit()
+
+        p = Peer(
+            name="crlf_peer",
+            public_key="PUB=",
+            private_key="PRIVKEY=\r\nPostUp = hacked.sh",
+            address="10.0.0.5/32\nPostUp = evil.sh",
+            dns="1.1.1.1\r\nPreUp = rm -rf /",
+            allowed_ips="0.0.0.0/0\n[Peer]\nPublicKey=EVIL",
+            iface_id=ifc.id,
+        )
+        with patch('services.config_generator._server_publickey', return_value="SRVPUB="), \
+             patch('services.config_generator._effective_client_endpoint', return_value="1.2.3.4:51820"):
+            conf = _client_conf_txt(p)
+            self.assertNotIn("\nPostUp", conf)
+            self.assertNotIn("\nPreUp", conf)
+            # Verify exactly two section headers as separate lines: [Interface] and [Peer]
+            lines = conf.splitlines()
+            self.assertEqual(lines.count("[Interface]"), 1)
+            self.assertEqual(lines.count("[Peer]"), 1)
+
+    def test_has_crlf_validator(self):
+        """Task 2.3: Test _has_crlf helper properly detects newlines."""
+        from blueprints.peers_bp import _has_crlf
+        self.assertFalse(_has_crlf("clean", "10.0.0.2", "1.1.1.1"))
+        self.assertTrue(_has_crlf("clean", "10.0.0.2\n", "1.1.1.1"))
+        self.assertTrue(_has_crlf("clean", "10.0.0.2\r", "1.1.1.1"))
+        self.assertTrue(_has_crlf("evil\r\nname"))
+        self.assertFalse(_has_crlf(None, "", "clean"))
+
+    def test_x25519_keypair_cryptographic_validity(self):
+        """Task 2.6: Test generate_wg_keypair generates valid Curve25519 public key from private key."""
+        from services.wg_parser import generate_wg_keypair, _derive_wg_public_key
+        priv, pub = generate_wg_keypair()
+        self.assertTrue(len(priv) >= 43)
+        self.assertTrue(len(pub) >= 43)
+        # Check derived public key strictly matches returned public key
+        derived_pub = _derive_wg_public_key(priv)
+        self.assertEqual(derived_pub, pub)
+
+    def test_wg_enable_ipv6_mask_128(self):
+        """Task 2.6: Test _wg_enable uses /128 for IPv6 and /32 for IPv4 in WireGuard command."""
+        from blueprints.peers_bp import _wg_enable
+        ifc = InterfaceConfig(name="wg_mask", path="dummy", address="10.0.0.1/24", listen_port=51820, private_key="pk")
+        db.session.add(ifc)
+        db.session.commit()
+
+        # Test IPv6 peer
+        p_v6 = Peer(name="v6peer", public_key="V6PUB=", private_key="pk", address="fd00:1234::5/64", iface_id=ifc.id, iface=ifc)
+        with patch('subprocess.run') as mock_run, patch('services.wg_parser.iface_devname', return_value="wg_mask"):
+            _wg_enable(p_v6)
+            self.assertTrue(mock_run.called)
+            cmd = mock_run.call_args[0][0]
+            self.assertIn("fd00:1234::5/128", cmd)
+            self.assertNotIn("fd00:1234::5/32", cmd)
+
+        # Test IPv4 peer
+        p_v4 = Peer(name="v4peer", public_key="V4PUB=", private_key="pk", address="10.0.0.5/24", iface_id=ifc.id, iface=ifc)
+        with patch('subprocess.run') as mock_run, patch('services.wg_parser.iface_devname', return_value="wg_mask"):
+            _wg_enable(p_v4)
+            self.assertTrue(mock_run.called)
+            cmd = mock_run.call_args[0][0]
+            self.assertIn("10.0.0.5/32", cmd)
+            self.assertNotIn("10.0.0.5/128", cmd)
+
+    def test_peer_create_compensation_rollback(self):
+        """Task 2.5: Test PeerCreateCompensation executes rollback on remote node when registered."""
+        from blueprints.peers_bp import PeerCreateCompensation
+        comp = PeerCreateCompensation()
+        node = Node(name="TestNode", base_url="http://1.2.3.4:5000", api_key="test_key")
+        comp.register_node(node, "PUBKEY_ROLLBACK=")
+
+        with patch('blueprints.peers_bp.node_delete') as mock_del:
+            comp.rollback()
+            mock_del.assert_called_once_with(node, '/api/peer/PUBKEY_ROLLBACK=')
 
 
 if __name__ == '__main__':

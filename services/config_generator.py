@@ -305,21 +305,34 @@ def _effective_client_endpoint(peer: Peer | Any) -> str:
     )
 
 
+def _clean_conf_val(val: Any) -> str:
+    """Sanitize configuration value by stripping newline characters and surrounding whitespace."""
+    if val is None:
+        return ''
+    return str(val).replace('\r', '').replace('\n', '').strip()
+
+
 def _client_conf_txt(peer: Peer | Any) -> str:
     """Generate standard WireGuard client configuration file text."""
     iface = getattr(peer, 'iface', None)
-    server_pub = _server_publickey(iface)
+    server_pub = _clean_conf_val(_server_publickey(iface))
     if not server_pub:
         raise ClientConfigIncomplete('server_public_key_unavailable')
 
-    dns_val = _effective_dns(peer)
-    ep = _effective_client_endpoint(peer)
-    mtu_val = getattr(peer, 'mtu', None) or (getattr(iface, 'mtu', None) if iface else None)
+    priv_key = _clean_conf_val(getattr(peer, 'private_key', ''))
+    address = _clean_conf_val(getattr(peer, 'address', ''))
+    dns_val = _clean_conf_val(_effective_dns(peer))
+    ep = _clean_conf_val(_effective_client_endpoint(peer))
+    raw_mtu = getattr(peer, 'mtu', None) or (getattr(iface, 'mtu', None) if iface else None)
+    mtu_val = _clean_conf_val(raw_mtu) if raw_mtu is not None else ''
+    allowed_ips = _clean_conf_val(getattr(peer, 'allowed_ips', None) or '0.0.0.0/0, ::/0')
+    raw_keepalive = getattr(peer, 'persistent_keepalive', None)
+    keepalive = _clean_conf_val(raw_keepalive) if raw_keepalive is not None else ''
 
     lines = [
         "[Interface]",
-        f"PrivateKey = {getattr(peer, 'private_key', '')}",
-        f"Address = {getattr(peer, 'address', '')}",
+        f"PrivateKey = {priv_key}",
+        f"Address = {address}",
     ]
     if dns_val:
         lines.append(f"DNS = {dns_val}")
@@ -330,9 +343,7 @@ def _client_conf_txt(peer: Peer | Any) -> str:
     lines.append(f"PublicKey = {server_pub}")
     if ep:
         lines.append(f"Endpoint = {ep}")
-    allowed_ips = getattr(peer, 'allowed_ips', None) or '0.0.0.0/0, ::/0'
     lines.append(f"AllowedIPs = {allowed_ips}")
-    keepalive = getattr(peer, 'persistent_keepalive', None)
     if keepalive:
         lines.append(f"PersistentKeepalive = {keepalive}")
     lines.append("")

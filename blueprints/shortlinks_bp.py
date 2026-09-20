@@ -66,7 +66,9 @@ def api_shortlink_by_public_key(public_key):
 
 @shortlinks_bp.route('/u/<token>')
 def user_peer_page(token):
-    _peer_from_shortlink_token(token)
+    p = _peer_from_shortlink_token(token)
+    if not p:
+        abort(404)
 
     ts = _load_template_settings()
     sel = (ts.get('selected') or 'default').lower()

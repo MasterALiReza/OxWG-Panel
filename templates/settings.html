@@ -20,7 +20,6 @@ html[data-theme="dark"] #set-panels .cards {
 }
 </style>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/settings-dark.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -1665,20 +1664,5 @@ html[data-theme="dark"] #set-panels .cards {
         </footer>
     </div>
 </div>
-
-
-<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
-
-<div id="ui-confirm" class="ui-confirm" hidden>
-    <div class="ui-confirm__sheet">
-        <div class="ui-confirm__title" id="ui-confirm-title">Confirm</div>
-        <div class="ui-confirm__body" id="ui-confirm-body">Are you sure?</div>
-        <div class="ui-confirm__actions">
-            <button type="button" class="btn secondary" id="ui-confirm-cancel">Cancel</button>
-            <button type="button" class="btn danger" id="ui-confirm-ok">OK</button>
-        </div>
-    </div>
-</div>
-
 
 {% endblock %}

@@ -142,6 +142,12 @@
     }
   }
 
+  window.addEventListener('storage', (event) => {
+    if (event.key === STORAGE_KEY || LEGACY_KEYS.includes(event.key)) {
+      apply(readStoredMode(), { persist: false, announce: true });
+    }
+  });
+
   window.WGTheme = Object.freeze({
     apply,
     getMode: currentMode,

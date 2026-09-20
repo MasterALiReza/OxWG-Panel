@@ -225,10 +225,16 @@
       try {
         const j = await api(`/api/nodes/${id}/summary`);
         const summary = { peers: j?.peers || {}, interfaces: j?.interfaces || {} };
-        if (n) n.summary = summary;
+        if (n) {
+          n.summary = summary;
+          if (typeof j?.online !== 'undefined') n.online = !!j.online;
+          if (j?.last_seen) n.last_seen = j.last_seen;
+        }
         peerTotal += Number(summary.peers.total || 0);
         if (peerCell) peerCell.innerHTML = peerSummaryHTML(summary.peers);
         if (ifaceCell) ifaceCell.innerHTML = ifaceSummaryHTML(summary.interfaces);
+        const cell = $(`.status[data-id="${CSS.escape(String(id))}"]`, TBody);
+        if (cell && n) cell.innerHTML = healthPills(n);
       } catch {
         if (peerCell) peerCell.innerHTML = peerSummaryHTML(n?.summary?.peers || {});
         if (ifaceCell) ifaceCell.innerHTML = ifaceSummaryHTML(n?.summary?.interfaces || {});
@@ -245,7 +251,7 @@
       const j = await api('/api/nodes');
       const rows = Array.isArray(j) ? j : (j?.nodes || j?.data || []);
       renderRows(rows);
-      await Promise.all([updateHealth(), updateSummaries()]);
+      await updateSummaries();
       refreshTime();
       setSync('ok', rows.length ? 'Updated now' : 'Ready');
     } catch (err) {

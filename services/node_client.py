@@ -6,9 +6,8 @@ HTTP client communication for managing remote WireGuard node agents.
 from typing import Any
 import json
 import requests
+from requests.adapters import HTTPAdapter
 from core.crypto import _read_api_key
-
-
 def _node_payload(r: requests.Response) -> Any:
     """Safely extract payload from a node HTTP response as JSON or text."""
     ctype = (r.headers.get('content-type') or '').split(';', 1)[0].strip().lower()
@@ -29,10 +28,15 @@ def _node_payload(r: requests.Response) -> Any:
 
 def node_get(n: Any, path: str, timeout: int | float = 6) -> Any:
     """Execute GET request on a remote node agent."""
+    kwargs: dict[str, Any] = {
+        'headers': {'Authorization': f'Bearer {_read_api_key(n)}'},
+        'timeout': timeout,
+    }
+    if getattr(n, 'insecure_tls', False) or getattr(n, 'tls_verify', None) is False:
+        kwargs['verify'] = False
     r = requests.get(
         f"{n.base_url}{path}",
-        headers={'Authorization': f'Bearer {_read_api_key(n)}'},
-        timeout=timeout,
+        **kwargs,
     )
     r.raise_for_status()
     return _node_payload(r)
@@ -40,14 +44,19 @@ def node_get(n: Any, path: str, timeout: int | float = 6) -> Any:
 
 def node_post(n: Any, path: str, payload: Any = None, timeout: int | float = 8) -> Any:
     """Execute POST request with JSON payload on a remote node agent."""
-    r = requests.post(
-        f"{n.base_url}{path}",
-        headers={
+    kwargs: dict[str, Any] = {
+        'headers': {
             'Authorization': f'Bearer {_read_api_key(n)}',
             'Content-Type': 'application/json',
         },
-        json=payload or {},
-        timeout=timeout,
+        'json': payload or {},
+        'timeout': timeout,
+    }
+    if getattr(n, 'insecure_tls', False) or getattr(n, 'tls_verify', None) is False:
+        kwargs['verify'] = False
+    r = requests.post(
+        f"{n.base_url}{path}",
+        **kwargs,
     )
     r.raise_for_status()
     return _node_payload(r)
@@ -65,6 +74,8 @@ def node_delete(n: Any, path: str, payload: Any = None, timeout: int | float = 8
     if payload is not None:
         headers['Content-Type'] = 'application/json'
         kwargs['json'] = payload
+    if getattr(n, 'insecure_tls', False) or getattr(n, 'tls_verify', None) is False:
+        kwargs['verify'] = False
 
     r = requests.delete(f"{n.base_url}{path}", **kwargs)
     r.raise_for_status()

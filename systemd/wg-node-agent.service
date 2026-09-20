@@ -12,7 +12,7 @@ WorkingDirectory=/root/wg/agent
 EnvironmentFile=/root/wg/agent/.env
 Environment=USE_GUNICORN=1
 Environment=FLASK_ENV=production
-ExecStart=/root/wp2/agent/venv/bin/python /root/wp2/agent/agent_node.py
+ExecStart=/root/wg/agent/venv/bin/python /root/wg/agent/node_agent.py
 
 Restart=always
 RestartSec=5

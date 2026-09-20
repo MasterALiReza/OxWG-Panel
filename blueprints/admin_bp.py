@@ -6,6 +6,7 @@ Branding: 2FA issuer "OxWg Panel", label "OxWg-Panel:{username}".
 """
 import json
 import secrets
+import time
 from flask import Blueprint, request, jsonify, session, current_app
 from flask_login import login_required, current_user
 
@@ -111,11 +112,13 @@ def twofa_confirm():
         recovery_plain = _gen_recovery()
         rec_h = [hash_recovery(c) for c in recovery_plain]
 
+        from core.crypto import _probably_encrypt
         acc = AdminAccount.query.filter_by(username=username).first()
         if acc:
             acc.twofa_enabled = True
-            acc.totp_secret = pending
+            acc.totp_secret = _probably_encrypt(pending)
             acc.recovery_codes = '\n'.join(rec_h)
+            acc.last_totp_counter = int(time.time() // 30)
             db.session.commit()
 
         try:
@@ -143,14 +146,26 @@ def twofa_confirm():
 @login_required
 def twofa_disable():
     try:
+        data = request.get_json(silent=True) or {}
+        password = (data.get('password') or '').strip()
         username = getattr(current_user, 'username', 'admin')
 
         acc = AdminAccount.query.filter_by(username=username).first()
-        if acc:
-            acc.twofa_enabled = False
-            acc.totp_secret = None
-            acc.recovery_codes = ''
-            db.session.commit()
+        if not acc:
+            return jsonify(error='Admin account not found'), 404
+
+        if not acc.twofa_enabled:
+            return jsonify(ok=True), 200
+
+        # Require password verification before disabling 2FA
+        if not password or not acc.verify_pw(password):
+            return jsonify(error='Invalid password. Password confirmation is required to disable 2FA.'), 403
+
+        acc.twofa_enabled = False
+        acc.totp_secret = None
+        acc.recovery_codes = ''
+        acc.last_totp_counter = 0
+        db.session.commit()
 
         try:
             rec = Admin2FA.query.filter_by(username=username).first()

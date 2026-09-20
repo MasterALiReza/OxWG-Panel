@@ -550,6 +550,13 @@ def node_one(nid):
     n = Node.query.get_or_404(nid)
 
     if request.method == 'DELETE':
+        from blueprints.peers_bp import _delete_peer_rows
+        interfaces = list(n.interfaces or []) or InterfaceConfig.query.filter_by(node_id=n.id).all()
+        for iface in interfaces:
+            peers = list(iface.peers or []) or Peer.query.filter_by(iface_id=iface.id).all()
+            for p in peers:
+                _delete_peer_rows(p)
+            db.session.delete(iface)
         db.session.delete(n)
         db.session.commit()
         return jsonify(ok=True)
@@ -616,6 +623,7 @@ def node_summary(nid):
     n = Node.query.get_or_404(nid)
 
     info = {}
+    online = False
     try:
         h = node_get(n, '/api/health', timeout=6) or {}
         n.last_seen = datetime.now(timezone.utc)
@@ -625,6 +633,7 @@ def node_summary(nid):
             'public_ipv4': h.get('public_ipv4') or '',
             'version': h.get('version') or '',
         }
+        online = bool(info['host'] or info['version'])
     except Exception:
         pass
 
@@ -665,6 +674,7 @@ def node_summary(nid):
         'id': n.id,
         'name': n.name,
         'enabled': n.enabled,
+        'online': online,
         'last_seen': last_seen.isoformat().replace('+00:00', 'Z') if last_seen else None,
         'info': info,
         'interfaces': iface_summary,
@@ -1758,6 +1768,12 @@ def node_enable_peer(nid, pub):
         current_live_total = max(0, current_live_total)
 
         p.bytes_offset = current_live_total
+        prev_node_bytes = int(getattr(p, 'used_bytes_total', 0) or 0)
+        if prev_node_bytes > 0 and getattr(p, 'iface_id', None):
+            iface = db.session.get(InterfaceConfig, p.iface_id)
+            if iface:
+                iface.add_retired_bytes(prev_node_bytes)
+                db.session.add(iface)
         p.used_bytes_total = 0
         p.first_used_at = None
         p.timer_started_at = None
@@ -1888,6 +1904,12 @@ def node_reset_peer_data_only(nid, pub):
     current = _node_peer_live_total_bytes(n, p)
 
     p.bytes_offset = int(current or 0)
+    prev_node_data = int(getattr(p, 'used_bytes_total', 0) or 0)
+    if prev_node_data > 0 and getattr(p, 'iface_id', None):
+        iface = db.session.get(InterfaceConfig, p.iface_id)
+        if iface:
+            iface.add_retired_bytes(prev_node_data)
+            db.session.add(iface)
     p.used_bytes_total = 0
     db.session.commit()
 

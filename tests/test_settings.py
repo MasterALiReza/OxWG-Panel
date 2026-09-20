@@ -34,6 +34,7 @@ class TestSettingsSubsystem(unittest.TestCase):
     def setUp(self):
         self.app = app
         self.app.config['TESTING'] = True
+        self.app.config['WTF_CSRF_ENABLED'] = False
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
@@ -236,6 +237,80 @@ class TestSettingsSubsystem(unittest.TestCase):
         self.assertIn('secret', d_2fa)
         self.assertIn('otp_uri', d_2fa)
         self.assertIn('OxWg%20Panel', d_2fa['otp_uri'])
+
+        # Test 2FA confirm with valid OTP
+        import pyotp
+        secret = d_2fa['secret']
+        valid_otp = pyotp.TOTP(secret).now()
+        r_confirm = self.client.post('/api/admin/twofa_confirm', json={"otp": valid_otp})
+        self.assertEqual(r_confirm.status_code, 200)
+        self.assertTrue(r_confirm.get_json().get('ok'))
+
+        # Verify 2FA is now enabled and secret is encrypted in DB
+        from models import AdminAccount, db
+        admin = AdminAccount.query.filter_by(username=current_username).first()
+        self.assertTrue(admin.twofa_enabled)
+        self.assertEqual(admin.totp_secret_decrypted, secret)
+        admin.password_hash = AdminAccount.hash_pw("test-password")
+        db.session.commit()
+
+        # Test 2FA disable without password (MUST be rejected with 403)
+        r_dis_nopw = self.client.post('/api/admin/twofa_disable', json={})
+        self.assertEqual(r_dis_nopw.status_code, 403)
+
+        # Test 2FA disable with wrong password (MUST be rejected with 403)
+        r_dis_badpw = self.client.post('/api/admin/twofa_disable', json={"password": "wrong-password"})
+        self.assertEqual(r_dis_badpw.status_code, 403)
+
+        # Test 2FA disable with correct password
+        r_dis_ok = self.client.post('/api/admin/twofa_disable', json={"password": "test-password"})
+        self.assertEqual(r_dis_ok.status_code, 200)
+        self.assertTrue(r_dis_ok.get_json().get('ok'))
+
+        admin = AdminAccount.query.filter_by(username=current_username).first()
+        self.assertFalse(admin.twofa_enabled)
+
+    def test_twofa_login_anti_replay_and_lazy_upgrade(self):
+        """Verify login with 2FA, transparent encryption upgrade from plaintext, and anti-replay defense."""
+        import pyotp
+        from models import AdminAccount, db
+
+        admin = AdminAccount.query.first()
+        admin.password_hash = AdminAccount.hash_pw("correct-password")
+        # Store plaintext legacy secret to test transparent upgrade
+        legacy_secret = "JBSWY3DPEHPK3PXP"
+        admin.totp_secret = legacy_secret
+        admin.twofa_enabled = True
+        admin.last_totp_counter = 0
+        db.session.commit()
+
+        # Step 1: Login with valid OTP
+        valid_otp = pyotp.TOTP(legacy_secret).now()
+        r_login1 = self.client.post('/login', data={
+            "username": admin.username,
+            "password": "correct-password",
+            "twofa_code": valid_otp
+        }, follow_redirects=False)
+        self.assertIn(r_login1.status_code, (200, 302))
+
+        # Check DB: last_totp_counter recorded and secret upgraded
+        admin = AdminAccount.query.first()
+        self.assertGreater(admin.last_totp_counter, 0)
+        self.assertEqual(admin.totp_secret_decrypted, legacy_secret)
+
+        # Step 2: Immediate replay of the exact same OTP code must be rejected
+        self.client.get('/logout')
+        r_replay = self.client.post('/login', data={
+            "username": admin.username,
+            "password": "correct-password",
+            "twofa_code": valid_otp
+        }, follow_redirects=True)
+        # Login page rendered with flash error
+        self.assertIn('Enter your 6-digit code or a valid recovery code', r_replay.get_data(as_text=True))
+
+        # Cleanup: disable 2FA
+        admin.twofa_enabled = False
+        db.session.commit()
 
     def test_security_http_protection(self):
         """Verify Security Center settings and capabilities APIs."""

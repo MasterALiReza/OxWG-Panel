@@ -14,6 +14,8 @@ import logging
 import ipaddress
 import subprocess
 import base64
+import contextlib
+import threading
 from io import BytesIO
 from datetime import datetime, timezone
 from urllib.parse import unquote
@@ -45,10 +47,12 @@ from models import (
 )
 from forms import PeerForm
 from core.extensions import csrf
+from core.paths import _ALLOC_LOCK_DIR
 from auth import require_api_key, require_api_key_or_login
 from core.time_utils import now_ts, from_ts, to_ts, add_days_ts, isoz
 from core.ip_utils import _public_ipv4, _first_cidr, _safe_ip
-from services.wg_parser import iface_devname, _iface_is_node
+from services.http_security import _lock_state_file, _unlock_state_file
+from services.wg_parser import iface_devname, _iface_is_node, generate_wg_keypair
 from services.config_generator import (
     _effective_client_endpoint,
     _peer_client_conf_or_502,
@@ -79,6 +83,29 @@ from blueprints.interfaces_bp import (
 
 peers_bp = Blueprint('peers_bp', __name__)
 logger = logging.getLogger(__name__)
+
+_ALLOC_LOCK = threading.Lock()
+
+
+@contextlib.contextmanager
+def _allocation_lock(iface_id=None):
+    os.makedirs(_ALLOC_LOCK_DIR, exist_ok=True)
+    safe_name = f"iface_{iface_id or 'default'}.lock"
+    lock_path = os.path.join(_ALLOC_LOCK_DIR, safe_name)
+    with _ALLOC_LOCK:
+        f = _lock_state_file(lock_path)
+        try:
+            yield
+        finally:
+            _unlock_state_file(f)
+
+
+def _has_crlf(*values) -> bool:
+    """Return True if any of the values contain CR or LF characters."""
+    for v in values:
+        if v is not None and any(c in str(v) for c in ('\r', '\n')):
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -175,13 +202,31 @@ def _wg_enable(peer: Peer):
     iface = getattr(peer, 'iface', None)
     if not iface:
         return
+
+    if _peer_is_on_node(peer):
+        node = getattr(iface, 'node', None)
+        if node:
+            try:
+                payload = {
+                    'iface': iface.name.split(':', 1)[-1] if ':' in iface.name else iface.name,
+                    'address': peer.address,
+                    'endpoint': peer.peer_endpoint or '',
+                    'persistent_keepalive': peer.persistent_keepalive or 0,
+                    'allowed_ips': peer.allowed_ips or '0.0.0.0/0, ::/0',
+                }
+                node_post(node, f'/api/peer/{peer.public_key}/enable', payload, timeout=15)
+            except Exception as e:
+                logger.warning("Failed to enable peer %s on remote node: %s", peer.public_key, e)
+        return
+
     dev = iface_devname(iface)
     host_cidr = _host_peer(peer)
     if not dev or not host_cidr:
         return
     try:
-        ip = str(ipaddress.ip_interface(host_cidr).ip)
-        cmd = ['wg', 'set', dev, 'peer', peer.public_key, 'allowed-ips', f"{ip}/32"]
+        ip_obj = ipaddress.ip_interface(host_cidr).ip
+        mask = 128 if ip_obj.version == 6 else 32
+        cmd = ['wg', 'set', dev, 'peer', peer.public_key, 'allowed-ips', f"{ip_obj}/{mask}"]
         if getattr(peer, 'peer_endpoint', None):
             cmd.extend(['endpoint', peer.peer_endpoint])
         if getattr(peer, 'persistent_keepalive', None):
@@ -195,6 +240,16 @@ def _wg_disable(peer: Peer):
     iface = getattr(peer, 'iface', None)
     if not iface:
         return
+
+    if _peer_is_on_node(peer):
+        node = getattr(iface, 'node', None)
+        if node:
+            try:
+                node_post(node, f'/api/peer/{peer.public_key}/disable', {}, timeout=15)
+            except Exception as e:
+                logger.warning("Failed to disable peer %s on remote node: %s", peer.public_key, e)
+        return
+
     dev = iface_devname(iface)
     if not dev:
         return
@@ -206,8 +261,8 @@ def _wg_disable(peer: Peer):
 
 
 def _sync_peer(peer: Peer):
-    # Stub for config sync if needed
-    pass
+    """Synchronize peer settings to WireGuard kernel (local) or remote node."""
+    _wg_enable(peer)
 
 
 def _wg_peer_keys(dev: str) -> set:
@@ -240,6 +295,14 @@ def _rollback_node_created_peer(node, public_key):
 
 def _delete_peer_rows(peer: Peer):
     try:
+        if getattr(peer, 'iface_id', None):
+            iface = db.session.get(InterfaceConfig, peer.iface_id)
+            if iface:
+                peer_bytes = int(getattr(peer, 'used_bytes_total', 0) or 0)
+                if peer_bytes > 0:
+                    iface.add_retired_bytes(peer_bytes)
+                    db.session.add(iface)
+
         ShortLink.query.filter_by(peer_id=peer.id).delete(synchronize_session=False)
         SubscriptionPeer.query.filter_by(peer_id=peer.id).delete(synchronize_session=False)
         PeerEvent.query.filter_by(peer_id=peer.id).delete(synchronize_session=False)
@@ -251,6 +314,13 @@ def _delete_peer_rows(peer: Peer):
 
 
 def remove_peer_everywhere(peer: Peer):
+    try:
+        if not _peer_is_on_node(peer):
+            from services.peer_lifecycle import sync_peer_transfer_atomic
+            sync_peer_transfer_atomic(peer)
+    except Exception:
+        pass
+
     if _peer_is_on_node(peer):
         node = getattr(getattr(peer, 'iface', None), 'node', None)
         if node is not None:
@@ -297,25 +367,26 @@ def _validate_requested_host(ip_iface, requested):
 
 
 def allocate_peer_address(iface, requested=None, *, exclude_peer_id=None, exclude_address=None, extra_reserved=()):
-    ip_iface = interface_ip_interface(iface)
-    if ip_iface is None:
-        raise AddressInvalid(f'Interface {getattr(iface, "name", "?")} has no usable Address= setting.')
-    net = ip_iface.network
-    reserved = _reserved_hosts(
-        iface, ip_iface,
-        exclude_peer_id=exclude_peer_id,
-        exclude_address=exclude_address,
-        extra=extra_reserved,
-    )
-    host = _validate_requested_host(ip_iface, requested)
-    if host is not None:
-        if host in reserved:
-            raise AddressConflict(f'{host} is already in use on {getattr(iface, "name", "?")}.')
-        return f'{host}/{net.prefixlen}'
-    for candidate in _usable_hosts(net):
-        if candidate not in reserved:
-            return f'{candidate}/{net.prefixlen}'
-    raise AddressPoolExhausted(f'No free client address left in {net}.')
+    with _allocation_lock(getattr(iface, 'id', None)):
+        ip_iface = interface_ip_interface(iface)
+        if ip_iface is None:
+            raise AddressInvalid(f'Interface {getattr(iface, "name", "?")} has no usable Address= setting.')
+        net = ip_iface.network
+        reserved = _reserved_hosts(
+            iface, ip_iface,
+            exclude_peer_id=exclude_peer_id,
+            exclude_address=exclude_address,
+            extra=extra_reserved,
+        )
+        host = _validate_requested_host(ip_iface, requested)
+        if host is not None:
+            if host in reserved:
+                raise AddressConflict(f'{host} is already in use on {getattr(iface, "name", "?")}.')
+            return f'{host}/{net.prefixlen}'
+        for candidate in _usable_hosts(net):
+            if candidate not in reserved:
+                return f'{candidate}/{net.prefixlen}'
+        raise AddressPoolExhausted(f'No free client address left in {net}.')
 
 
 def address_error_response(exc: AddressAllocationError):
@@ -396,13 +467,13 @@ def users():
             flash('Please select an interface.', 'error')
             return render_template('users.html', form=form)
 
-        try:
-            priv = subprocess.check_output(['wg', 'genkey'], stderr=subprocess.DEVNULL, timeout=3).strip().decode()
-            pub = subprocess.check_output(['wg', 'pubkey'], input=(priv + '\n').encode(), stderr=subprocess.DEVNULL, timeout=3).strip().decode()
-        except Exception:
-            import base64
-            priv = base64.b64encode(os.urandom(32)).decode()
-            pub = base64.b64encode(os.urandom(32)).decode()
+        if _has_crlf(form.name.data, form.address.data, form.allowed_ips.data,
+                     getattr(form, 'endpoint', None) and form.endpoint.data,
+                     getattr(form, 'dns', None) and form.dns.data):
+            flash('Newlines are not allowed in configuration values.', 'error')
+            return render_template('users.html', form=form)
+
+        priv, pub = generate_wg_keypair()
 
         try:
             addr = allocate_peer_address(iface, requested=(form.address.data or '').strip() or None)
@@ -616,6 +687,10 @@ def panel_peers():
 @require_api_key_or_login
 def peers_create():
     data = request.get_json(silent=True) or {}
+    if _has_crlf(data.get('name'), data.get('address'), data.get('allowed_ips'),
+                 data.get('endpoint'), data.get('peer_endpoint'), data.get('dns')):
+        return jsonify(ok=False, error='newline_characters_not_allowed', message='Newlines are not allowed in configuration values'), 400
+
     scope = (data.get('scope') or 'local').strip().lower()
 
     if scope == 'node':
@@ -623,15 +698,9 @@ def peers_create():
         iface_name = (data.get('iface_name') or data.get('ifaceName') or data.get('iface') or '').strip()
         if not nid or not iface_name:
             return jsonify(error='node_id and iface_name required for node scope'), 400
-        n = Node.query.get_or_404(nid)
+        n = db.session.get(Node, nid) or abort(404)
 
-        try:
-            priv = subprocess.check_output(['wg', 'genkey'], stderr=subprocess.DEVNULL, timeout=3).strip().decode()
-            pub = subprocess.check_output(['wg', 'pubkey'], input=(priv + '\n').encode(), stderr=subprocess.DEVNULL, timeout=3).strip().decode()
-        except Exception:
-            import base64
-            priv = base64.b64encode(os.urandom(32)).decode()
-            pub = base64.b64encode(os.urandom(32)).decode()
+        priv, pub = generate_wg_keypair()
 
         mirror_name = f"n{nid}:{iface_name}"
         mirror = InterfaceConfig.query.filter_by(name=mirror_name).first()
@@ -640,7 +709,30 @@ def peers_create():
             db.session.add(mirror)
             db.session.flush()
 
-        addr = (data.get('address') or '').strip() or "10.0.0.2/32"
+        from blueprints.nodes_bp import node_install_peer, NodePeerInstallError
+        try:
+            addr = node_install_peer(
+                n,
+                iface_name,
+                mirror,
+                public_key=pub,
+                requested_address=(data.get('address') or '').strip() or None,
+                peer_endpoint=(data.get('peer_endpoint') or '').strip() or '',
+                keepalive=int(data.get('persistent_keepalive') or 0),
+                mtu=int(data.get('mtu')) if data.get('mtu') else None,
+                dns=(data.get('dns') or '').strip() or None,
+                allowed_ips=(data.get('allowed_ips') or '0.0.0.0/0, ::/0').strip(),
+            )
+        except NodePeerInstallError as e:
+            db.session.rollback()
+            return jsonify(ok=False, error=e.code, message=str(e)), e.status
+        except Exception as e:
+            db.session.rollback()
+            return jsonify(ok=False, error='node_peer_install_failed', message=str(e)), 502
+
+        comp = PeerCreateCompensation()
+        comp.register_node(n, pub)
+
         p = Peer(
             iface_id=mirror.id,
             name=(data.get('name') or '').strip() or 'peer',
@@ -648,13 +740,26 @@ def peers_create():
             private_key=priv,
             address=addr,
             allowed_ips=(data.get('allowed_ips') or '0.0.0.0/0, ::/0').strip(),
+            endpoint=data.get('endpoint') or None,
+            peer_endpoint=(data.get('peer_endpoint') or '').strip() or None,
+            dns=(data.get('dns') or '').strip() or None,
+            mtu=int(data.get('mtu')) if data.get('mtu') else None,
             status='online',
             created_at=from_ts(now_ts()),
             timer_started_at=from_ts(now_ts()),
+            phone_number=(data.get('phone_number') or data.get('phone') or '').strip(),
+            telegram_id=(data.get('telegram_id') or data.get('telegram') or '').strip(),
         )
-        db.session.add(p)
-        db.session.commit()
-        return jsonify(ok=True, success=True, id=p.id, public_key=p.public_key, address=p.address), 200
+        try:
+            db.session.add(p)
+            db.session.commit()
+        except Exception as e:
+            comp.rollback()
+            db.session.rollback()
+            return jsonify(ok=False, error='db_error', message=str(e)), 500
+
+        log_event(p, 'created', f'Created on node {n.name}:{iface_name}')
+        return jsonify(ok=True, success=True, id=p.id, public_key=p.public_key, address=p.address, endpoint=_effective_client_endpoint(p)), 200
 
     # Local scope
     iface_id = data.get('iface_id')
@@ -669,13 +774,7 @@ def peers_create():
     if not iface:
         return jsonify(error='Interface not found'), 404
 
-    try:
-        priv = subprocess.check_output(['wg', 'genkey'], stderr=subprocess.DEVNULL, timeout=3).strip().decode()
-        pub = subprocess.check_output(['wg', 'pubkey'], input=(priv + '\n').encode(), stderr=subprocess.DEVNULL, timeout=3).strip().decode()
-    except Exception:
-        import base64
-        priv = base64.b64encode(os.urandom(32)).decode()
-        pub = base64.b64encode(os.urandom(32)).decode()
+    priv, pub = generate_wg_keypair()
 
     try:
         addr = allocate_peer_address(iface, requested=(data.get('address') or '').strip())
@@ -732,6 +831,10 @@ def peers_create():
 @require_api_key_or_login
 def panel_peers_bulk():
     data = request.get_json(silent=True) or {}
+    if _has_crlf(data.get('prefix'), data.get('name_prefix'), data.get('allowed_ips'),
+                 data.get('endpoint'), data.get('peer_endpoint'), data.get('dns')):
+        return jsonify(ok=False, error='newline_characters_not_allowed', message='Newlines are not allowed in configuration values'), 400
+
     count = int(data.get('count') or data.get('bulkPeerCount') or 0)
     if count < 1:
         return jsonify(error="count is required"), 400
@@ -745,17 +848,12 @@ def panel_peers_bulk():
 
     prefix = (data.get('prefix') or data.get('name_prefix') or 'peer').strip()
     created = []
+    allocated_ips = set()
     for idx in range(count):
+        priv, pub = generate_wg_keypair()
         try:
-            priv = subprocess.check_output(['wg', 'genkey'], stderr=subprocess.DEVNULL, timeout=3).strip().decode()
-            pub = subprocess.check_output(['wg', 'pubkey'], input=(priv + '\n').encode(), stderr=subprocess.DEVNULL, timeout=3).strip().decode()
-        except Exception:
-            import base64
-            priv = base64.b64encode(os.urandom(32)).decode()
-            pub = base64.b64encode(os.urandom(32)).decode()
-
-        try:
-            addr = allocate_peer_address(iface)
+            addr = allocate_peer_address(iface, extra_reserved=allocated_ips)
+            allocated_ips.add(addr.split('/')[0].strip())
         except AddressAllocationError as e:
             break
 
@@ -787,6 +885,10 @@ def api_edit(pid):
     if not isinstance(data, dict):
         return jsonify(ok=False, error='invalid_payload'), 400
 
+    if _has_crlf(data.get('name'), data.get('allowed_ips'), data.get('endpoint'),
+                 data.get('peer_endpoint'), data.get('dns'), data.get('phone_number'), data.get('telegram_id')):
+        return jsonify(ok=False, error='newline_characters_not_allowed', message='Newlines are not allowed in configuration values'), 400
+
     if 'name' in data:
         p.name = str(data['name']).strip()
     if 'allowed_ips' in data:
@@ -813,6 +915,8 @@ def api_edit(pid):
         p.telegram_id = str(data['telegram_id']).strip()
 
     db.session.commit()
+    if p.status == 'online':
+        _sync_peer(p)
     log_event(p, 'edited', 'Peer settings updated')
     return jsonify(ok=True, success=True)
 
@@ -835,6 +939,11 @@ def api_delete(pid):
 def peer_clear_total(pid):
     p = db.session.get(Peer, pid) or abort(404)
     prev = int(getattr(p, 'used_bytes_total', 0) or 0)
+    if prev > 0 and getattr(p, 'iface_id', None):
+        iface = db.session.get(InterfaceConfig, p.iface_id)
+        if iface:
+            iface.add_retired_bytes(prev)
+            db.session.add(iface)
     p.used_bytes_total = 0
     db.session.commit()
     log_event(p, 'clear_total', f'Lifetime cleared (was {prev} bytes)')
@@ -911,6 +1020,12 @@ def reset_data(pid):
     except Exception:
         current = 0
     p.bytes_offset = max(0, current)
+    prev = int(getattr(p, 'used_bytes_total', 0) or 0)
+    if prev > 0 and getattr(p, 'iface_id', None):
+        iface = db.session.get(InterfaceConfig, p.iface_id)
+        if iface:
+            iface.add_retired_bytes(prev)
+            db.session.add(iface)
     p.used_bytes_total = 0
 
     # If peer was blocked (e.g. data limit exceeded), and timer is not expired, reactivate

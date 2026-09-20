@@ -604,36 +604,38 @@ function renderizeRows(rows){
     window.dispatchEvent(new CustomEvent('logs:refreshed'));
   }
 
-  window.uiConfirm = function({ title = "Are you sure?", body = "", okText = "OK", cancelText = "Cancel", tone = "danger" } = {}) {
-    return new Promise((resolve) => {
-      const root = document.getElementById('ui-confirm');
-      if (!root) return resolve(confirm(title)); 
-      const ttl = root.querySelector('.ui-confirm__title');
-      const bdy = root.querySelector('.ui-confirm__body');
-      const ok = root.querySelector('[data-act="ok"]');
-      const cancel = root.querySelector('[data-act="cancel"]');
+  if (!window.uiConfirm) {
+    window.uiConfirm = function({ title = "Are you sure?", body = "", okText = "OK", cancelText = "Cancel", tone = "danger" } = {}) {
+      return new Promise((resolve) => {
+        const root = document.getElementById('ui-confirm');
+        if (!root) return resolve(confirm(title)); 
+        const ttl = root.querySelector('.ui-confirm__title');
+        const bdy = root.querySelector('.ui-confirm__body');
+        const ok = root.querySelector('[data-act="ok"]');
+        const cancel = root.querySelector('[data-act="cancel"]');
 
-      ttl.textContent = title;
-      bdy.textContent = body;
-      ok.textContent = okText;
-      cancel.textContent = cancelText;
+        ttl.textContent = title;
+        bdy.textContent = body;
+        ok.textContent = okText;
+        cancel.textContent = cancelText;
 
-      ok.classList.remove('danger','ghost');
-      if (tone === 'danger') ok.classList.add('danger');
+        ok.classList.remove('danger','ghost');
+        if (tone === 'danger') ok.classList.add('danger');
 
-      root.hidden = false;
+        root.hidden = false;
 
-      const cleanup = (val) => {
-        root.hidden = true;
-        ok.onclick = cancel.onclick = null;
-        resolve(val);
-      };
-      ok.onclick = () => cleanup(true);
-      cancel.onclick = () => cleanup(false);
-      root.onkeydown = (e) => { if (e.key === 'Escape') cleanup(false); };
-      root.focus?.();
-    });
-  };
+        const cleanup = (val) => {
+          root.hidden = true;
+          ok.onclick = cancel.onclick = null;
+          resolve(val);
+        };
+        ok.onclick = () => cleanup(true);
+        cancel.onclick = () => cleanup(false);
+        root.onkeydown = (e) => { if (e.key === 'Escape') cleanup(false); };
+        root.focus?.();
+      });
+    };
+  }
 
     async function clearLogs(){
     const cfg = SOURCES[state.source] || SOURCES.app;

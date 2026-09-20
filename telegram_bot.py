@@ -287,7 +287,11 @@ def _detect_panel_base() -> str:
     if _ENV_PANEL:
         return _ENV_PANEL
 
+    server_host = (settings.get("server_host") or "").strip()
     if tls_on:
+        if server_host and not server_host.startswith("127.") and server_host != "localhost":
+            port_part = f":{https_port}" if https_port != 443 else ""
+            return f"https://{server_host}{port_part}"
         if runtime_port == https_port:
             return f"https://127.0.0.1:{runtime_port}"
 
@@ -315,7 +319,11 @@ def load_bot_token() -> str:
     except Exception:
         return ""
 
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 api = requests.Session()
+api.verify = False
 if API_KEY:
     api.headers.update({
         "Authorization": f"Bearer {API_KEY}",
@@ -329,6 +337,7 @@ PANEL_ADMIN_USER = os.getenv("PANEL_ADMIN_USER", "").strip()
 PANEL_ADMIN_PASS = os.getenv("PANEL_ADMIN_PASS", "").strip()
 
 sess = requests.Session()
+sess.verify = False
 
 def _login_session() -> None:
     if not (PANEL_ADMIN_USER and PANEL_ADMIN_PASS):

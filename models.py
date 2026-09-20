@@ -32,9 +32,24 @@ class InterfaceConfig(db.Model):
     pre_down    = db.Column(db.Text)
     post_up     = db.Column(db.Text)
     post_down   = db.Column(db.Text)
-    peers       = db.relationship('Peer', backref='iface', lazy=True)
-    node_id = db.Column(db.Integer, db.ForeignKey('node.id'), nullable=True)
-    node    = db.relationship('Node', backref='interfaces', lazy=True)
+    retired_total_bytes = db.Column(db.BigInteger, default=0, nullable=False, server_default='0')
+    peers       = db.relationship('Peer', backref='iface', lazy=True, cascade='all, delete-orphan')
+    node_id = db.Column(db.Integer, db.ForeignKey('node.id', ondelete='CASCADE'), nullable=True)
+    node    = db.relationship('Node', backref=db.backref('interfaces', cascade='all, delete-orphan'), lazy=True)
+
+    @property
+    def total_used_bytes(self) -> int:
+        retired = int(getattr(self, 'retired_total_bytes', 0) or 0)
+        active = 0
+        try:
+            active = sum(int(getattr(p, 'used_bytes_total', 0) or 0) for p in (self.peers or []))
+        except Exception:
+            pass
+        return retired + active
+
+    def add_retired_bytes(self, amount: int) -> None:
+        if amount and amount > 0:
+            self.retired_total_bytes = int(getattr(self, 'retired_total_bytes', 0) or 0) + int(amount)
 
 class Peer(db.Model):
     __table_args__ = (
@@ -190,9 +205,21 @@ class AdminAccount(db.Model):
     id            = db.Column(db.Integer, primary_key=True)
     username      = db.Column(db.String(64), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    totp_secret   = db.Column(db.String(32))
+    totp_secret   = db.Column(db.Text)
     twofa_enabled = db.Column(db.Boolean, default=False)
     recovery_codes = db.Column(db.Text)
+    last_totp_counter = db.Column(db.BigInteger, default=0)
+
+    @property
+    def totp_secret_decrypted(self) -> str:
+        """Safely decrypt TOTP secret or return plaintext if not yet encrypted."""
+        if not self.totp_secret:
+            return ""
+        try:
+            from core.crypto import _probably_decrypt
+            return _probably_decrypt(self.totp_secret)
+        except Exception:
+            return self.totp_secret
 
     @staticmethod
     def hash_pw(password: str) -> str:

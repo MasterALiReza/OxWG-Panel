@@ -277,6 +277,50 @@ class TestAppModularIntegration(unittest.TestCase):
             wg_py = f.read()
         self.assertIn('print(c("OxWg Panel Control"', wg_py)
 
+    def test_api_key_meta_removed_and_csrf_protection_rules(self):
+        """Verify master API key is never rendered in base.html or csrf.js, and CSRF rules apply correctly."""
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        with open(os.path.join(base_dir, "templates", "base.html"), "r", encoding="utf-8") as f:
+            base_html = f.read()
+        self.assertNotIn('<meta name="api-key"', base_html)
+
+        with open(os.path.join(base_dir, "static", "js", "csrf.js"), "r", encoding="utf-8") as f:
+            csrf_js = f.read()
+        self.assertNotIn("getApiKey", csrf_js)
+        self.assertNotIn("X-API-KEY", csrf_js)
+
+    def test_security_headers_and_https_redirect(self):
+        """Verify X-Content-Type-Options, Referrer-Policy, CSP, and API 308 redirect behavior."""
+        # 1. Check security headers on standard response
+        resp = self.client.get("/login")
+        self.assertEqual(resp.headers.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(resp.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
+        self.assertEqual(resp.headers.get("X-Frame-Options"), "DENY")
+        csp = resp.headers.get("Content-Security-Policy", "")
+        self.assertIn("frame-ancestors 'none'", csp)
+
+        # 2. Check preview page CSP allows frame-ancestors 'self'
+        resp_prev = self.client.get("/preview/test-token")
+        csp_prev = resp_prev.headers.get("Content-Security-Policy", "")
+        self.assertIn("frame-ancestors 'self'", csp_prev)
+        self.assertEqual(resp_prev.headers.get("X-Frame-Options"), "SAMEORIGIN")
+
+        # 3. Check HTTPS redirect behavior with mock effective TLS
+        from unittest.mock import patch
+        with patch.object(self.flask_app, "_tls_enabled_effective", True, create=True):
+            with patch("core.hooks._load_panel_settings", return_value={"force_https_redirect": True, "domain": "panel.test", "https_port": 443}):
+                # GET UI route -> 301
+                r_ui = self.client.get("/login", base_url="http://panel.test")
+                self.assertEqual(r_ui.status_code, 301)
+                self.assertEqual(r_ui.headers.get("Location"), "https://panel.test/login")
+
+                # POST API route -> 308 (preserves HTTP method & payload)
+                r_api = self.client.post("/api/peers", base_url="http://panel.test")
+                self.assertEqual(r_api.status_code, 308)
+                self.assertEqual(r_api.headers.get("Location"), "https://panel.test/api/peers")
+
 
 if __name__ == "__main__":
     unittest.main()
+
+

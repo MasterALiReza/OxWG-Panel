@@ -188,6 +188,93 @@ def _check_local_notifications(state: dict[str, Any]) -> None:
     state[local_key] = next_interfaces
 
 
+def _resync_node_blocked_peers(node: Any) -> None:
+    """Audit and re-disable all blocked peers on a recovered remote node."""
+    try:
+        from models import Peer, InterfaceConfig
+        from services.node_client import node_post
+
+        blocked_peers = (
+            Peer.query.join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
+            .filter(
+                InterfaceConfig.name.like(f"n{node.id}:%"),
+                Peer.status == 'blocked',
+            )
+            .all()
+        )
+        for p in blocked_peers:
+            try:
+                addr = getattr(p, 'address', '') or ''
+                host_cidr = addr.split(',')[0].strip() if addr else ''
+                node_post(
+                    node,
+                    f'/api/peer/{p.public_key}/disable',
+                    {'host_cidr': host_cidr, 'reason': 'recovery_resync'},
+                    timeout=5,
+                )
+            except Exception as exc:
+                logger.debug("Failed to resync blocked peer %s on node %s: %s", p.public_key, node.id, exc)
+    except Exception as exc:
+        logger.warning("Error during node %s blocked peer resync: %s", getattr(node, 'id', 'unknown'), exc)
+
+
+def _sync_node_peers_usage(node: Any) -> bool:
+    """Poll peer traffic from online remote node and accumulate into database."""
+    try:
+        from models import db, Peer, InterfaceConfig
+        from services.node_client import node_get
+        from services.peer_lifecycle import _accumulate_peer_usage, from_ts
+
+        data = node_get(node, '/api/peers', timeout=8) or {}
+        peers_list = data.get('peers') or []
+        if not peers_list:
+            return False
+
+        runtime = {p.get('public_key'): p for p in peers_list if isinstance(p, dict) and p.get('public_key')}
+        if not runtime:
+            return False
+
+        db_peers = (
+            Peer.query.join(InterfaceConfig, Peer.iface_id == InterfaceConfig.id)
+            .filter(InterfaceConfig.name.like(f"n{node.id}:%"))
+            .all()
+        )
+
+        dirty = False
+        for p in db_peers:
+            r = runtime.get(p.public_key)
+            if not r:
+                continue
+
+            try:
+                rx = float(r.get('rx_mib') or 0)
+                tx = float(r.get('tx_mib') or 0)
+            except (TypeError, ValueError):
+                rx = tx = 0.0
+
+            live_total = int((rx + tx) * 1024 * 1024)
+            _used_total, _delta, usage_changed = _accumulate_peer_usage(p, live_total)
+            if usage_changed:
+                dirty = True
+
+            if not getattr(p, 'first_used_at', None):
+                try:
+                    hs = int(r.get('latest_handshake') or 0)
+                except (TypeError, ValueError):
+                    hs = 0
+                if hs > 0:
+                    p.first_used_at = from_ts(hs)
+                    p.timer_started_at = from_ts(hs)
+                    dirty = True
+
+        if dirty:
+            db.session.commit()
+            return True
+    except Exception as exc:
+        logger.debug("Error syncing peer usage for node %s: %s", getattr(node, 'id', 'unknown'), exc)
+    return False
+
+
 def _check_node_notifications(state: dict[str, Any]) -> None:
     """Poll configured remote nodes, detect health status changes, and track interfaces."""
     current_epoch = int(time.time())
@@ -279,9 +366,11 @@ def _check_node_notifications(state: dict[str, Any]) -> None:
                 dedupe_key=f'node-up:{node.id}',
                 dedupe_seconds=60,
             )
+            _resync_node_blocked_peers(node)
 
         current_interfaces: dict[str, Any] = {}
         if confirmed_online:
+            _sync_node_peers_usage(node)
             for interface in interfaces:
                 if not isinstance(interface, dict):
                     continue
@@ -491,30 +580,30 @@ def _node_monitor_once() -> None:
 
 
 def _node_monitor_loop() -> None:
-    """Worker loop ensuring single execution via lock file and active Flask context."""
+    """Worker loop ensuring single execution via flock with standby retry for Gunicorn workers."""
     lock_handle = None
-    try:
-        import fcntl
-        lock_handle = open(_NODE_NOTIFY_MONITOR_LOCK_FILE, 'a+', encoding='utf-8')
-        try:
-            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except (BlockingIOError, OSError):
-            try:
-                lock_handle.close()
-            except Exception:
-                pass
-            return
-    except ImportError:
-        pass
-    except Exception:
-        if lock_handle:
-            try:
-                lock_handle.close()
-            except Exception:
-                pass
-        return
+    is_leader = False
 
     while True:
+        if not is_leader:
+            try:
+                import fcntl
+                if lock_handle is None or lock_handle.closed:
+                    lock_handle = open(_NODE_NOTIFY_MONITOR_LOCK_FILE, 'a+', encoding='utf-8')
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                is_leader = True
+                logger.info("Acquired node notification monitor leader lock (PID %s)", os.getpid())
+            except (BlockingIOError, OSError):
+                # Standby worker: wait and retry next tick
+                time.sleep(_NODE_NOTIFY_INTERVAL_SEC)
+                continue
+            except ImportError:
+                is_leader = True
+            except Exception as exc:
+                logger.warning("Error attempting node monitor leader lock: %s", exc)
+                time.sleep(_NODE_NOTIFY_INTERVAL_SEC)
+                continue
+
         try:
             with _get_app_context():
                 _node_monitor_once()

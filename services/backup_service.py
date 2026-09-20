@@ -631,34 +631,33 @@ def _save_autobackup(data_bytes: bytes, keep: int | None = None) -> dict[str, An
 def _backup_scheduler_loop(app: Any = None) -> None:
     """
     Background worker loop for scheduled automated backups.
-    Acquires file lock to ensure single execution across worker processes.
+    Acquires file lock to ensure single leader execution across worker processes;
+    standby workers wait and retry to seamlessly take over if leader restarts.
     """
     if app is not None:
         set_app(app)
     lock_handle = None
-    try:
-        import fcntl
-        lock_handle = open(_BACKUP_SCHEDULER_LOCK_FILE, "a+", encoding="utf-8")
-        try:
-            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except (BlockingIOError, OSError):
-            try:
-                lock_handle.close()
-            except Exception:
-                pass
-            return
-    except ImportError:
-        # On Windows
-        pass
-    except Exception:
-        if lock_handle:
-            try:
-                lock_handle.close()
-            except Exception:
-                pass
-        return
+    is_leader = False
 
     while True:
+        if not is_leader:
+            try:
+                import fcntl
+                if lock_handle is None or lock_handle.closed:
+                    lock_handle = open(_BACKUP_SCHEDULER_LOCK_FILE, "a+", encoding="utf-8")
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                is_leader = True
+                logger.info("Acquired backup scheduler leader lock (PID %s)", os.getpid())
+            except (BlockingIOError, OSError):
+                # Standby worker: wait and retry
+                time.sleep(30)
+                continue
+            except ImportError:
+                is_leader = True
+            except Exception as exc:
+                logger.warning("Error attempting backup scheduler leader lock: %s", exc)
+                time.sleep(30)
+                continue
         try:
             with _get_app_context():
                 schedule = _load_backup_schedule()

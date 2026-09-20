@@ -1505,8 +1505,8 @@
       modal.className = "modal open";
       modal.innerHTML = `
         <div class="modal-content" style="max-width:420px">
-          <h3 style="margin:0 0 .5rem 0">${message}</h3>
-          <input id="dlg-input" class="input" placeholder="${defText.replace(/"/g, "&quot;")}" style="width:100%;margin:.25rem 0 .75rem 0">
+          <h3 style="margin:0 0 .5rem 0">${peerEsc(message)}</h3>
+          <input id="dlg-input" class="input" placeholder="${peerEsc(defText)}" style="width:100%;margin:.25rem 0 .75rem 0">
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button id="dlg-cancel" class="btn secondary">Cancel</button>
             <button id="dlg-ok" class="btn">OK</button>
@@ -1811,48 +1811,48 @@
        data-panel-status="${pStatus}"
        data-blocked="${blocked ? "1" : "0"}"
        data-depleting="${depleted ? "1" : "0"}"
-       data-name="${(p.name || "").toLowerCase()}"
-       data-phone="${(p.phone_number || "").toLowerCase()}"
-       data-tg="${(p.telegram_id || "").toLowerCase()}"
-       data-iface="${p.iface || p.iface_name || ""}">
+       data-name="${peerEsc((p.name || "").toLowerCase())}"
+       data-phone="${peerEsc((p.phone_number || "").toLowerCase())}"
+       data-tg="${peerEsc((p.telegram_id || "").toLowerCase())}"
+       data-iface="${peerEsc(p.iface || p.iface_name || "")}">
 
     <div class="peer-main peer-main-nowrap">
       <span class="peer-index">${i + 1})</span>
 
       <div class="peer-identity-block">
-        <span class="peer-name" title="${peerEsc(p.name || "")}">${p.name || ""}</span>
-        <span class="peer-iface-line"><i class="fas fa-network-wired"></i>${p.iface || p.iface_name || "—"}</span>
+        <span class="peer-name" title="${peerEsc(p.name || "")}">${peerEsc(p.name || "")}</span>
+        <span class="peer-iface-line"><i class="fas fa-network-wired"></i>${peerEsc(p.iface || p.iface_name || "—")}</span>
       </div>
 
       <div class="peer-live-block">
         <div class="peer-tags">${peerTagsHTML(p)}</div>
         <div class="peer-traffic">
-          <span><i class="fas fa-download"></i><b class="rx">${String(p.rx || "0")}</b> MB</span>
-          <span><i class="fas fa-upload"></i><b class="tx">${String(p.tx || "0")}</b> MB</span>
+          <span><i class="fas fa-download"></i><b class="rx">${peerEsc(String(p.rx || "0"))}</b> MB</span>
+          <span><i class="fas fa-upload"></i><b class="tx">${peerEsc(String(p.tx || "0"))}</b> MB</span>
         </div>
       </div>
 
       <div class="peer-usage-block">
-        <div class="peer-data" title="${p.unlimited ? `${usedStr} used · No data cap` : `${remainStr} remaining · ${limitStr} limit`}">
+        <div class="peer-data" title="${peerEsc(p.unlimited ? `${usedStr} used · No data cap` : `${remainStr} remaining · ${limitStr} limit`)}">
           <i class="fas fa-database"></i>
-          <span class="data-summary">${p.unlimited ? `${usedStr} used · No data cap` : `${remainStr} left · ${limitStr} limit`}</span>
+          <span class="data-summary">${peerEsc(p.unlimited ? `${usedStr} used · No data cap` : `${remainStr} left · ${limitStr} limit`)}</span>
         </div>
-        <div class="peer-timer" title="${
+        <div class="peer-timer" title="${peerEsc(
           p.unlimited && activeSince !== "–"
             ? `Active since ${activeSince}`
             : timerStr
-        }">
+        )}">
           <i class="fas fa-clock"></i>
-          <span class="timer-text">${timerStr}</span>
+          <span class="timer-text">${peerEsc(timerStr)}</span>
         </div>
       </div>
 
       <div class="peer-network-block">
         <div class="peer-address-line" title="${peerEsc(p.address || "")}">
-          <i class="fas fa-network-wired"></i><span class="address">${p.address || "—"}</span>
+          <i class="fas fa-network-wired"></i><span class="address">${peerEsc(p.address || "—")}</span>
         </div>
         <div class="endpoint-wrap"${epStr ? "" : ' style="display:none"'} title="${peerEsc(epStr)}">
-          <i class="fas fa-globe"></i><span class="endpoint">${epStr}</span>
+          <i class="fas fa-globe"></i><span class="endpoint">${peerEsc(epStr)}</span>
         </div>
       </div>
 
@@ -1882,16 +1882,16 @@
       ${peerProgressBar(p, ttl, started)}
 
       <div class="peer-more-grid">
-        ${peerDetailItem("mi-limit", "database", "Limit", limitStr)}
-        ${peerDetailItem("mi-remain", "hourglass-half", "Time remaining", remainTime)}
-        ${peerDetailItem("mi-days", "calendar-alt", capLabel, `${fmtDaysOrHours(p.time_limit_days)}${capTail}`)}
-        ${peerDetailItem("mi-first", "play-circle", "First used", first)}
-        ${peerDetailItem("mi-created", "calendar-plus", "Created", created)}
-        ${peerDetailItem("mi-exp", "calendar-times", "Expires", exp)}
-        ${peerDetailItem("mi-total", "exchange-alt", "Total usage", totalStr)}
-        ${peerDetailItem("mi-phone", "phone", "Phone", p.phone_number || "–")}
-        ${peerDetailItem("mi-tg", "paper-plane", "Telegram", p.telegram_id || "–")}
-        ${peerDetailItem("mi-iface", "network-wired", "Interface", `<span class="mi-iface-name">${p.iface || p.iface_name || "–"}</span>`)}
+        ${peerDetailItem("mi-limit", "database", "Limit", peerEsc(limitStr))}
+        ${peerDetailItem("mi-remain", "hourglass-half", "Time remaining", peerEsc(remainTime))}
+        ${peerDetailItem("mi-days", "calendar-alt", peerEsc(capLabel), `${peerEsc(fmtDaysOrHours(p.time_limit_days))}${peerEsc(capTail)}`)}
+        ${peerDetailItem("mi-first", "play-circle", "First used", peerEsc(first))}
+        ${peerDetailItem("mi-created", "calendar-plus", "Created", peerEsc(created))}
+        ${peerDetailItem("mi-exp", "calendar-times", "Expires", peerEsc(exp))}
+        ${peerDetailItem("mi-total", "exchange-alt", "Total usage", peerEsc(totalStr))}
+        ${peerDetailItem("mi-phone", "phone", "Phone", peerEsc(p.phone_number || "–"))}
+        ${peerDetailItem("mi-tg", "paper-plane", "Telegram", peerEsc(p.telegram_id || "–"))}
+        ${peerDetailItem("mi-iface", "network-wired", "Interface", `<span class="mi-iface-name">${peerEsc(p.iface || p.iface_name || "–")}</span>`)}
       </div>
     </div>
 
@@ -2472,18 +2472,18 @@
     );
     setHTML(
       ".mi-phone",
-      peerDetailInner("phone", "Phone", p.phone_number || "–"),
+      peerDetailInner("phone", "Phone", peerEsc(p.phone_number || "–")),
     );
     setHTML(
       ".mi-tg",
-      peerDetailInner("paper-plane", "Telegram", p.telegram_id || "–"),
+      peerDetailInner("paper-plane", "Telegram", peerEsc(p.telegram_id || "–")),
     );
     setHTML(
       ".mi-iface",
       peerDetailInner(
         "network-wired",
         "Interface",
-        `<span class="mi-iface-name">${p.iface || p.iface_name || "–"}</span>`,
+        `<span class="mi-iface-name">${peerEsc(p.iface || p.iface_name || "–")}</span>`,
       ),
     );
 

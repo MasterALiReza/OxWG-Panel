@@ -5,6 +5,8 @@ Handles admin login, logout, registration, and initial 2FA enrollment.
 Branding: "OxWg Panel" for 2FA issuer.
 """
 import os
+import time
+import datetime
 import json
 import secrets
 from flask import (
@@ -112,9 +114,35 @@ def login():
             verified = False
 
             if account.totp_secret and otp and pyotp is not None:
-                totp = pyotp.TOTP(account.totp_secret)
-                if totp.verify(otp, valid_window=1):
-                    verified = True
+                plain_secret = account.totp_secret_decrypted
+                if plain_secret:
+                    try:
+                        totp = pyotp.TOTP(plain_secret)
+                        now_dt = datetime.datetime.now()
+                        current_timecode = totp.timecode(now_dt)
+                        matched_counter = None
+                        for offset in (0, -1, 1):
+                            if pyotp.utils.strings_equal(str(otp).strip(), str(totp.at(now_dt, counter_offset=offset))):
+                                matched_counter = current_timecode + offset
+                                break
+
+                        last_used = getattr(account, 'last_totp_counter', 0) or 0
+                        if matched_counter is not None:
+                            if matched_counter > last_used:
+                                verified = True
+                                account.last_totp_counter = matched_counter
+                                from core.crypto import _probably_encrypt
+                                enc = _probably_encrypt(plain_secret)
+                                if account.totp_secret != enc:
+                                    account.totp_secret = enc
+                                db.session.commit()
+                            else:
+                                current_app.logger.warning(
+                                    "2FA replay attempt rejected for user %s (counter %s <= %s)",
+                                    account.username, matched_counter, last_used
+                                )
+                    except Exception as ex:
+                        current_app.logger.error("TOTP verification error: %s", ex)
 
             if not verified and otp:
                 recovery_codes = (account.recovery_codes or '').splitlines()
@@ -276,10 +304,12 @@ def register():
             acc = AdminAccount(username=u, password_hash=pw_hash)
 
             if session.get('reg_totp_confirmed') and session.get('reg_totp_secret'):
+                from core.crypto import _probably_encrypt
                 acc.twofa_enabled = True
-                acc.totp_secret = session['reg_totp_secret']
+                acc.totp_secret = _probably_encrypt(session['reg_totp_secret'])
                 rc_h = session.get('reg_recovery_codes_h') or []
                 acc.recovery_codes = '\n'.join(rc_h)
+                acc.last_totp_counter = int(time.time() // 30)
 
             db.session.add(acc)
             db.session.commit()

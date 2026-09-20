@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block head_extras %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/logs.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/logs-dark.css') }}">
 {% endblock %}
 {% block responsive_extras %}
 {% endblock %}
@@ -468,17 +467,6 @@
         </div>
     </div>
 </section>
-
-<div id="ui-confirm" class="ui-confirm" hidden>
-    <div class="ui-confirm__sheet">
-        <div class="ui-confirm__title"></div>
-        <div class="ui-confirm__body"></div>
-        <div class="ui-confirm__actions">
-            <button class="btn ghost" data-act="cancel">Cancel</button>
-            <button class="btn danger" data-act="ok">OK</button>
-        </div>
-    </div>
-</div>
 
 <script>
     window.showToast = (m, t = 'info', s = false) => toastSafe(m, t, s);
