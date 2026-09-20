@@ -16,6 +16,8 @@
     lastTerminalNotice: '',
     localVersion: null,
     targets: [],
+    localUpdateActive: false,
+    reloading: false,
   };
 
   const BUSY = new Set([
@@ -551,6 +553,67 @@
     return BUSY.has(statusName(status));
   }
 
+  function schedulePageReloadAfterUpdate(status) {
+    if (state.reloading) return;
+    state.reloading = true;
+    state.localUpdateActive = false;
+    try {
+      sessionStorage.removeItem('wg_panel_updating');
+      sessionStorage.setItem('wg_panel_updated_reload', '1');
+    } catch (_) {}
+
+    stopPoll();
+    clearTimeout(state.reconnectTimer);
+
+    setText(
+      'pu-local-stage',
+      'Update installed! Restarting panel and reloading page…',
+    );
+    setText('pu-local-percent', '100%');
+    const bar = $('pu-local-bar');
+    if (bar) bar.style.width = '100%';
+
+    setDisabled('pu-refresh', true);
+    setDisabled('pu-update-local', true);
+
+    window.dispatchEvent(new CustomEvent('wg-panel-update-finished'));
+
+    let attempts = 0;
+    const maxAttempts = 30;
+
+    const probe = async () => {
+      attempts += 1;
+      try {
+        const response = await fetch('/api/healthz', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          signal: AbortSignal.timeout
+            ? AbortSignal.timeout(3000)
+            : undefined,
+        });
+
+        if (response.ok) {
+          setText('pu-local-stage', 'Panel is online! Reloading page…');
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
+          return;
+        }
+      } catch (_) {
+        // Expected while the panel service is restarting
+      }
+
+      if (attempts >= maxAttempts) {
+        window.location.reload();
+        return;
+      }
+
+      setTimeout(probe, 1000);
+    };
+
+    setTimeout(probe, 1200);
+  }
+
   function updateProgress(status) {
     state.lastStatus = status || {};
 
@@ -597,6 +660,13 @@
       enterReconnectMode();
     }
 
+    let wasUpdatingLocally = Boolean(state.localUpdateActive);
+    try {
+      if (sessionStorage.getItem('wg_panel_updating') === '1') {
+        wasUpdatingLocally = true;
+      }
+    } catch (_) {}
+
     if (TERMINAL_OK.has(name)) {
       stopPoll();
       state.panelReachableAfterRestart = false;
@@ -629,6 +699,16 @@
 
       setDisabled('pu-refresh', false);
 
+      if (wasUpdatingLocally && name !== 'rollback_completed') {
+        schedulePageReloadAfterUpdate(status);
+        return;
+      }
+
+      state.localUpdateActive = false;
+      try {
+        sessionStorage.removeItem('wg_panel_updating');
+      } catch (_) {}
+
       setTimeout(() => {
         refreshCenter().catch(() => {});
       }, 900);
@@ -638,6 +718,10 @@
       stopPoll();
       state.panelReachableAfterRestart = false;
       state.reconnecting = false;
+      state.localUpdateActive = false;
+      try {
+        sessionStorage.removeItem('wg_panel_updating');
+      } catch (_) {}
       window.WG_PANEL_UPDATING = false;
       window.WG_PANEL_RESTARTING = false;
       const noticeKey = [
@@ -765,6 +849,10 @@
 
     if (elapsed >= 120) {
       state.reconnecting = false;
+      state.localUpdateActive = false;
+      try {
+        sessionStorage.removeItem('wg_panel_updating');
+      } catch (_) {}
       window.WG_PANEL_UPDATING = false;
       window.WG_PANEL_RESTARTING = false;
       setDisabled('pu-refresh', false);
@@ -809,7 +897,7 @@
         setDisabled('pu-refresh', false);
         window.dispatchEvent(new CustomEvent('wg-panel-update-finished'));
         if (name !== 'rollback_completed') {
-          setTimeout(() => window.location.reload(), 1200);
+          schedulePageReloadAfterUpdate(status);
         }
         return;
       }
@@ -819,6 +907,16 @@
         window.WG_PANEL_UPDATING = false;
         window.WG_PANEL_RESTARTING = false;
         setDisabled('pu-refresh', false);
+
+        let wasUpdating = Boolean(state.localUpdateActive);
+        try {
+          if (sessionStorage.getItem('wg_panel_updating') === '1') wasUpdating = true;
+        } catch (_) {}
+
+        if (wasUpdating) {
+          schedulePageReloadAfterUpdate(status);
+          return;
+        }
 
         setText(
           'pu-local-stage',
@@ -1105,6 +1203,10 @@
 
     button.disabled = true;
     state.lastTerminalNotice = '';
+    state.localUpdateActive = true;
+    try {
+      sessionStorage.setItem('wg_panel_updating', '1');
+    } catch (_) {}
     window.WG_PANEL_UPDATING = true;
 
     const target = String(
@@ -1135,6 +1237,10 @@
       toast('Panel update started.', 'info');
       startPoll();
     } catch (error) {
+      state.localUpdateActive = false;
+      try {
+        sessionStorage.removeItem('wg_panel_updating');
+      } catch (_) {}
       window.WG_PANEL_UPDATING = false;
       button.disabled = false;
       toast(
@@ -1250,12 +1356,37 @@
       setText('pu-log-output', 'No update activity yet.');
     });
 
+    try {
+      const updatedReload = sessionStorage.getItem('wg_panel_updated_reload');
+      if (updatedReload === '1') {
+        sessionStorage.removeItem('wg_panel_updated_reload');
+        sessionStorage.removeItem('wg_panel_updating');
+        state.localUpdateActive = false;
+        toast('Panel updated successfully to the latest version.', 'success');
+      }
+    } catch (_) {}
+
+    try {
+      if (sessionStorage.getItem('wg_panel_updating') === '1') {
+        state.localUpdateActive = true;
+      }
+    } catch (_) {}
+
     api('/api/panel/update/status', { timeout: 5000 })
       .then((status) => {
         if (isBusy(status)) {
+          state.localUpdateActive = true;
+          try {
+            sessionStorage.setItem('wg_panel_updating', '1');
+          } catch (_) {}
           window.WG_PANEL_UPDATING = true;
           updateProgress(status);
           startPoll();
+        } else {
+          state.localUpdateActive = false;
+          try {
+            sessionStorage.removeItem('wg_panel_updating');
+          } catch (_) {}
         }
       })
       .catch(() => {});

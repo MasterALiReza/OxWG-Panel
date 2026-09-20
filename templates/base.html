@@ -292,10 +292,10 @@
         {% block content %}{% endblock %}
     </main>
 
-    <script defer src="{{ url_for('static', filename='js/panel-version.js') }}"></script>
-    <script defer src="{{ url_for('static', filename='js/panel-update.js') }}"></script>
-    <script defer src="{{ url_for('static', filename='js/theme.js') }}"></script>
-    <script defer src="{{ url_for('static', filename='js/ox-dropdown.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/panel-version.js') }}?v=1.4.5"></script>
+    <script defer src="{{ url_for('static', filename='js/panel-update.js') }}?v=1.4.5"></script>
+    <script defer src="{{ url_for('static', filename='js/theme.js') }}?v=1.4.5"></script>
+    <script defer src="{{ url_for('static', filename='js/ox-dropdown.js') }}?v=1.4.5"></script>
 
 
     <div class="pu-modal" id="panel-update-modal" hidden aria-hidden="true" role="dialog"
