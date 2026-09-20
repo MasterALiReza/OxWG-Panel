@@ -133,8 +133,15 @@ def _read_update_source(scope: str = "panel") -> dict[str, Any]:
     if scope == "panel":
         git_sha = _local_git_revision(BASE_DIR)
         if git_sha:
-            git_head = Path(BASE_DIR) / ".git" / "HEAD"
-            git_mtime = git_head.stat().st_mtime if git_head.is_file() else 0.0
+            git_dir = Path(BASE_DIR) / ".git"
+            candidates = [
+                git_dir / "refs" / "heads" / "main",
+                git_dir / "FETCH_HEAD",
+                git_dir / "index",
+                git_dir / "HEAD",
+            ]
+            mtimes = [p.stat().st_mtime for p in candidates if p.is_file()]
+            git_mtime = max(mtimes) if mtimes else 0.0
             recorded_sha = str(payload.get("revision") or "").strip().lower()
 
             # If no recorded revision exists from an update installer, git is the source of truth.
