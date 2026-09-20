@@ -631,13 +631,22 @@
       ),
     );
 
+    let wasUpdatingLocally = Boolean(state.localUpdateActive);
+    try {
+      if (sessionStorage.getItem('wg_panel_updating') === '1') {
+        wasUpdatingLocally = true;
+      }
+    } catch (_) {}
+
     const progress = $('pu-local-progress');
     const bar = $('pu-local-bar');
 
     if (progress) {
-      progress.hidden = !isBusy(status)
-        && !TERMINAL_OK.has(name)
-        && !TERMINAL_BAD.has(name);
+      const showProgress = isBusy(status)
+        || state.reconnecting
+        || state.reloading
+        || (wasUpdatingLocally && !TERMINAL_BAD.has(name));
+      progress.hidden = !showProgress;
     }
 
     setText('pu-local-stage', message);
@@ -659,13 +668,6 @@
     ) {
       enterReconnectMode();
     }
-
-    let wasUpdatingLocally = Boolean(state.localUpdateActive);
-    try {
-      if (sessionStorage.getItem('wg_panel_updating') === '1') {
-        wasUpdatingLocally = true;
-      }
-    } catch (_) {}
 
     if (TERMINAL_OK.has(name)) {
       stopPoll();
@@ -1010,9 +1012,18 @@
   function renderLocalVersion(version) {
     state.localVersion = version || {};
 
-    const current = version?.current
+    const currentVer = version?.current
       ? `v${String(version.current).replace(/^v/i, '')}`
       : '—';
+    const currentRev = String(
+      version?.current_revision_short
+      || version?.current_revision
+      || ''
+    ).slice(0, 8);
+
+    const current = currentRev
+      ? `${currentVer} · ${currentRev}`
+      : currentVer;
 
     const latestRevision = String(
       version?.latest_revision_short

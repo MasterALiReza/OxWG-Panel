@@ -60,6 +60,56 @@ def _version_tuple(v: Any) -> tuple[int, ...]:
     return tuple(parts)
 
 
+def _local_git_revision(root: str | Path = BASE_DIR) -> str:
+    """
+    Attempt to read the current git commit SHA from the local repository.
+    First tries direct file reading (.git/HEAD and refs), then falls back to git rev-parse.
+    """
+    try:
+        head_file = Path(root) / ".git" / "HEAD"
+        if head_file.is_file():
+            content = head_file.read_text(encoding="utf-8").strip()
+            if content.startswith("ref:"):
+                rel_ref = content[4:].strip()
+                ref_path = Path(root) / ".git" / rel_ref
+                if ref_path.is_file():
+                    sha = ref_path.read_text(encoding="utf-8").strip()
+                    if re.fullmatch(r"[0-9a-fA-F]{40}", sha):
+                        return sha.lower()
+                packed = Path(root) / ".git" / "packed-refs"
+                if packed.is_file():
+                    for line in packed.read_text(encoding="utf-8").splitlines():
+                        line = line.strip()
+                        if not line or line.startswith(("#", "^")):
+                            continue
+                        parts = line.split(maxsplit=1)
+                        if len(parts) == 2 and parts[1] == rel_ref:
+                            if re.fullmatch(r"[0-9a-fA-F]{40}", parts[0]):
+                                return parts[0].lower()
+            elif re.fullmatch(r"[0-9a-fA-F]{40}", content):
+                return content.lower()
+    except Exception:
+        pass
+
+    try:
+        import subprocess
+        res = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if res.returncode == 0:
+            val = res.stdout.strip().lower()
+            if re.fullmatch(r"[0-9a-fA-F]{40}", val):
+                return val
+    except Exception:
+        pass
+
+    return ""
+
+
 def _update_source_marker(scope: str = "panel") -> Path:
     """Return path to the update source metadata file."""
     safe_scope = "node" if str(scope).strip().lower() == "node" else "panel"
@@ -67,46 +117,111 @@ def _update_source_marker(scope: str = "panel") -> Path:
 
 
 def _read_update_source(scope: str = "panel") -> dict[str, Any]:
-    """Read stored update source metadata."""
+    """Read stored update source metadata, enhanced with live git revision if available."""
+    payload: dict[str, Any] = {}
     try:
         marker = _update_source_marker(scope)
         if marker.is_file():
-            payload = json.loads(marker.read_text(encoding="utf-8"))
-            return payload if isinstance(payload, dict) else {}
+            loaded = json.loads(marker.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                payload = loaded
     except Exception:
         pass
-    return {}
+
+    if scope == "panel":
+        git_sha = _local_git_revision(BASE_DIR)
+        if git_sha:
+            payload["revision"] = git_sha
+            payload["revision_short"] = git_sha[:8]
+
+    return payload
 
 
 def _github_latest_panel_version() -> dict[str, Any] | None:
-    """Query GitHub API for latest commit and VERSION file content on the main branch."""
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "WG-Panel",
-        "Cache-Control": "no-cache",
-    }
-
+    """
+    Query GitHub for the latest commit and VERSION file on the main branch.
+    Uses multi-tier fallback to remain 100% functional even when GitHub REST API
+    hits its 60 req/hour unauthenticated rate limit:
+      1. Git Smart HTTP (`git ls-remote`) - zero rate limit
+      2. GitHub Atom feed (`commits/main.atom`) - public feed, no REST rate limit
+      3. GitHub REST API (`api.github.com`) - with optional GITHUB_TOKEN
+    """
     commit_sha = ""
     commit_url = ""
     commit_date = ""
     remote_version = None
 
+    # Tier 1: git ls-remote (fast, immune to REST API rate limit)
     try:
-        url = f"https://api.github.com/repos/{PANEL_REPO}/commits/main"
-        response = requests.get(url, headers=headers, timeout=8)
-        if response.ok:
-            payload = response.json() or {}
-            commit_sha = str(payload.get("sha") or "").strip()
-            commit_url = str(payload.get("html_url") or f"https://github.com/{PANEL_REPO}").strip()
-            commit = payload.get("commit") or {}
-            author = commit.get("author") or {}
-            commit_date = str(author.get("date") or "").strip()
+        import subprocess
+        res = subprocess.run(
+            ["git", "ls-remote", f"https://github.com/{PANEL_REPO}.git", "refs/heads/main"],
+            capture_output=True,
+            text=True,
+            timeout=6,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            match = re.search(r"([0-9a-fA-F]{40})\s+refs/heads/main", res.stdout)
+            if match:
+                commit_sha = match.group(1).lower()
+                commit_url = f"https://github.com/{PANEL_REPO}/commit/{commit_sha}"
     except Exception as exc:
-        logger.warning("Could not fetch GitHub main commit: %s", exc)
+        logger.debug("git ls-remote check skipped/failed: %s", exc)
 
+    # Tier 2: GitHub Commits Atom Feed (public web feed, no REST rate limit)
+    if not commit_sha:
+        try:
+            feed_url = f"https://github.com/{PANEL_REPO}/commits/main.atom"
+            resp = requests.get(
+                feed_url,
+                headers={"User-Agent": "WG-Panel", "Cache-Control": "no-cache"},
+                timeout=6,
+            )
+            if resp.ok:
+                sha_match = re.search(r"Commit/([0-9a-fA-F]{40})", resp.text)
+                if sha_match:
+                    commit_sha = sha_match.group(1).lower()
+                    commit_url = f"https://github.com/{PANEL_REPO}/commit/{commit_sha}"
+                date_match = re.search(r"<updated>([^<]+)</updated>", resp.text)
+                if date_match:
+                    commit_date = date_match.group(1).strip()
+        except Exception as exc:
+            logger.debug("GitHub Atom feed check failed: %s", exc)
+
+    # Tier 3: GitHub REST API (if commit_sha still empty or to get author date)
+    if not commit_sha or not commit_date:
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "WG-Panel",
+            "Cache-Control": "no-cache",
+        }
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        if token:
+            headers["Authorization"] = f"Bearer {token.strip()}"
+
+        try:
+            url = f"https://api.github.com/repos/{PANEL_REPO}/commits/main"
+            response = requests.get(url, headers=headers, timeout=6)
+            if response.ok:
+                payload = response.json() or {}
+                if not commit_sha:
+                    commit_sha = str(payload.get("sha") or "").strip().lower()
+                    commit_url = str(payload.get("html_url") or f"https://github.com/{PANEL_REPO}").strip()
+                commit = payload.get("commit") or {}
+                author = commit.get("author") or {}
+                if not commit_date:
+                    commit_date = str(author.get("date") or "").strip()
+        except Exception as exc:
+            logger.debug("GitHub REST API check failed: %s", exc)
+
+    # Remote VERSION file check from raw.githubusercontent.com
     try:
         raw_url = f"https://raw.githubusercontent.com/{PANEL_REPO}/main/VERSION"
-        response = requests.get(raw_url, headers=headers, timeout=6)
+        response = requests.get(
+            raw_url,
+            headers={"User-Agent": "WG-Panel", "Cache-Control": "no-cache"},
+            timeout=6,
+        )
         if response.ok:
             candidate = response.text.strip().lstrip("vV")
             if re.fullmatch(r"\d+(?:\.\d+){0,3}(?:[-+][0-9A-Za-z.-]+)?", candidate):
@@ -123,7 +238,7 @@ def _github_latest_panel_version() -> dict[str, Any] | None:
         "url": commit_url or f"https://github.com/{PANEL_REPO}",
         "source": "main",
         "revision": commit_sha,
-        "revision_short": commit_sha[:8],
+        "revision_short": commit_sha[:8] if commit_sha else "",
         "commit_date": commit_date,
     }
 
