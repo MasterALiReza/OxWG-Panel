@@ -372,18 +372,15 @@ html[data-theme="dark"] .subx-pick.active { background:#26364a !important; color
 html[data-theme="dark"] .np-hero,
 html[data-theme="dark"] .np-stat,
 html[data-theme="dark"] .np-panel,
-html[data-theme="dark"] .np-table-wrap,
 html[data-theme="dark"] .nodes-card {
-  background:#121d2b !important;
-  border-color:#2a3c51 !important;
+  background:#0e1722 !important;
+  border-color:#233345 !important;
   color:#edf3fb !important;
-  box-shadow:0 13px 30px rgba(0,0,0,.18) !important;
+  box-shadow:0 13px 30px rgba(0,0,0,.22) !important;
 }
-html[data-theme="dark"] .np-toolbar,
-html[data-theme="dark"] .np-search,
-html[data-theme="dark"] .np-filters { background:#101925 !important; border-color:#2b3d52 !important; }
-html[data-theme="dark"] .np-filters button { color:#afbed0 !important; }
-html[data-theme="dark"] .np-filters button.active { background:#223248 !important; color:#fff !important; }
+html[data-theme="dark"] .np-filters button { background:#131d29 !important; border-color:#26384a !important; color:#94a3b8 !important; }
+html[data-theme="dark"] .np-filters button.active { background:#223547 !important; border-color:#3b5570 !important; color:#fff !important; }
+
 
 html[data-theme="dark"] .bk-card,
 html[data-theme="dark"] .bk-tabs,
