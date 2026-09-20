@@ -873,27 +873,45 @@ html[data-theme="dark"] .np-empty #empty-add-node:hover {
 /* Pagination */
 html[data-theme="dark"] .np-pagination {
   background: #0e1722 !important;
-  border-color: #233345 !important;
+  border: 1px solid #233345 !important;
   color: #edf3fb !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
 }
 html[data-theme="dark"] .np-page-info {
   color: #8da1b6 !important;
+  font-weight: 700 !important;
+}
+html[data-theme="dark"] .np-page-info b,
+html[data-theme="dark"] .np-page-info strong {
+  color: #f1f5f9 !important;
+  font-weight: 850 !important;
 }
 html[data-theme="dark"] .np-page-controls > button {
   background: #14202d !important;
-  border-color: #283a4e !important;
+  border: 1px solid #283a4e !important;
   color: #edf3fb !important;
+  border-radius: 11px !important;
+  transition: transform 0.14s ease, background 0.16s ease, border-color 0.16s ease, color 0.16s ease !important;
 }
 html[data-theme="dark"] .np-page-controls > button:hover:not(:disabled) {
   background: #1c2b3c !important;
   border-color: #3b5067 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
 }
 html[data-theme="dark"] .np-page-controls > button:disabled {
   opacity: 0.35 !important;
+  background: #0f1621 !important;
+  border-color: #1e2a38 !important;
+  color: #526377 !important;
 }
 html[data-theme="dark"] .np-page-controls span {
-  color: #94a3b8 !important;
+  color: #8da1b6 !important;
+  font-weight: 700 !important;
+}
+html[data-theme="dark"] .np-page-controls span b {
+  color: #f1f5f9 !important;
+  font-weight: 900 !important;
 }
 html[data-theme="dark"] .np-page-controls select {
   background: #14202d !important;
@@ -901,6 +919,7 @@ html[data-theme="dark"] .np-page-controls select {
   color: #edf3fb !important;
   color-scheme: dark !important;
 }
+
 
 /* Add / Edit Node Modal */
 html[data-theme="dark"] .nodes-modal .modal-card {

@@ -1049,12 +1049,21 @@ html[data-theme="dark"] .ox-select-menu {
 }
 
 html[data-theme="dark"] .ox-select-item {
-  color: #cbd5e1 !important;
+  color: #dce6f1 !important;
+}
+
+html[data-theme="dark"] .ox-select-item .ox-select-item-text {
+  color: inherit !important;
 }
 
 html[data-theme="dark"] .ox-select-item:hover,
 html[data-theme="dark"] .ox-select-item:focus-visible {
-  background: #162337 !important;
+  background: #182535 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .ox-select-item:hover .ox-select-item-text,
+html[data-theme="dark"] .ox-select-item:focus-visible .ox-select-item-text {
   color: #ffffff !important;
 }
 
@@ -1062,6 +1071,11 @@ html[data-theme="dark"] .ox-select-item.selected {
   background: rgba(16, 185, 129, 0.16) !important;
   color: #34d399 !important;
 }
+
+html[data-theme="dark"] .ox-select-item.selected .ox-select-item-text {
+  color: #34d399 !important;
+}
+
 
 .ox-select-item.disabled {
   opacity: 0.4 !important;
