@@ -40,9 +40,23 @@ html[data-theme="dark"] .peer-scope-option{color:#d9dfe4!important}html[data-the
 html[data-theme="dark"] .iface-toolbar-label,html[data-theme="dark"] .iface-btn,html[data-theme="dark"] .iface-chip,html[data-theme="dark"] .iface-action-btn{background:#141c25!important;border-color:#303c48!important;color:#cbd3da!important;box-shadow:none!important}
 html[data-theme="dark"] .iface-btn[aria-pressed="true"],html[data-theme="dark"] .iface-btn.is-active{background:#d7dde2!important;border-color:#d7dde2!important;color:#11161b!important}
 html[data-theme="dark"] .peer-page-actions{background:#0d1319!important;border:1px solid #28333e!important;border-radius:14px;padding:6px!important}
-html[data-theme="dark"] .peer-page-actions .btn{background:#1a232d!important;border-color:#34414e!important;color:#e8ebee!important}html[data-theme="dark"] .peer-page-actions .btn:hover{background:#222d38!important}
+html[data-theme="dark"] .peer-page-actions .btn{background:#1a232d!important;border-color:#34414e!important;color:#e8ebee!important;cursor:pointer!important;transition:transform .14s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease!important}
+html[data-theme="dark"] .peer-page-actions .btn:hover{background:#222d38!important;transform:translateY(-1px)!important}
+html[data-theme="dark"] .peer-page-actions .btn:active{transform:translateY(0) scale(.985)!important}
+html[data-theme="dark"] #create-peer-btn{background:linear-gradient(135deg,#13755f 0%,#0c5746 100%)!important;border:1px solid #1ba585!important;color:#f0fdf9!important;box-shadow:0 4px 14px rgba(16,185,129,.20)!important}
+html[data-theme="dark"] #create-peer-btn:hover{background:linear-gradient(135deg,#168d73 0%,#0f6955 100%)!important;border-color:#2dd4bf!important;box-shadow:0 6px 20px rgba(16,185,129,.30)!important}
+html[data-theme="dark"] #create-peer-btn>i{background:rgba(255,255,255,.15)!important;border:1px solid rgba(255,255,255,.25)!important;color:#ffffff!important}
+html[data-theme="dark"] #create-peer-btn .btn-mini-on{background:rgba(0,0,0,.28)!important;border:1px solid rgba(167,243,208,.25)!important;color:#a7f3d0!important}
 html[data-theme="dark"] .peer-summary-title strong{color:#e8ecef!important}html[data-theme="dark"] .peer-summary-title small{color:#8d98a4!important}
-html[data-theme="dark"] .summary-stat{background:#151d26!important;border-color:#303c48!important;color:#dce2e7!important}html[data-theme="dark"] .summary-stat .stat-copy small{color:#8e99a5!important}
+html[data-theme="dark"] .summary-stat{border-radius:9px!important;cursor:pointer!important;transition:transform .14s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease!important}
+html[data-theme="dark"] .summary-stat:hover{transform:translateY(-1px)!important;box-shadow:0 4px 12px rgba(0,0,0,.20)!important}
+html[data-theme="dark"] .summary-stat:active{transform:translateY(0) scale(.985)!important}
+html[data-theme="dark"] .summary-stat.online{border-color:rgba(76,195,161,.24)!important;background:rgba(76,195,161,.06)!important}
+html[data-theme="dark"] .summary-stat.offline{border-color:rgba(145,160,175,.22)!important;background:rgba(145,160,175,.05)!important}
+html[data-theme="dark"] .summary-stat.enabled{border-color:rgba(76,195,161,.24)!important;background:rgba(76,195,161,.06)!important}
+html[data-theme="dark"] .summary-stat.disabled{border-color:rgba(160,148,201,.24)!important;background:rgba(160,148,201,.05)!important}
+html[data-theme="dark"] .summary-stat.depleting{border-color:rgba(208,162,75,.30)!important;background:rgba(208,162,75,.07)!important}
+html[data-theme="dark"] .summary-stat.blocked{border-color:rgba(225,123,135,.30)!important;background:rgba(225,123,135,.07)!important}
 html[data-theme="dark"] .peer-filters .input,html[data-theme="dark"] #peer-filter-q,html[data-theme="dark"] #peer-filter-status{background:#111820!important;border-color:#33404d!important;color:#e5e9ed!important}html[data-theme="dark"] #peer-filter-clear{background:#1b242e!important;border-color:#35424f!important;color:#dfe4e8!important}
 html[data-theme="dark"] .peer-card{background:#0f151c!important;border-color:#2b3641!important;box-shadow:0 10px 28px rgba(0,0,0,.18)!important}
 html[data-theme="dark"] .peer-card:hover{background:#111922!important;border-color:#3c4956!important;box-shadow:0 16px 36px rgba(0,0,0,.28)!important}
