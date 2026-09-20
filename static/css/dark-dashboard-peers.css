@@ -65,24 +65,500 @@ html[data-theme="dark"] .peer-data,html[data-theme="dark"] .peer-timer,html[data
 html[data-theme="dark"] .peer-actions-row{background:#0d1319!important;border-color:#27323d!important}html[data-theme="dark"] .peer-actions button,html[data-theme="dark"] .more-toggle.icon-only,html[data-theme="dark"] .peer-info-wrap .icon-only{background:#18212a!important;border-color:#34414d!important;color:#cbd3da!important;box-shadow:none!important}html[data-theme="dark"] .peer-actions button:hover,html[data-theme="dark"] .more-toggle.icon-only:hover{background:#242f3a!important;border-color:#455361!important}
 html[data-theme="dark"] .peer-more-section,html[data-theme="dark"] .peer-detail-item,html[data-theme="dark"] .peer-limit-bar{background:#111820!important;border-color:#2d3945!important}html[data-theme="dark"] .peer-detail-value,html[data-theme="dark"] .peer-more-title{color:#dde3e8!important}html[data-theme="dark"] .peer-detail-label{color:#84909c!important}
 html[data-theme="dark"] .modal-backdrop{background:rgba(2,5,8,.76)!important;backdrop-filter:blur(5px)!important}
-html[data-theme="dark"] .peerx-dialog,html[data-theme="dark"] .iface-create-card{background:#0b1016!important;border:1px solid #303b47!important;color:var(--text)!important;box-shadow:0 28px 80px rgba(0,0,0,.55)!important}
-html[data-theme="dark"] .peerx-modal-head,html[data-theme="dark"] .iface-create-card>h2{background:#10171f!important;border-color:#2a3540!important;color:#e8ecef!important}
-html[data-theme="dark"] .peerx-modal-head p,html[data-theme="dark"] .iface-create-card>p{color:#8f9aa5!important}
-html[data-theme="dark"] .peerx-modal-badge{background:#1b2530!important;border-color:#35424e!important;color:#d9dfe4!important}
-html[data-theme="dark"] .peerx-smart-form{background:#0b1016!important}
-html[data-theme="dark"] .peerx-form-card{background:#10171f!important;border-color:#2b3642!important;box-shadow:none!important}
-html[data-theme="dark"] .peerx-section-head{background:#151e27!important;border-color:#303c48!important}html[data-theme="dark"] .peerx-section-head>span{background:#222d38!important;color:#d8dee4!important}html[data-theme="dark"] .peerx-section-head b{color:#e2e7eb!important}html[data-theme="dark"] .peerx-section-head small{color:#8d98a4!important}
-html[data-theme="dark"] .peerx-form-modal .input,html[data-theme="dark"] .peerx-form-modal input:not([type="checkbox"]),html[data-theme="dark"] .peerx-form-modal select,html[data-theme="dark"] .peerx-form-modal textarea,html[data-theme="dark"] .iface-create-card .input{background:#0c1218!important;border-color:#34414d!important;color:#e3e8ec!important;box-shadow:none!important}
-html[data-theme="dark"] .peerx-form-modal .input::placeholder,html[data-theme="dark"] .iface-create-card .input::placeholder{color:#6f7b87!important}
-html[data-theme="dark"] .peerx-form-modal .input:focus,html[data-theme="dark"] .iface-create-card .input:focus{border-color:#71808e!important;box-shadow:0 0 0 3px rgba(148,163,184,.12)!important}
-html[data-theme="dark"] .peerx-form-modal .form-group,html[data-theme="dark"] .peerx-form-modal .form-group>span,html[data-theme="dark"] .peerx-form-modal .form-group label,html[data-theme="dark"] .iface-create-card label{color:#b9c2cb!important}
-html[data-theme="dark"] .peerx-switch,html[data-theme="dark"] .auto-network-toggle,html[data-theme="dark"] .iface-auto-up{background:#141c24!important;border-color:#303c48!important;color:#dce2e7!important;box-shadow:none!important}
-html[data-theme="dark"] .peerx-switch>span,html[data-theme="dark"] .auto-network-switch,html[data-theme="dark"] .iface-auto-up-switch{background:#465361!important}
-html[data-theme="dark"] .peerx-form-actions,html[data-theme="dark"] .iface-create-actions{background:#0f161d!important;border-color:#2b3641!important}
-html[data-theme="dark"] .peerx-form-actions .btn.secondary,html[data-theme="dark"] .iface-create-actions .btn.secondary{background:#1a232d!important;border-color:#35424f!important;color:#dce2e7!important}
-html[data-theme="dark"] .peerx-form-actions .btn:not(.secondary),html[data-theme="dark"] .iface-create-actions .btn:not(.secondary){background:#d8dde2!important;border-color:#d8dde2!important;color:#11161b!important}
-html[data-theme="dark"] .modal-close{background:#18212a!important;border:1px solid #35424f!important;color:#cbd3da!important}html[data-theme="dark"] .modal-close:hover{background:#242f3a!important;color:#fff!important}
-html[data-theme="dark"] .profile-picker,html[data-theme="dark"] .peerx-profile-row,html[data-theme="dark"] .ep-row{background:#141c24!important;border-color:#303c48!important;color:#d4dbe1!important}
+html[data-theme="dark"] #peer-modal .peerx-dialog,
+html[data-theme="dark"] #edit-peer-modal .peerx-dialog,
+html[data-theme="dark"] #bulk-modal .peerx-dialog,
+html[data-theme="dark"] .peerx-dialog,
+html[data-theme="dark"] .iface-create-card {
+  background: #0b111a !important;
+  border: 1px solid #233446 !important;
+  color: #edf3fb !important;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65) !important;
+}
+
+html[data-theme="dark"] #peer-modal #create-peer-form,
+html[data-theme="dark"] #edit-peer-modal #edit-peer-form,
+html[data-theme="dark"] #bulk-modal #bulk-form,
+html[data-theme="dark"] .peerx-smart-form {
+  background: #090e17 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-modal-head,
+html[data-theme="dark"] #edit-peer-modal .peerx-modal-head,
+html[data-theme="dark"] #bulk-modal .peerx-modal-head,
+html[data-theme="dark"] .peerx-modal-head,
+html[data-theme="dark"] .iface-create-card > h2 {
+  background: #0e1724 !important;
+  border-bottom: 1px solid #1e2c3e !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-modal-head h2,
+html[data-theme="dark"] #edit-peer-modal .peerx-modal-head h2,
+html[data-theme="dark"] #bulk-modal .peerx-modal-head h2,
+html[data-theme="dark"] .peerx-modal-head h2 {
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-modal-head p,
+html[data-theme="dark"] #edit-peer-modal .peerx-modal-head p,
+html[data-theme="dark"] #bulk-modal .peerx-modal-head p,
+html[data-theme="dark"] .peerx-modal-head p,
+html[data-theme="dark"] .iface-create-card > p {
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-modal-badge,
+html[data-theme="dark"] #edit-peer-modal .peerx-modal-badge,
+html[data-theme="dark"] #bulk-modal .peerx-modal-badge,
+html[data-theme="dark"] .peerx-modal-badge {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.28)) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+}
+
+html[data-theme="dark"] #peer-modal .modal-close,
+html[data-theme="dark"] #edit-peer-modal .modal-close,
+html[data-theme="dark"] #bulk-modal .modal-close,
+html[data-theme="dark"] .modal-close {
+  background: #162232 !important;
+  border: 1px solid #283b51 !important;
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .modal-close:hover,
+html[data-theme="dark"] #edit-peer-modal .modal-close:hover,
+html[data-theme="dark"] #bulk-modal .modal-close:hover,
+html[data-theme="dark"] .modal-close:hover {
+  background: #1e2e42 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-form-card,
+html[data-theme="dark"] #edit-peer-modal .peerx-form-card,
+html[data-theme="dark"] #bulk-modal .peerx-form-card,
+html[data-theme="dark"] .peerx-form-card {
+  background: #0e1724 !important;
+  border: 1px solid #1f2f42 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-section-head,
+html[data-theme="dark"] #edit-peer-modal .peerx-section-head,
+html[data-theme="dark"] #bulk-modal .peerx-section-head,
+html[data-theme="dark"] .peerx-section-head {
+  background: #14202e !important;
+  border: 1px solid #233549 !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-section-head > span,
+html[data-theme="dark"] #edit-peer-modal .peerx-section-head > span,
+html[data-theme="dark"] #bulk-modal .peerx-section-head > span,
+html[data-theme="dark"] #peer-modal .peerx-section-head-main > span,
+html[data-theme="dark"] #edit-peer-modal .peerx-section-head-main > span,
+html[data-theme="dark"] .peerx-section-head > span,
+html[data-theme="dark"] .peerx-section-head-main > span {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border-radius: 10px !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-section-head b,
+html[data-theme="dark"] #edit-peer-modal .peerx-section-head b,
+html[data-theme="dark"] #bulk-modal .peerx-section-head b,
+html[data-theme="dark"] #peer-modal .peerx-section-head-main b,
+html[data-theme="dark"] #edit-peer-modal .peerx-section-head-main b,
+html[data-theme="dark"] .peerx-section-head b,
+html[data-theme="dark"] .peerx-section-head-main b {
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-section-head small,
+html[data-theme="dark"] #edit-peer-modal .peerx-section-head small,
+html[data-theme="dark"] #bulk-modal .peerx-section-head small,
+html[data-theme="dark"] #peer-modal .peerx-section-head-main small,
+html[data-theme="dark"] #edit-peer-modal .peerx-section-head-main small,
+html[data-theme="dark"] .peerx-section-head small,
+html[data-theme="dark"] .peerx-section-head-main small {
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .input,
+html[data-theme="dark"] #peer-modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] #peer-modal select,
+html[data-theme="dark"] #peer-modal textarea,
+html[data-theme="dark"] #edit-peer-modal .input,
+html[data-theme="dark"] #edit-peer-modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] #edit-peer-modal select,
+html[data-theme="dark"] #edit-peer-modal textarea,
+html[data-theme="dark"] #bulk-modal .input,
+html[data-theme="dark"] #bulk-modal input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] #bulk-modal select,
+html[data-theme="dark"] #bulk-modal textarea,
+html[data-theme="dark"] .peerx-form-modal .input,
+html[data-theme="dark"] .peerx-form-modal input:not([type="checkbox"]),
+html[data-theme="dark"] .peerx-form-modal select,
+html[data-theme="dark"] .peerx-form-modal textarea,
+html[data-theme="dark"] .iface-create-card .input {
+  background: #111a28 !important;
+  border: 1px solid #25364b !important;
+  color: #edf3fb !important;
+  color-scheme: dark !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+html[data-theme="dark"] #peer-modal .input::placeholder,
+html[data-theme="dark"] #peer-modal input::placeholder,
+html[data-theme="dark"] #edit-peer-modal input::placeholder,
+html[data-theme="dark"] #bulk-modal input::placeholder,
+html[data-theme="dark"] .peerx-form-modal .input::placeholder,
+html[data-theme="dark"] .iface-create-card .input::placeholder {
+  color: #64748b !important;
+}
+
+html[data-theme="dark"] #peer-modal .input:focus,
+html[data-theme="dark"] #peer-modal input:focus,
+html[data-theme="dark"] #peer-modal select:focus,
+html[data-theme="dark"] #peer-modal textarea:focus,
+html[data-theme="dark"] #edit-peer-modal .input:focus,
+html[data-theme="dark"] #bulk-modal .input:focus,
+html[data-theme="dark"] .peerx-form-modal .input:focus,
+html[data-theme="dark"] .iface-create-card .input:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+}
+
+html[data-theme="dark"] #peer-modal .form-group,
+html[data-theme="dark"] #peer-modal .form-group > span,
+html[data-theme="dark"] #peer-modal .form-group label,
+html[data-theme="dark"] #peer-modal label.form-group,
+html[data-theme="dark"] #edit-peer-modal .form-group,
+html[data-theme="dark"] #bulk-modal .form-group,
+html[data-theme="dark"] .peerx-form-modal .form-group,
+html[data-theme="dark"] .peerx-form-modal .form-group > span,
+html[data-theme="dark"] .peerx-form-modal .form-group label,
+html[data-theme="dark"] .iface-create-card label {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peer-ip-address-hint,
+html[data-theme="dark"] #edit-peer-modal .peer-ip-address-hint {
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-switch,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch,
+html[data-theme="dark"] #bulk-modal .peerx-switch,
+html[data-theme="dark"] #peer-modal .auto-network-toggle,
+html[data-theme="dark"] #edit-peer-modal .auto-network-toggle,
+html[data-theme="dark"] .peerx-switch,
+html[data-theme="dark"] .auto-network-toggle,
+html[data-theme="dark"] .iface-auto-up {
+  background: #111a28 !important;
+  border: 1px solid #233446 !important;
+  color: #edf3fb !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-switch:hover,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch:hover,
+html[data-theme="dark"] #bulk-modal .peerx-switch:hover,
+html[data-theme="dark"] .peerx-switch:hover,
+html[data-theme="dark"] .auto-network-toggle:hover {
+  background: #14202e !important;
+  border-color: #31465e !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-switch span,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch span,
+html[data-theme="dark"] #bulk-modal .peerx-switch span,
+html[data-theme="dark"] .peerx-switch > span,
+html[data-theme="dark"] .auto-network-switch,
+html[data-theme="dark"] .iface-auto-up-switch {
+  background: #28394e !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-switch input:checked + span,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch input:checked + span,
+html[data-theme="dark"] #bulk-modal .peerx-switch input:checked + span,
+html[data-theme="dark"] #peer-modal .auto-network-toggle input:checked + .auto-network-switch,
+html[data-theme="dark"] #edit-peer-modal .auto-network-toggle input:checked + .auto-network-switch {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-switch span:after,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch span:after,
+html[data-theme="dark"] #bulk-modal .peerx-switch span:after {
+  background: #ffffff !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-switch b,
+html[data-theme="dark"] #edit-peer-modal .peerx-switch b,
+html[data-theme="dark"] #bulk-modal .peerx-switch b,
+html[data-theme="dark"] .peerx-switch b,
+html[data-theme="dark"] .auto-network-copy b {
+  color: #edf3fb !important;
+}
+
+html[data-theme="dark"] #peer-modal .auto-network-copy small,
+html[data-theme="dark"] #edit-peer-modal .auto-network-copy small {
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-profile-card {
+  background: #0e1724 !important;
+  border-bottom: 1px solid #1f2f42 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-profile-row,
+html[data-theme="dark"] .peerx-profile-row {
+  background: #111a28 !important;
+  border: 1px solid #233446 !important;
+  color: #edf3fb !important;
+}
+
+html[data-theme="dark"] #peer-modal .profile-picker,
+html[data-theme="dark"] .profile-picker {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+html[data-theme="dark"] #peer-modal .profile-picker select,
+html[data-theme="dark"] #peer-modal #profile-select,
+html[data-theme="dark"] .profile-picker select {
+  background: #0d1522 !important;
+  border: 1px solid #25364b !important;
+  color: #edf3fb !important;
+}
+
+html[data-theme="dark"] #peer-modal .profile-picker .icon-btn,
+html[data-theme="dark"] .profile-picker .icon-btn {
+  background: #162232 !important;
+  border: 1px solid #283b51 !important;
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .profile-picker .icon-btn:hover,
+html[data-theme="dark"] .profile-picker .icon-btn:hover {
+  background: #1e2e42 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-profile-menu,
+html[data-theme="dark"] #profile-menu {
+  background: #0e1724 !important;
+  border: 1px solid #25364b !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-profile-menu .menu-item,
+html[data-theme="dark"] #profile-menu .menu-item {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-profile-menu .menu-item:hover,
+html[data-theme="dark"] #profile-menu .menu-item:hover {
+  background: #182535 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-profile-menu .menu-item.danger,
+html[data-theme="dark"] #profile-menu .menu-item.danger {
+  color: #f87171 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-profile-menu .menu-sep,
+html[data-theme="dark"] #profile-menu .menu-sep {
+  background: #1f2f42 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-chips-container,
+html[data-theme="dark"] #edit-peer-modal .peerx-chips-container,
+html[data-theme="dark"] .peerx-chips-container {
+  background: #0d1522 !important;
+  border: 1px solid #1f2f42 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-chips-label,
+html[data-theme="dark"] #edit-peer-modal .peerx-chips-label,
+html[data-theme="dark"] .peerx-chips-label {
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-chip,
+html[data-theme="dark"] #edit-peer-modal .peerx-chip,
+html[data-theme="dark"] .peerx-chip {
+  background: #131e2d !important;
+  border: 1px solid #26384e !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-chip:hover,
+html[data-theme="dark"] #edit-peer-modal .peerx-chip:hover,
+html[data-theme="dark"] .peerx-chip:hover {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border-color: #10b981 !important;
+  color: #34d399 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-chip.active,
+html[data-theme="dark"] #edit-peer-modal .peerx-chip.active,
+html[data-theme="dark"] .peerx-chip.active {
+  background: #10b981 !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact,
+html[data-theme="dark"] #bulk-modal .endpoint-presets-compact,
+html[data-theme="dark"] .endpoint-presets-compact {
+  background: #0d1522 !important;
+  border: 1px solid #1f2f42 !important;
+}
+
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact select,
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact #ep-saved,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact select,
+html[data-theme="dark"] #bulk-modal .endpoint-presets-compact select,
+html[data-theme="dark"] .endpoint-presets-compact select,
+html[data-theme="dark"] .endpoint-presets-compact #ep-saved {
+  background: #111a28 !important;
+  border: 1px solid #25364b !important;
+  color: #edf3fb !important;
+}
+
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact > .endpoint-preset-action,
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact > .btn,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact > .endpoint-preset-action,
+html[data-theme="dark"] #bulk-modal .endpoint-presets-compact > .endpoint-preset-action,
+html[data-theme="dark"] .endpoint-presets-compact > .endpoint-preset-action {
+  background: #162232 !important;
+  border: 1px solid #283b51 !important;
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact > .endpoint-preset-action:hover,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact > .endpoint-preset-action:hover,
+html[data-theme="dark"] .endpoint-presets-compact > .endpoint-preset-action:hover {
+  background: #1e2e42 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact > #ep-apply,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact > #ep-apply,
+html[data-theme="dark"] .endpoint-presets-compact > #ep-apply {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+}
+
+html[data-theme="dark"] #peer-modal .endpoint-presets-compact > #ep-del,
+html[data-theme="dark"] #edit-peer-modal .endpoint-presets-compact > #ep-del,
+html[data-theme="dark"] .endpoint-presets-compact > #ep-del {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #f87171 !important;
+}
+
+html[data-theme="dark"] #peer-modal .endpoint-effective,
+html[data-theme="dark"] #edit-peer-modal .endpoint-effective,
+html[data-theme="dark"] .endpoint-effective {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-fixed-endpoint-field,
+html[data-theme="dark"] #edit-peer-modal .peerx-fixed-endpoint-field,
+html[data-theme="dark"] .peerx-fixed-endpoint-field {
+  background: #0e1724 !important;
+  border: 1px solid #1f2f42 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-endpoint-chip,
+html[data-theme="dark"] #edit-peer-modal .peerx-endpoint-chip,
+html[data-theme="dark"] .peerx-endpoint-chip {
+  background: #172236 !important;
+  color: #8fa0b5 !important;
+}
+
+html[data-theme="dark"] #peer-modal .ep-row,
+html[data-theme="dark"] #edit-peer-modal .ep-row,
+html[data-theme="dark"] #bulk-modal .ep-row,
+html[data-theme="dark"] .ep-row {
+  background: #111a28 !important;
+  border: 1px solid #233446 !important;
+  color: #edf3fb !important;
+}
+
+html[data-theme="dark"] .peer-route-host {
+  background: #0d1522 !important;
+  border: 1px solid #1f2f42 !important;
+}
+
+html[data-theme="dark"] .peer-route-chip {
+  background: #162232 !important;
+  border: 1px solid #283b51 !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-form-actions,
+html[data-theme="dark"] #edit-peer-modal .peerx-form-actions,
+html[data-theme="dark"] #bulk-modal .peerx-form-actions,
+html[data-theme="dark"] .peerx-form-actions,
+html[data-theme="dark"] .iface-create-actions {
+  background: #0e1724 !important;
+  border-top: 1px solid #1e2c3e !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-form-actions .btn.secondary,
+html[data-theme="dark"] #edit-peer-modal .peerx-form-actions .btn.secondary,
+html[data-theme="dark"] #bulk-modal .peerx-form-actions .btn.secondary,
+html[data-theme="dark"] #create-cancel,
+html[data-theme="dark"] #edit-cancel,
+html[data-theme="dark"] #bulk-cancel,
+html[data-theme="dark"] .peerx-form-actions .btn.secondary,
+html[data-theme="dark"] .iface-create-actions .btn.secondary {
+  background: #162232 !important;
+  border: 1px solid #283b51 !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-form-actions .btn.secondary:hover,
+html[data-theme="dark"] #edit-peer-modal .peerx-form-actions .btn.secondary:hover,
+html[data-theme="dark"] #create-cancel:hover,
+html[data-theme="dark"] #edit-cancel:hover,
+html[data-theme="dark"] .peerx-form-actions .btn.secondary:hover,
+html[data-theme="dark"] .iface-create-actions .btn.secondary:hover {
+  background: #1e2e42 !important;
+  color: #ffffff !important;
+  border-color: #3b506a !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-form-actions .btn:not(.secondary),
+html[data-theme="dark"] #edit-peer-modal .peerx-form-actions .btn:not(.secondary),
+html[data-theme="dark"] #bulk-modal .peerx-form-actions .btn:not(.secondary),
+html[data-theme="dark"] .peerx-form-actions .btn:not(.secondary),
+html[data-theme="dark"] .iface-create-actions .btn:not(.secondary) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: 1px solid #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35) !important;
+}
+
+html[data-theme="dark"] #peer-modal .peerx-form-actions .btn:not(.secondary):hover,
+html[data-theme="dark"] #edit-peer-modal .peerx-form-actions .btn:not(.secondary):hover,
+html[data-theme="dark"] #bulk-modal .peerx-form-actions .btn:not(.secondary):hover,
+html[data-theme="dark"] .peerx-form-actions .btn:not(.secondary):hover,
+html[data-theme="dark"] .iface-create-actions .btn:not(.secondary):hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
 /* ==========================================================================
    Pagination Bar & OxSelect Page-Size Dropdown — Dark Mode Harmonization
    ========================================================================== */
