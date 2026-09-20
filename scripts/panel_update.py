@@ -1200,6 +1200,16 @@ def main():
             source_metadata,
         )
 
+        git_exe = shutil.which("git")
+        if git_exe and (root / ".git").is_dir() and args.scope == "panel":
+            try:
+                target_rev = source_metadata.get("revision") or "origin/main"
+                run([git_exe, "fetch", "origin", "main"], cwd=str(root), timeout=45, check=False)
+                run([git_exe, "reset", "--hard", target_rev], cwd=str(root), timeout=45, check=False)
+                status.set(log=f"Synchronized git repository to {source_metadata.get('revision_short') or target_rev[:8]}.")
+            except Exception as git_err:
+                status.set(log=f"Git sync notice (non-fatal): {git_err}")
+
         status.set(
             status="completed",
             stage="completed",

@@ -658,6 +658,10 @@
 
     const localButton = $('pu-update-local');
 
+    if (isBusy(status)) {
+      state.seenBusyStage = true;
+    }
+
     if (localButton) {
       localButton.disabled = isBusy(status) || state.reconnecting;
     }
@@ -670,6 +674,14 @@
     }
 
     if (TERMINAL_OK.has(name)) {
+      // Guard against stale status from a previous update if a local update was just initiated
+      if (wasUpdatingLocally && !state.seenBusyStage && state.updateInitiatedAt) {
+        const statusTime = new Date(status?.updated_at || status?.started_at || 0).getTime();
+        if (statusTime > 0 && statusTime < (state.updateInitiatedAt - 3000)) {
+          return;
+        }
+      }
+
       stopPoll();
       state.panelReachableAfterRestart = false;
       state.reconnecting = false;
@@ -1215,6 +1227,8 @@
     button.disabled = true;
     state.lastTerminalNotice = '';
     state.localUpdateActive = true;
+    state.updateInitiatedAt = Date.now();
+    state.seenBusyStage = false;
     try {
       sessionStorage.setItem('wg_panel_updating', '1');
     } catch (_) {}
@@ -1313,21 +1327,23 @@
   }
 
   function closeCenter() {
+    const modal = $('panel-update-modal');
+    if (modal) {
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+      state.opened = false;
+    }
+
     if (state.reconnecting || window.WG_PANEL_UPDATING) {
       toast(
-        'The update is still running. Keep this page open while the panel restarts.',
-        'warn',
+        'Update is running in the background. The page will reload once complete.',
+        'info',
       );
+      // Keep polling active in background so completion/reload still happens
       return;
     }
 
-    const modal = $('panel-update-modal');
-    if (!modal) return;
-
-    modal.hidden = true;
-    modal.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('modal-open');
-    state.opened = false;
     stopPoll();
   }
 

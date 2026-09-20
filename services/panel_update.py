@@ -212,6 +212,20 @@ def _queue_safe_update(
     if _update_is_busy(current) or _update_lock_active(root_path):
         raise RuntimeError("An update is already running for this target.")
 
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    queued_payload = {
+        "status": "queued",
+        "stage": "queued",
+        "percent": 2,
+        "message": "Update queued.",
+        "started_at": now_iso,
+        "updated_at": now_iso,
+        "log": ["Update queued."],
+        "target": str(target or "main"),
+        "scope": scope,
+    }
+    _write_update_status(target_status, queued_payload)
+
     cmd = [
         sys.executable,
         str(helper),
@@ -230,4 +244,6 @@ def _queue_safe_update(
     ]
 
     log_path = root_path / "instance" / "update_runner.log"
-    return _launch_update(cmd=cmd, root=root_path, scope=scope, log_path=log_path)
+    res = _launch_update(cmd=cmd, root=root_path, scope=scope, log_path=log_path)
+    res["status"] = queued_payload
+    return res

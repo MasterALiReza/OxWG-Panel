@@ -119,9 +119,11 @@ def _update_source_marker(scope: str = "panel") -> Path:
 def _read_update_source(scope: str = "panel") -> dict[str, Any]:
     """Read stored update source metadata, enhanced with live git revision if available."""
     payload: dict[str, Any] = {}
+    marker = _update_source_marker(scope)
+    marker_mtime = 0.0
     try:
-        marker = _update_source_marker(scope)
         if marker.is_file():
+            marker_mtime = marker.stat().st_mtime
             loaded = json.loads(marker.read_text(encoding="utf-8"))
             if isinstance(loaded, dict):
                 payload = loaded
@@ -131,8 +133,21 @@ def _read_update_source(scope: str = "panel") -> dict[str, Any]:
     if scope == "panel":
         git_sha = _local_git_revision(BASE_DIR)
         if git_sha:
-            payload["revision"] = git_sha
-            payload["revision_short"] = git_sha[:8]
+            git_head = Path(BASE_DIR) / ".git" / "HEAD"
+            git_mtime = git_head.stat().st_mtime if git_head.is_file() else 0.0
+            recorded_sha = str(payload.get("revision") or "").strip().lower()
+
+            # If no recorded revision exists from an update installer, git is the source of truth.
+            # If git was modified AFTER the update marker file was created, someone ran git commands manually.
+            # Otherwise, the updater installed files more recently than git, so keep the recorded revision!
+            if not recorded_sha:
+                payload["revision"] = git_sha
+                payload["revision_short"] = git_sha[:8]
+            elif git_mtime > marker_mtime and marker_mtime > 0:
+                payload["revision"] = git_sha
+                payload["revision_short"] = git_sha[:8]
+            else:
+                payload.setdefault("revision_short", recorded_sha[:8])
 
     return payload
 
